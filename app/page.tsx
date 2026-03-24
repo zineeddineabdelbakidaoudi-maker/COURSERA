@@ -413,7 +413,7 @@ export default function HomePage() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {categories.map((cat) => {
-              const IconComponent = categoryIcons[cat.icon] || FileText
+              const IconComponent = (categoryIcons[cat.icon] || FileText) as any
               return (
                 <Link
                   key={cat.slug}
