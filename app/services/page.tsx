@@ -500,8 +500,8 @@ export default function ServicesPage() {
                     <ServiceCard
                       key={service.id}
                       {...service}
-                      isSaved={savedServices.has(service.id)}
-                      onSaveToggle={() => toggleSaveService(service.id)}
+                      isSaved={savedServices.has(service.id || "")}
+                      onSaveToggle={() => toggleSaveService(service.id || "")}
                     />
                   ))}
                 </div>
