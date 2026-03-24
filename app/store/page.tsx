@@ -454,7 +454,7 @@ export default function StorePage() {
                     : "flex flex-col gap-4"
                 )}>
                   {filteredProducts.map((product) => (
-                    <ProductCard key={product.id} {...product} />
+                    <ProductCard key={product.id || ""} {...product} />
                   ))}
                 </div>
               ) : (

@@ -198,7 +198,7 @@ export default function SellerProfilePage() {
                 <TabsContent value="services">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     {sellerProfile.services.map((service) => (
-                      <ServiceCard key={service.id} {...service} />
+                      <ServiceCard key={service.id || ""} {...service} />
                     ))}
                   </div>
                 </TabsContent>
