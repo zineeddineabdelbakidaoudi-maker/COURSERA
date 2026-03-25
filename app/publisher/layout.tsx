@@ -1,90 +1,135 @@
-import React from "react"
-import Link from "next/link"
-import { 
-  LayoutDashboard, 
-  Package, 
-  Tag, 
-  BookOpen, 
-  Users, 
-  Settings, 
-  TrendingUp,
-  LogOut,
-  Bell
-} from "lucide-react"
+"use client"
 
-export const metadata = {
-  title: "Publisher Dashboard | Digit Hup",
-  description: "Dashboard for publishing digital products on Digit Hup.",
-}
+import React, { useState, useEffect } from "react"
+import Link from "next/link"
+import { usePathname, useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { BookOpen, LayoutDashboard, Tags, Users, Package, Settings, Menu, X, Bell, ChevronDown, LogOut, ShieldCheck } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
+import { Badge } from "@/components/ui/badge"
+
+const sidebarItems = [
+  { title: "Overview", href: "/publisher", icon: LayoutDashboard },
+  { title: "My Products", href: "/publisher/products", icon: Package },
+  { title: "Categories", href: "/publisher/categories", icon: Tags },
+  { title: "Sellers", href: "/publisher/sellers", icon: Users },
+  { title: "Settings", href: "/publisher/settings", icon: Settings },
+]
 
 export default function PublisherLayout({ children }: { children: React.ReactNode }) {
-  const navLinks = [
-    { label: "Overview", href: "/publisher", icon: LayoutDashboard },
-    { label: "My Products", href: "/publisher/products", icon: Package },
-    { label: "Sales & Analytics", href: "/publisher/analytics", icon: TrendingUp },
-    { label: "Discount Codes", href: "/publisher/discounts", icon: Tag },
-    { label: "Students / Buyers", href: "/publisher/buyers", icon: Users },
-    { label: "Store Settings", href: "/publisher/settings", icon: Settings },
-  ]
+  const pathname = usePathname()
+  const router = useRouter()
+  const supabase = createClient()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<any>(null)
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setUser(user)
+        supabase.from("Profile").select("full_name, avatar_url, role, publisher_status").eq("id", user.id).single().then(({ data }) => setProfile(data))
+      }
+    })
+  }, [])
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push("/")
+  }
+
+  const displayName = profile?.full_name || user?.email?.split("@")[0] || "Publisher"
+  const initials = displayName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
 
   return (
-    <div className="min-h-screen flex bg-secondary/30">
-      {/* Sidebar */}
-      <aside className="w-64 bg-background border-r border-border flex flex-col hidden lg:flex">
-        {/* Brand */}
-        <div className="h-16 flex items-center px-6 border-b border-border">
-          <Link href="/publisher" className="flex items-center gap-2">
-            <BookOpen className="w-6 h-6 text-accent" />
-            <span className="font-display font-semibold text-lg text-foreground">
-              Publisher Hub
-            </span>
-          </Link>
-        </div>
-        
-        {/* Nav Links */}
-        <nav className="flex-1 py-6 px-4 space-y-1 overflow-y-auto">
-          {navLinks.map((link) => (
-            <Link 
-              key={link.href} 
-              href={link.href}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-accent/10 hover:text-accent transition-colors"
-            >
-              <link.icon className="w-4 h-4" />
-              {link.label}
+    <div className="min-h-screen bg-background">
+      {sidebarOpen && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
+
+      <aside className={`fixed top-0 left-0 z-50 h-full w-64 bg-card border-r transform transition-transform duration-200 lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="flex flex-col h-full">
+          <div className="flex items-center justify-between h-16 px-4 border-b">
+            <Link href="/publisher" className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-purple-600 flex items-center justify-center">
+                <BookOpen className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <span className="font-bold text-sm block leading-none">Publisher</span>
+                <span className="text-xs text-muted-foreground">Digit Hup</span>
+              </div>
             </Link>
-          ))}
-        </nav>
-        
-        {/* Bottom Actions */}
-        <div className="p-4 border-t border-border">
-          <Link href="/dashboard">
-            <button className="flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-secondary transition-colors">
-              <LogOut className="w-4 h-4" />
-              Back to Main App
-            </button>
-          </Link>
+            <button onClick={() => setSidebarOpen(false)} className="lg:hidden"><X className="h-5 w-5" /></button>
+          </div>
+
+          <div className="px-3 py-4 border-b">
+            <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-200 gap-1">
+              <ShieldCheck className="w-3 h-3" /> Publisher Access
+            </Badge>
+          </div>
+
+          <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+            {sidebarItems.map((item) => {
+              const isActive = pathname === item.href
+              return (
+                <Link key={item.href} href={item.href} onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive ? "bg-purple-600 text-white" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
+                  <item.icon className="h-5 w-5 shrink-0" />
+                  <span>{item.title}</span>
+                </Link>
+              )
+            })}
+          </nav>
+
+          <div className="p-3 border-t space-y-1">
+            <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted transition-colors text-sm">
+              <LayoutDashboard className="h-4 w-4" /> Back to My Dashboard
+            </Link>
+          </div>
+
+          <div className="p-4 border-t">
+            <div className="flex items-center gap-3">
+              <Avatar className="h-9 w-9"><AvatarImage src={profile?.avatar_url || ""} /><AvatarFallback>{initials}</AvatarFallback></Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm truncate">{displayName}</p>
+                <p className="text-xs text-muted-foreground">Publisher</p>
+              </div>
+            </div>
+          </div>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-h-screen">
-        {/* Top Header */}
-        <header className="h-16 bg-background border-b border-border flex items-center justify-between px-6 sticky top-0 z-10">
-          <h2 className="font-medium text-foreground text-sm">Welcome back to your Publisher Hub</h2>
-          <div className="flex items-center gap-4">
-            <button className="relative p-2 text-muted-foreground hover:text-foreground transition-colors">
-              <Bell className="w-5 h-5" />
+      <div className="lg:pl-64">
+        <header className="sticky top-0 z-30 h-16 border-b bg-card/80 backdrop-blur-sm">
+          <div className="flex items-center justify-between h-full px-4">
+            <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-muted-foreground hover:text-foreground">
+              <Menu className="h-6 w-6" />
             </button>
-            <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center border border-accent/20">
-              <span className="text-sm font-semibold text-accent">P</span>
+            <div className="flex items-center gap-3 ml-auto">
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="h-5 w-5" />
+                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2">
+                    <Avatar className="h-8 w-8"><AvatarImage src={profile?.avatar_url || ""} /><AvatarFallback>{initials}</AvatarFallback></Avatar>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuLabel>{displayName}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild><Link href="/publisher/settings"><Settings className="h-4 w-4 mr-2" />Settings</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link href="/dashboard"><LayoutDashboard className="h-4 w-4 mr-2" />My Dashboard</Link></DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-red-500 cursor-pointer" onClick={handleLogout}><LogOut className="h-4 w-4 mr-2" />Sign Out</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </header>
-        
-        {/* Page Content */}
-        <main className="flex-1 p-6 lg:p-8">
-          {children}
-        </main>
+        <main className="p-4 md:p-6 lg:p-8">{children}</main>
       </div>
     </div>
   )

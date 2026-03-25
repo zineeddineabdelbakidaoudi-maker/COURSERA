@@ -1,76 +1,90 @@
 "use client"
 
-import React from "react"
-import Link from "next/link"
-import { Heart, Star, ShoppingCart, Trash2, ExternalLink, Store } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Heart, Briefcase, Package, Search, Star, ArrowRight } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-const savedItems = [
-  { id: "1", title: "Professional Video Editing", seller: "Amine K.", rating: 4.9, reviews: 124, price: "3,000 DZD", category: "Video", saved: "3 days ago" },
-  { id: "2", title: "Full-Stack Web Application", seller: "Mohamed R.", rating: 5.0, reviews: 67, price: "25,000 DZD", category: "Development", saved: "1 week ago" },
-  { id: "3", title: "Arabic Content Writing", seller: "Nassima B.", rating: 4.7, reviews: 89, price: "1,500 DZD", category: "Writing", saved: "2 weeks ago" },
+const savedServices = [
+  { title: "Brand Identity Design", seller: "Yacine M.", rating: 4.9, price: "From 15,000 DZD", category: "Design" },
+  { title: "Fullstack Web Development", seller: "Karim B.", rating: 5.0, price: "From 45,000 DZD", category: "Tech" },
+]
+const savedProducts = [
+  { title: "Ultimate Figma UI Kit", seller: "DigitHup Pro", type: "Template", price: "4,500 DZD" },
 ]
 
 export default function BuyerSavedPage() {
   return (
     <div className="space-y-8 animate-slide-up">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">
         <div>
           <h1 className="text-3xl font-display font-semibold mb-1">Saved Items</h1>
-          <p className="text-muted-foreground">Services you've bookmarked for later.</p>
+          <p className="text-muted-foreground">Your bookmarked services and digital products.</p>
         </div>
-        <Button variant="outline" asChild>
-          <Link href="/services"><Store className="w-4 h-4 mr-2" />Browse More</Link>
-        </Button>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input className="pl-9 w-64" placeholder="Search saved..." />
+        </div>
       </div>
 
-      {savedItems.length === 0 ? (
-        <Card className="border-border">
-          <CardContent className="p-16 flex flex-col items-center text-center">
-            <Heart className="w-16 h-16 text-muted-foreground/30 mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Nothing saved yet</h3>
-            <p className="text-muted-foreground mb-6">Browse our marketplace and click the heart icon to save services.</p>
-            <Button asChild><Link href="/services">Explore Services</Link></Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {savedItems.map((item) => (
-            <Card key={item.id} className="border-border shadow-sm overflow-hidden group hover:border-primary/30 transition-all">
-              <div className="h-36 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
-                <Heart className="w-8 h-8 text-primary/30" />
-              </div>
-              <CardContent className="p-5">
-                <Badge variant="outline" className="text-xs mb-2">{item.category}</Badge>
-                <h3 className="font-semibold leading-tight mb-1 line-clamp-2">{item.title}</h3>
-                <p className="text-sm text-muted-foreground mb-2">by {item.seller}</p>
-                <div className="flex items-center gap-1 mb-3">
-                  <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
-                  <span className="text-sm font-medium">{item.rating}</span>
-                  <span className="text-xs text-muted-foreground">({item.reviews})</span>
+      <Tabs defaultValue="services">
+        <TabsList>
+          <TabsTrigger value="services" className="gap-2"><Briefcase className="w-4 h-4" />Services ({savedServices.length})</TabsTrigger>
+          <TabsTrigger value="products" className="gap-2"><Package className="w-4 h-4" />Products ({savedProducts.length})</TabsTrigger>
+        </TabsList>
+        <TabsContent value="services" className="mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            {savedServices.map((s, i) => (
+              <Card key={i} className="border-border shadow-sm group hover:shadow-md transition-shadow">
+                <div className="h-28 bg-gradient-to-br from-primary/10 to-accent/10 rounded-t-xl flex items-center justify-center">
+                  <Briefcase className="w-10 h-10 text-primary/40" />
                 </div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="font-bold text-primary">{item.price}</span>
-                  <span className="text-xs text-muted-foreground">{item.saved}</span>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div>
+                      <Badge variant="outline" className="text-xs mb-1">{s.category}</Badge>
+                      <p className="font-semibold text-sm leading-tight">{s.title}</p>
+                      <p className="text-xs text-muted-foreground">{s.seller}</p>
+                    </div>
+                    <Heart className="w-4 h-4 text-red-400 fill-red-400 shrink-0 mt-1" />
+                  </div>
+                  <div className="flex items-center justify-between border-t border-border pt-3">
+                    <span className="text-xs flex items-center gap-1 text-amber-500 font-medium"><Star className="w-3 h-3 fill-current" />{s.rating}</span>
+                    <Button size="sm" variant="outline" className="gap-1 text-xs"><ArrowRight className="w-3 h-3" />View</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+        <TabsContent value="products" className="mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            {savedProducts.map((p, i) => (
+              <Card key={i} className="border-border shadow-sm">
+                <div className="h-28 bg-gradient-to-br from-purple-500/10 to-fuchsia-500/10 rounded-t-xl flex items-center justify-center">
+                  <Package className="w-10 h-10 text-purple-400/40" />
                 </div>
-                <div className="flex gap-2">
-                  <Button size="sm" className="flex-1 gap-1.5 text-xs" asChild>
-                    <Link href={`/services/${item.id}`}><ShoppingCart className="w-3.5 h-3.5" />Order Now</Link>
-                  </Button>
-                  <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" asChild>
-                    <Link href={`/services/${item.id}`}><ExternalLink className="w-3.5 h-3.5" /></Link>
-                  </Button>
-                  <Button variant="outline" size="icon" className="h-8 w-8 shrink-0 text-destructive hover:text-destructive">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div>
+                      <Badge variant="outline" className="text-xs mb-1">{p.type}</Badge>
+                      <p className="font-semibold text-sm">{p.title}</p>
+                      <p className="text-xs text-muted-foreground">{p.seller}</p>
+                    </div>
+                    <Heart className="w-4 h-4 text-red-400 fill-red-400 shrink-0" />
+                  </div>
+                  <div className="flex items-center justify-between border-t border-border pt-3">
+                    <span className="font-bold text-sm text-primary">{p.price}</span>
+                    <Button size="sm" className="text-xs gap-1">Buy Now</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

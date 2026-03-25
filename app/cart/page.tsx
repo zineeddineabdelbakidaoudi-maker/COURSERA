@@ -1,119 +1,84 @@
 "use client"
 
-import React from "react"
-import Link from "next/link"
-import { Navbar } from "@/components/layout/navbar"
-import { Footer } from "@/components/layout/footer"
+import { ShoppingCart, Trash2, Plus, Minus, ArrowRight } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ShoppingCart, ArrowRight, Package, Trash2, Tag, CheckCircle2 } from "lucide-react"
-import { useCartStore } from "@/store/useCartStore"
+import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
+import { useState } from "react"
+
+const initialItems = [
+  { id: "1", title: "Brand Identity Design", seller: "Yacine M.", price: 15000, qty: 1, type: "service" },
+  { id: "2", title: "Figma UI Kit 2026", seller: "DigitHup Pro", price: 4500, qty: 1, type: "product" },
+]
 
 export default function CartPage() {
-  const { items: cartItems, removeItem, subtotal } = useCartStore()
-  
-  const fee = cartItems.length > 0 ? 500 : 0 // Platform fee mock
-  const total = subtotal + fee
+  const [items, setItems] = useState(initialItems)
+
+  const remove = (id: string) => setItems(items.filter(i => i.id !== id))
+  const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0)
+  const fee = Math.round(subtotal * 0.05)
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <Navbar />
-      
-      <main className="flex-1 pt-24 pb-16 lg:pt-32">
-        <div className="container mx-auto px-4 lg:px-8 max-w-6xl animate-slide-up">
-          <h1 className="text-3xl md:text-4xl font-display font-bold mb-8 text-foreground">
-            Your Cart <span className="text-muted-foreground font-sans text-xl font-normal ml-2">({cartItems.length} items)</span>
-          </h1>
+    <div className="min-h-screen bg-background">
+      <div className="max-w-5xl mx-auto px-4 py-12">
+        <h1 className="text-3xl font-display font-bold mb-8 flex items-center gap-3">
+          <ShoppingCart className="w-7 h-7 text-primary" /> My Cart
+          <Badge variant="secondary">{items.length} items</Badge>
+        </h1>
 
+        {items.length === 0 ? (
+          <div className="text-center py-24">
+            <ShoppingCart className="w-16 h-16 mx-auto text-muted-foreground/20 mb-4" />
+            <p className="text-xl font-semibold text-muted-foreground mb-2">Your cart is empty</p>
+            <Button asChild className="mt-4"><Link href="/services">Browse Services</Link></Button>
+          </div>
+        ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Cart Items List */}
             <div className="lg:col-span-2 space-y-4">
-              {cartItems.map((item) => (
-                <div key={item.id} className="flex flex-col sm:flex-row gap-4 p-4 rounded-2xl border border-border bg-card">
-                  {/* Item Image */}
-                  <div className="w-full sm:w-32 h-24 rounded-xl bg-secondary/50 overflow-hidden flex-shrink-0 relative">
-                    <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
-                  </div>
-                  
-                  {/* Item Details */}
-                  <div className="flex-1 flex flex-col justify-between">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full mb-2 inline-block">
-                          {item.type}
-                        </span>
-                        <h3 className="font-semibold text-foreground leading-snug line-clamp-2">{item.title}</h3>
-                        <p className="text-sm text-muted-foreground mt-1">by {item.author}</p>
-                      </div>
-                      <p className="font-mono font-bold text-lg whitespace-nowrap">
-                        {item.price.toLocaleString('en-US')} DZD
-                      </p>
+              {items.map(item => (
+                <Card key={item.id} className="border-border shadow-sm">
+                  <CardContent className="p-5 flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                      <ShoppingCart className="w-6 h-6 text-primary" />
                     </div>
-                    
-                    <div className="flex items-center justify-end mt-4 sm:mt-0">
-                      <button 
-                        onClick={() => removeItem(item.id)}
-                        className="flex items-center gap-1.5 text-sm font-medium text-destructive hover:text-destructive/80 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" /> Remove
-                      </button>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold truncate">{item.title}</p>
+                      <p className="text-sm text-muted-foreground">{item.seller}</p>
+                      <Badge variant="outline" className="mt-1 text-xs capitalize">{item.type}</Badge>
                     </div>
-                  </div>
-                </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="font-bold text-lg">{item.price.toLocaleString()} DZD</span>
+                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => remove(item.id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
 
-            {/* Order Summary */}
-            <div className="lg:col-span-1">
-              <div className="bg-card rounded-2xl border border-border p-6 sticky top-24">
-                <h3 className="text-xl font-semibold mb-6">Order Summary</h3>
-                
-                <div className="space-y-4 text-sm mb-6">
-                  <div className="flex items-center justify-between text-muted-foreground">
-                    <span>Subtotal</span>
-                    <span className="font-mono font-medium text-foreground">{subtotal.toLocaleString('en-US')} DZD</span>
+            <div>
+              <Card className="border-border shadow-sm sticky top-4">
+                <CardHeader><CardTitle>Order Summary</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{subtotal.toLocaleString()} DZD</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Platform Fee (5%)</span><span>{fee.toLocaleString()} DZD</span></div>
+                    <div className="border-t border-border pt-2 flex justify-between font-bold text-base">
+                      <span>Total</span><span className="text-primary">{(subtotal + fee).toLocaleString()} DZD</span>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between text-muted-foreground">
-                    <span>Platform Fee</span>
-                    <span className="font-mono font-medium text-foreground">{fee.toLocaleString('en-US')} DZD</span>
-                  </div>
-                </div>
-
-                {/* Promo Code */}
-                <div className="flex gap-2 mb-6">
-                  <div className="relative flex-1">
-                    <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <input 
-                      type="text" 
-                      placeholder="Promo code" 
-                      className="w-full h-10 pl-9 pr-3 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    />
-                  </div>
-                  <Button variant="secondary" className="h-10">Apply</Button>
-                </div>
-
-                <div className="pt-4 border-t border-border mb-8 flex items-center justify-between">
-                  <span className="font-semibold text-foreground">Total</span>
-                  <span className="font-mono font-bold text-2xl text-foreground">{total.toLocaleString('en-US')} DZD</span>
-                </div>
-
-                <Link href="/checkout" className="block w-full">
-                  <Button size="lg" className="w-full rounded-xl gradient-primary text-white shadow-glow">
-                    Secure Checkout
-                    <ArrowRight className="w-4 h-4 ml-2" />
+                  <Button asChild className="w-full gap-2">
+                    <Link href="/checkout">Proceed to Checkout <ArrowRight className="w-4 h-4" /></Link>
                   </Button>
-                </Link>
-                
-                <p className="text-xs text-center text-muted-foreground mt-4 flex items-center justify-center gap-1.5">
-                  <span className="inline-block w-3 h-3 rounded-full bg-success/20 flex items-center justify-center"><CheckCircle2 className="w-2 h-2 text-success" /></span>
-                  Guaranteed safe & secure checkout
-                </p>
-              </div>
+                  <p className="text-xs text-muted-foreground text-center">Cash on Delivery available · Secure payments</p>
+                </CardContent>
+              </Card>
             </div>
           </div>
-        </div>
-      </main>
-
-      <Footer />
+        )}
+      </div>
     </div>
   )
 }

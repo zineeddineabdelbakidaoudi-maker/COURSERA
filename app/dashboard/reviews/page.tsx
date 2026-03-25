@@ -1,137 +1,72 @@
 "use client"
 
-import React from "react"
-import { Star, ThumbsUp, MessageSquare, Flag } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useState } from "react"
+import { Star, Filter, MessageSquare } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 const reviews = [
-  {
-    id: "1",
-    buyer: "Karim B.",
-    avatar: null,
-    service: "Logo Design Package",
-    rating: 5,
-    comment: "Absolutely fantastic work! The logos were creative, professional, and delivered on time. Highly recommend this seller.",
-    date: "Mar 22, 2026",
-    helpful: 4,
-  },
-  {
-    id: "2",
-    buyer: "Sara M.",
-    avatar: null,
-    service: "Social Media Kit",
-    rating: 4,
-    comment: "Great quality and very responsive. Minor revision required but everything was handled smoothly.",
-    date: "Mar 18, 2026",
-    helpful: 2,
-  },
-  {
-    id: "3",
-    buyer: "Yacine D.",
-    avatar: null,
-    service: "UI/UX Design",
-    rating: 5,
-    comment: "Exceeded all expectations. The design really captured our brand identity perfectly. Will order again!",
-    date: "Mar 10, 2026",
-    helpful: 7,
-  },
+  { buyer: "Ahmed K.", service: "Brand Identity Design", rating: 5, comment: "Absolutely incredible work! Fast delivery and understood the brief perfectly.", date: "Mar 20, 2026" },
+  { buyer: "Sara B.", service: "Logo Redesign", rating: 4, comment: "Very clean result, I would have liked a bit more variation in concepts.", date: "Mar 15, 2026" },
+  { buyer: "Nassim D.", service: "UI Mockup Pack", rating: 5, comment: "Great quality Figma files. The components are very well structured.", date: "Mar 10, 2026" },
+  { buyer: "Leila M.", service: "Brand Identity Design", rating: 5, comment: "Super fast, super professional. Will hire again!", date: "Feb 28, 2026" },
 ]
 
-const ratingBreakdown = [
-  { stars: 5, count: 18, pct: 75 },
-  { stars: 4, count: 4, pct: 17 },
-  { stars: 3, count: 1, pct: 4 },
-  { stars: 2, count: 1, pct: 4 },
-  { stars: 1, count: 0, pct: 0 },
-]
+const starColor = (r: number) => r === 5 ? "text-amber-400" : r >= 4 ? "text-blue-400" : "text-muted-foreground"
 
 export default function ReviewsPage() {
-  const avgRating = 4.8
+  const [filter, setFilter] = useState(0)
+  const avg = (reviews.reduce((a, r) => a + r.rating, 0) / reviews.length).toFixed(1)
+  const filtered = filter === 0 ? reviews : reviews.filter(r => r.rating === filter)
 
   return (
     <div className="space-y-8 animate-slide-up">
-      <div>
-        <h1 className="text-3xl font-display font-semibold mb-1">My Reviews</h1>
-        <p className="text-muted-foreground">See what clients say about your services.</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-display font-semibold mb-1">Reviews</h1>
+          <p className="text-muted-foreground">Feedback received from your buyers.</p>
+        </div>
+        <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-300/30 px-4 py-2 rounded-xl">
+          <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+          <span className="text-2xl font-bold">{avg}</span>
+          <span className="text-sm text-muted-foreground">/ 5.0</span>
+        </div>
       </div>
 
-      {/* Overview */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <Card className="border-border shadow-sm">
-          <CardContent className="p-8 flex flex-col items-center text-center">
-            <div className="text-6xl font-bold text-foreground mb-2">{avgRating}</div>
-            <div className="flex items-center gap-1 mb-3">
-              {[1,2,3,4,5].map(s => (
-                <Star key={s} className={`w-5 h-5 ${s <= Math.round(avgRating) ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} />
-              ))}
-            </div>
-            <p className="text-muted-foreground text-sm">{reviews.length} total reviews</p>
-          </CardContent>
-        </Card>
-
-        <Card className="lg:col-span-2 border-border shadow-sm">
-          <CardHeader>
-            <CardTitle>Rating Breakdown</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {ratingBreakdown.map((r) => (
-              <div key={r.stars} className="flex items-center gap-3">
-                <div className="flex items-center gap-1 w-16 shrink-0">
-                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  <span className="text-sm font-medium">{r.stars}</span>
-                </div>
-                <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
-                  <div className="h-full rounded-full bg-yellow-400 transition-all" style={{ width: `${r.pct}%` }} />
-                </div>
-                <span className="text-sm text-muted-foreground w-8 text-right">{r.count}</span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+      <div className="flex items-center gap-2 flex-wrap">
+        <Filter className="w-4 h-4 text-muted-foreground" />
+        {[0, 5, 4, 3].map(n => (
+          <button key={n} onClick={() => setFilter(n)} className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${filter === n ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/80 text-muted-foreground"}`}>
+            {n === 0 ? "All" : `${n} ★`}
+          </button>
+        ))}
       </div>
 
-      {/* Reviews List */}
       <div className="space-y-4">
-        {reviews.map((review) => (
-          <Card key={review.id} className="border-border shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={review.avatar || ""} />
-                    <AvatarFallback>{review.buyer.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-semibold">{review.buyer}</p>
-                    <p className="text-xs text-muted-foreground">{review.service}</p>
+        {filtered.map((r, i) => (
+          <Card key={i} className="border-border shadow-sm">
+            <CardContent className="p-5">
+              <div className="flex items-start gap-4">
+                <Avatar className="h-10 w-10 shrink-0">
+                  <AvatarFallback>{r.buyer.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
+                    <div>
+                      <span className="font-semibold">{r.buyer}</span>
+                      <span className="text-xs text-muted-foreground ml-2">{r.date}</span>
+                    </div>
+                    <div className={`flex items-center gap-1 font-bold ${starColor(r.rating)}`}>
+                      {Array.from({ length: r.rating }).map((_, j) => <Star key={j} className="w-4 h-4 fill-current" />)}
+                    </div>
                   </div>
+                  <Badge variant="outline" className="mb-3 text-xs">{r.service}</Badge>
+                  <p className="text-sm text-foreground/80 flex items-start gap-2">
+                    <MessageSquare className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
+                    {r.comment}
+                  </p>
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                  <div className="flex items-center gap-0.5">
-                    {[1,2,3,4,5].map(s => (
-                      <Star key={s} className={`w-4 h-4 ${s <= review.rating ? "fill-yellow-400 text-yellow-400" : "text-muted"}`} />
-                    ))}
-                  </div>
-                  <span className="text-xs text-muted-foreground">{review.date}</span>
-                </div>
-              </div>
-              <p className="text-sm text-foreground leading-relaxed mb-4">{review.comment}</p>
-              <div className="flex items-center gap-3">
-                <Button variant="ghost" size="sm" className="h-8 text-xs gap-1.5 text-muted-foreground">
-                  <ThumbsUp className="w-3.5 h-3.5" />
-                  Helpful ({review.helpful})
-                </Button>
-                <Button variant="ghost" size="sm" className="h-8 text-xs gap-1.5 text-muted-foreground">
-                  <MessageSquare className="w-3.5 h-3.5" />
-                  Reply
-                </Button>
-                <Button variant="ghost" size="sm" className="h-8 text-xs gap-1.5 text-muted-foreground">
-                  <Flag className="w-3.5 h-3.5" />
-                  Report
-                </Button>
               </div>
             </CardContent>
           </Card>

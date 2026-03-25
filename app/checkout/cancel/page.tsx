@@ -1,56 +1,25 @@
-import React from "react"
 import Link from "next/link"
-import { Navbar } from "@/components/layout/navbar"
-import { Footer } from "@/components/layout/footer"
+import { XCircle, ArrowLeft, ShoppingCart } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { XCircle, ArrowLeft, HeadphonesIcon } from "lucide-react"
 
 export default function CheckoutCancelPage() {
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <Navbar />
-      
-      <main className="flex-1 pt-32 pb-16 flex items-center justify-center">
-        <div className="container mx-auto px-4 text-center max-w-2xl animate-scale-in">
-          {/* Cancel Icon */}
-          <div className="w-24 h-24 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-8 shadow-[0_0_40px_oklch(0.63_0.24_25_/_0.2)]">
-            <XCircle className="w-12 h-12 text-destructive" />
-          </div>
-
-          <h1 className="text-4xl md:text-5xl font-display font-bold text-foreground mb-4">
-            Payment Cancelled
-          </h1>
-          <p className="text-lg text-muted-foreground mb-8">
-            Your payment process was interrupted and no charges were made to your account. Your items are still saved in your cart.
-          </p>
-
-          <div className="bg-secondary/30 rounded-2xl p-6 mb-10 max-w-md mx-auto text-left border border-border flex items-center gap-4">
-            <div className="w-12 h-12 bg-background rounded-xl flex items-center justify-center border border-border">
-              <HeadphonesIcon className="w-6 h-6 text-warning" />
-            </div>
-            <div>
-              <p className="font-semibold text-foreground">Need help?</p>
-              <Link href="/contact" className="text-sm text-primary hover:underline">Contact our support team</Link>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/cart">
-              <Button size="lg" className="w-full sm:w-auto rounded-full bg-primary hover:bg-primary/90 text-primary-foreground gap-2 px-8">
-                Return to Cart
-                <ArrowLeft className="w-4 h-4" />
-              </Button>
-            </Link>
-            <Link href="/services">
-              <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-full gap-2 px-8">
-                Continue Shopping
-              </Button>
-            </Link>
-          </div>
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="text-center max-w-md">
+        <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-6">
+          <XCircle className="w-10 h-10 text-red-500" />
         </div>
-      </main>
-
-      <Footer />
+        <h1 className="text-3xl font-display font-bold mb-2">Order Cancelled</h1>
+        <p className="text-muted-foreground mb-8">Your order was not placed. Your cart items are still saved — you can go back and complete your purchase anytime.</p>
+        <div className="flex gap-3 justify-center">
+          <Button asChild>
+            <Link href="/cart" className="gap-2"><ShoppingCart className="w-4 h-4" />Back to Cart</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/services" className="gap-2"><ArrowLeft className="w-4 h-4" />Browse More</Link>
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }

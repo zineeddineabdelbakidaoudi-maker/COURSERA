@@ -1,101 +1,86 @@
 "use client"
 
-import React, { useState } from "react"
-import Link from "next/link"
-import { ShoppingBag, ChevronRight, Search, Filter, Package, Clock, CheckCircle, XCircle, Truck } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ShoppingBag, Clock, CheckCircle2, AlertTriangle, Eye } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-
-const statusConfig: Record<string, { label: string; icon: any; class: string }> = {
-  pending: { label: "Pending", icon: Clock, class: "bg-yellow-500/10 text-yellow-600 border-yellow-200" },
-  in_progress: { label: "In Progress", icon: Package, class: "bg-blue-500/10 text-blue-600 border-blue-200" },
-  completed: { label: "Completed", icon: CheckCircle, class: "bg-green-500/10 text-green-600 border-green-200" },
-  cancelled: { label: "Cancelled", icon: XCircle, class: "bg-red-500/10 text-red-500 border-red-200" },
-  delivered: { label: "Delivered", icon: Truck, class: "bg-purple-500/10 text-purple-600 border-purple-200" },
-}
 
 const orders = [
-  { id: "ORD-7819", service: "Professional Logo Design", seller: "Yacine M.", status: "in_progress", amount: "2,500 DZD", date: "Mar 22, 2026", deliveryDate: "Mar 29, 2026" },
-  { id: "ORD-7792", service: "Business Website Development", seller: "Karim B.", status: "pending", amount: "15,000 DZD", date: "Mar 20, 2026", deliveryDate: "Apr 5, 2026" },
-  { id: "ORD-7744", service: "Arabic Content Writing (10 articles)", seller: "Nassima B.", status: "completed", amount: "4,500 DZD", date: "Mar 10, 2026", deliveryDate: "Mar 17, 2026" },
-  { id: "ORD-7701", service: "Video Editing (3 minutes)", seller: "Amine K.", status: "delivered", amount: "3,000 DZD", date: "Mar 2, 2026", deliveryDate: "Mar 9, 2026" },
+  { id: "#ORD-1042", service: "Brand Identity Design", seller: "Yacine M.", price: "15,000 DZD", status: "in_progress", date: "Mar 20, 2026" },
+  { id: "#ORD-1031", service: "SEO Copywriting x5", seller: "Nassima B.", price: "5,500 DZD", status: "completed", date: "Mar 10, 2026" },
+  { id: "#ORD-1019", service: "React Landing Page", seller: "Karim B.", price: "25,000 DZD", status: "completed", date: "Feb 28, 2026" },
+  { id: "#ORD-1008", service: "Social Media Kit", seller: "Amine K.", price: "8,000 DZD", status: "disputed", date: "Feb 14, 2026" },
 ]
 
-export default function BuyerOrdersPage() {
-  const [search, setSearch] = useState("")
-  const filtered = orders.filter(o =>
-    o.service.toLowerCase().includes(search.toLowerCase()) ||
-    o.id.toLowerCase().includes(search.toLowerCase())
-  )
+const STATUS_MAP: Record<string, { label: string; color: string; icon: any }> = {
+  in_progress: { label: "In Progress", color: "bg-blue-500/10 text-blue-600 border-blue-200", icon: Clock },
+  completed: { label: "Completed", color: "bg-green-500/10 text-green-600 border-green-200", icon: CheckCircle2 },
+  disputed: { label: "Disputed", color: "bg-red-500/10 text-red-600 border-red-200", icon: AlertTriangle },
+}
 
+export default function BuyerOrdersPage() {
   return (
     <div className="space-y-8 animate-slide-up">
       <div>
         <h1 className="text-3xl font-display font-semibold mb-1">My Orders</h1>
-        <p className="text-muted-foreground">Track and manage all your purchases.</p>
+        <p className="text-muted-foreground">Track all your service and product orders.</p>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input className="pl-9" placeholder="Search orders..." value={search} onChange={e => setSearch(e.target.value)} />
-        </div>
-        <Button variant="outline" className="gap-2">
-          <Filter className="w-4 h-4" />
-          Filter by Status
-        </Button>
+      <div className="grid grid-cols-3 gap-4">
+        {[{ label: "Active", count: 1, color: "text-blue-500" }, { label: "Completed", count: 2, color: "text-green-500" }, { label: "Disputed", count: 1, color: "text-red-500" }].map(s => (
+          <Card key={s.label} className="border-border shadow-sm">
+            <CardContent className="p-4 text-center">
+              <p className={`text-3xl font-bold ${s.color}`}>{s.count}</p>
+              <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {filtered.length === 0 ? (
-        <Card className="border-border"><CardContent className="p-16 text-center">
-          <ShoppingBag className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-          <p className="text-muted-foreground">No orders found</p>
-        </CardContent></Card>
-      ) : (
-        <Card className="border-border shadow-sm overflow-hidden">
-          <CardHeader className="border-b border-border bg-muted/30">
-            <CardTitle>Order History</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="divide-y divide-border">
-              {filtered.map((order) => {
-                const status = statusConfig[order.status]
-                const Icon = status.icon
-                return (
-                  <div key={order.id} className="p-5 flex flex-col sm:flex-row sm:items-center gap-4 hover:bg-muted/30 transition-colors">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="w-12 h-12 rounded-xl bg-primary/5 flex items-center justify-center shrink-0 border border-primary/10">
-                        <ShoppingBag className="w-5 h-5 text-primary" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-semibold text-foreground truncate">{order.service}</p>
-                        <p className="text-sm text-muted-foreground">{order.id} • {order.seller}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">Ordered: {order.date}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between sm:justify-end gap-6">
-                      <div className="text-right">
-                        <p className="font-bold text-foreground">{order.amount}</p>
-                        <p className="text-xs text-muted-foreground">Delivery: {order.deliveryDate}</p>
-                      </div>
-                      <Badge variant="outline" className={`gap-1.5 ${status.class}`}>
-                        <Icon className="w-3 h-3" />
-                        {status.label}
-                      </Badge>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" asChild>
-                        <Link href={`/dashboard/orders/${order.id}`}><ChevronRight className="w-4 h-4" /></Link>
-                      </Button>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <Card className="border-border shadow-sm overflow-hidden">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/30">
+                  <th className="text-left p-4 text-muted-foreground font-semibold">Order</th>
+                  <th className="text-left p-4 text-muted-foreground font-semibold hidden sm:table-cell">Seller</th>
+                  <th className="text-left p-4 text-muted-foreground font-semibold">Status</th>
+                  <th className="text-right p-4 text-muted-foreground font-semibold">Price</th>
+                  <th className="text-right p-4 text-muted-foreground font-semibold">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {orders.map(o => {
+                  const s = STATUS_MAP[o.status]
+                  const SIcon = s.icon
+                  return (
+                    <tr key={o.id} className="hover:bg-muted/20 transition-colors">
+                      <td className="p-4">
+                        <p className="font-semibold">{o.id}</p>
+                        <p className="text-xs text-muted-foreground">{o.service}</p>
+                        <p className="text-xs text-muted-foreground">{o.date}</p>
+                      </td>
+                      <td className="p-4 hidden sm:table-cell text-muted-foreground">{o.seller}</td>
+                      <td className="p-4">
+                        <Badge variant="outline" className={`gap-1.5 ${s.color}`}>
+                          <SIcon className="w-3 h-3" />{s.label}
+                        </Badge>
+                      </td>
+                      <td className="p-4 text-right font-semibold">{o.price}</td>
+                      <td className="p-4 text-right">
+                        <Button variant="ghost" size="sm" className="gap-1.5">
+                          <Eye className="w-3.5 h-3.5" />View
+                        </Button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
