@@ -2,6 +2,6 @@
 
 import { MessagesChat } from "@/components/dashboard/messages-chat"
 
-export default function SellerMessagesPage() {
+export default function BuyerMessagesPage() {
   return <MessagesChat />
 }
