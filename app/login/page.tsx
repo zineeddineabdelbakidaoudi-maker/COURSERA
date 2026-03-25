@@ -69,7 +69,7 @@ export default function LoginPage() {
       }
     }
 
-    router.push("/dashboard")
+    router.push("/dashboard/buyer")
   }
 
   const handleOAuthLogin = async (provider: 'google' | 'github') => {
