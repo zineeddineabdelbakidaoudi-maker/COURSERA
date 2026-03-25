@@ -1,191 +1,366 @@
-import React from "react"
+"use client"
+
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Navbar } from "@/components/layout/navbar"
-import { Footer } from "@/components/layout/footer"
-import { Search, Sparkles, Star, Users, ArrowRight, ShieldCheck, CheckCircle2, ChevronRight, Zap, Package } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+import { useRouter } from "next/navigation"
+import {
+  Search, Sparkles, Star, Users, ArrowRight, ShieldCheck,
+  CheckCircle2, Zap, Package, Menu, X, LogOut, LayoutDashboard
+} from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
 
-export default function EnhancedHomePage() {
+const NAV_LINKS = [
+  { href: "/services", label: "Explore Services" },
+  { href: "/store", label: "Browse Products" },
+  { href: "/how-it-works", label: "How It Works" },
+]
+
+const SERVICES = [
+  { title: "Brand Identity Design", author: "Yassine M.", rating: 4.9, price: "From 15,000 DZD", category: "Design", emoji: "🎨" },
+  { title: "React & Next.js Development", author: "Karim B.", rating: 5.0, price: "From 45,000 DZD", category: "Tech", emoji: "💻" },
+  { title: "SEO Arabic Copywriting", author: "Nassima B.", rating: 4.8, price: "From 2,500 DZD", category: "Writing", emoji: "✍️" },
+  { title: "Social Media Management", author: "Amine K.", rating: 4.7, price: "From 20,000 DZD", category: "Marketing", emoji: "📱" },
+]
+
+const PRODUCTS = [
+  { title: "Ultimate UI/UX Design System", author: "DigitHup Pro", type: "Figma Template", price: "5,000 DZD", sales: 124 },
+  { title: "Freelancer Contract Pack", author: "LegalDZ", type: "Document Bundle", price: "1,500 DZD", sales: 342 },
+  { title: "E-Commerce Masterclass 2026", author: "E-Com DZ", type: "Video Course", price: "12,000 DZD", sales: 89 },
+]
+
+export default function HomePage() {
+  const supabase = createClient()
+  const router = useRouter()
+  const [scrolled, setScrolled] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<any>(null)
+  const [searchQuery, setSearchQuery] = useState("")
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 30)
+    window.addEventListener("scroll", onScroll)
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user)
+      if (user) {
+        supabase.from("Profile").select("full_name, role, avatar_url").eq("id", user.id).single().then(({ data }) => setProfile(data))
+      }
+    })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) router.push(`/services?q=${encodeURIComponent(searchQuery)}`)
+  }
+
+  const getDashLink = () => {
+    if (!profile) return "/dashboard"
+    if (profile.role === "admin") return "/admin"
+    if (profile.role === "buyer") return "/dashboard/buyer"
+    return "/dashboard"
+  }
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    setUser(null)
+    setProfile(null)
+  }
+
+  const initials = profile?.full_name?.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2) || "U"
+
   return (
-    <div className="flex flex-col min-h-screen bg-slate-950 text-slate-50 overflow-x-hidden selection:bg-indigo-500/30">
-      <Navbar />
+    <div style={{ background: "#020817", color: "#f8fafc", minHeight: "100vh", fontFamily: "system-ui, sans-serif" }}>
 
-      <main className="flex-1">
-        {/* HERO SECTION */}
-        <section className="relative min-h-[90vh] flex flex-col items-center justify-center pt-24 pb-16 px-6 sm:px-12 overflow-hidden">
-          {/* Background Elements */}
-          <div className="absolute inset-0 z-0">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-indigo-900/20 via-slate-950/80 to-slate-950"></div>
-            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/20 rounded-full blur-[120px] mix-blend-screen animate-pulse"></div>
-            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-fuchsia-600/20 rounded-full blur-[120px] mix-blend-screen animate-pulse delay-1000"></div>
-            
-            {/* Grid pattern overlay */}
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik00MCAwaC0xTDBgLjVsMSAuNXoiIGZpbGw9InJnYmEoMjU1LCAyNTUsIDI1NSwgMC4wMikiIGZpbGwtcnVsZT0iZXZlbm9kZCIvPgo8L3N2Zz4=')] opacity-20"></div>
+      {/* ── NAVBAR ── */}
+      <header style={{
+        position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
+        background: scrolled ? "rgba(2,8,23,0.95)" : "transparent",
+        backdropFilter: scrolled ? "blur(16px)" : "none",
+        borderBottom: scrolled ? "1px solid rgba(255,255,255,0.08)" : "none",
+        transition: "all 0.25s ease"
+      }}>
+        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 24px", height: 72, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          {/* Logo */}
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Zap size={18} color="white" />
+            </div>
+            <span style={{ fontSize: 20, fontWeight: 800, color: "#f8fafc", letterSpacing: "-0.5px" }}>Digit<span style={{ color: "#818cf8" }}>Hup</span></span>
+          </Link>
+
+          {/* Desktop Nav Links */}
+          <nav style={{ display: "flex", gap: 32, listStyle: "none" }} className="hidden-mobile">
+            {NAV_LINKS.map(l => (
+              <Link key={l.href} href={l.href} style={{ color: "rgba(248,250,252,0.7)", textDecoration: "none", fontSize: 15, fontWeight: 500, transition: "color 0.2s" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "#f8fafc")}
+                onMouseLeave={e => (e.currentTarget.style.color = "rgba(248,250,252,0.7)")}>
+                {l.label}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Auth Area */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            {user ? (
+              <>
+                <Link href={getDashLink()} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", borderRadius: 10, background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "#818cf8", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>
+                  <LayoutDashboard size={16} /> Dashboard
+                </Link>
+                <button onClick={handleLogout} style={{ padding: "8px 14px", borderRadius: 10, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", color: "#f87171", fontSize: 14, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                  <LogOut size={15} /> Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link href="/login" style={{ color: "rgba(248,250,252,0.8)", textDecoration: "none", fontSize: 14, fontWeight: 600, padding: "8px 16px" }}>Log In</Link>
+                <Link href="/register" style={{ padding: "9px 20px", borderRadius: 10, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "white", textDecoration: "none", fontSize: 14, fontWeight: 700 }}>
+                  Get Started
+                </Link>
+              </>
+            )}
+            <button onClick={() => setMenuOpen(!menuOpen)} style={{ background: "none", border: "none", color: "white", cursor: "pointer", display: "none" }} className="show-mobile">
+              {menuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        {menuOpen && (
+          <div style={{ background: "rgba(2,8,23,0.98)", backdropFilter: "blur(16px)", padding: "16px 24px 24px", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+            {NAV_LINKS.map(l => (
+              <Link key={l.href} href={l.href} onClick={() => setMenuOpen(false)} style={{ display: "block", padding: "12px 0", color: "rgba(248,250,252,0.8)", textDecoration: "none", fontSize: 16, fontWeight: 500, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                {l.label}
+              </Link>
+            ))}
+            <div style={{ marginTop: 16, display: "flex", gap: 12 }}>
+              <Link href="/login" style={{ flex: 1, textAlign: "center", padding: "10px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.15)", color: "white", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>Log In</Link>
+              <Link href="/register" style={{ flex: 1, textAlign: "center", padding: "10px", borderRadius: 10, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "white", textDecoration: "none", fontSize: 14, fontWeight: 700 }}>Register</Link>
+            </div>
+          </div>
+        )}
+      </header>
+
+      {/* ── HERO ── */}
+      <section style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "120px 24px 80px", position: "relative", overflow: "hidden" }}>
+        {/* Glow blobs */}
+        <div style={{ position: "absolute", top: "20%", left: "20%", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(99,102,241,0.2), transparent 70%)", filter: "blur(60px)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", bottom: "20%", right: "15%", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(168,85,247,0.2), transparent 70%)", filter: "blur(60px)", pointerEvents: "none" }} />
+
+        <div style={{ position: "relative", zIndex: 1, maxWidth: 820, margin: "0 auto", textAlign: "center" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 18px", borderRadius: 100, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#818cf8", fontSize: 13, fontWeight: 600, marginBottom: 28, backdropFilter: "blur(8px)" }}>
+            <Sparkles size={14} /> The Premier Digital Marketplace for Algeria
           </div>
 
-          <div className="relative z-10 w-full max-w-5xl mx-auto flex flex-col items-center text-center animate-slide-up">
-            <Badge variant="outline" className="mb-6 border-indigo-500/30 bg-indigo-500/10 text-indigo-300 py-1.5 px-4 font-medium backdrop-blur-md">
-              <Sparkles className="w-4 h-4 mr-2 text-indigo-400" />
-              The Premium Marketplace for Algerian Creatives
-            </Badge>
-            
-            <h1 className="text-5xl sm:text-7xl font-display font-extrabold tracking-tight mb-8 leading-tight">
-              Elevate your projects with <br className="hidden sm:block" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-fuchsia-400 to-indigo-400 animate-gradient-x">
-                world-class talent.
+          <h1 style={{ fontSize: "clamp(40px, 7vw, 76px)", fontWeight: 900, lineHeight: 1.1, letterSpacing: "-2px", marginBottom: 24 }}>
+            Elevate your work with
+            <br />
+            <span style={{ background: "linear-gradient(135deg, #6366f1, #a78bfa, #c084fc)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+              world-class talent.
+            </span>
+          </h1>
+
+          <p style={{ fontSize: 18, color: "rgba(248,250,252,0.6)", marginBottom: 40, lineHeight: 1.7, maxWidth: 580, margin: "0 auto 40px" }}>
+            Connect with top Algerian freelancers, purchase ready-made digital tools, and grow your business. Secure. Professional. Built for Algeria.
+          </p>
+
+          {/* Search Box */}
+          <form onSubmit={handleSearch} style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 16, padding: 6, maxWidth: 640, margin: "0 auto 48px", backdropFilter: "blur(16px)", transition: "border-color 0.2s" }}>
+            <div style={{ padding: "0 16px", color: "rgba(248,250,252,0.4)" }}><Search size={20} /></div>
+            <input
+              type="text"
+              placeholder="Search for a service or product..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "#f8fafc", fontSize: 15, padding: "12px 0" }}
+            />
+            <button type="submit" style={{ padding: "12px 24px", borderRadius: 12, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "white", border: "none", fontWeight: 700, fontSize: 14, cursor: "pointer", whiteSpace: "nowrap" }}>
+              Search
+            </button>
+          </form>
+
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 24, justifyContent: "center", color: "rgba(248,250,252,0.55)", fontSize: 14 }}>
+            {["Secure COD Payments", "Vetted Professionals", "24/7 Support"].map(t => (
+              <span key={t} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <CheckCircle2 size={16} color="#34d399" /> {t}
               </span>
-            </h1>
-            
-            <p className="text-lg sm:text-xl text-slate-400 mb-10 max-w-2xl font-light">
-              Connect with top-tier Algerian freelancers to build your brand, develop your software, and create stunning content. Secure, fast, and professional.
-            </p>
-
-            {/* Search Bar */}
-            <div className="w-full max-w-2xl bg-slate-900/50 backdrop-blur-xl border border-slate-800 p-2 rounded-2xl flex items-center shadow-2xl transition-all focus-within:border-indigo-500/50 focus-within:shadow-indigo-500/20">
-              <div className="pl-4 text-slate-400"><Search className="w-5 h-5" /></div>
-              <input 
-                type="text" 
-                placeholder="What service are you looking for?" 
-                className="flex-1 bg-transparent border-none outline-none text-slate-200 px-4 py-3 placeholder:text-slate-500"
-              />
-              <Button className="rounded-xl px-8 bg-indigo-600 hover:bg-indigo-500 text-white font-medium h-12">Search</Button>
-            </div>
-
-            <div className="mt-12 flex flex-wrap justify-center items-center gap-6 text-sm text-slate-400">
-              <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500" /> Secure COD Payments</span>
-              <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500" /> Vetted Professionals</span>
-              <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500" /> 24/7 Dedicated Support</span>
-            </div>
+            ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* SERVICES SECTION */}
-        <section className="py-24 px-6 sm:px-12 bg-slate-950 relative border-t border-slate-900">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col sm:flex-row justify-between items-end mb-12 gap-6">
-              <div>
-                <h2 className="text-3xl sm:text-4xl font-display font-bold text-white mb-3">Trending <span className="text-indigo-400">Services</span></h2>
-                <p className="text-slate-400 max-w-lg">Hire experts for one-off projects or long-term collaborations. Paid only upon successful delivery.</p>
-              </div>
-              <Button variant="outline" className="border-slate-800 hover:bg-slate-900 group">
-                Browse All Services <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-              </Button>
+      {/* ── SERVICES SECTION ── */}
+      <section style={{ padding: "80px 24px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <div style={{ maxWidth: 1280, margin: "0 auto" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48, flexWrap: "wrap", gap: 16 }}>
+            <div>
+              <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: 2, color: "#818cf8", textTransform: "uppercase", marginBottom: 10 }}>🔥 Trending Now</p>
+              <h2 style={{ fontSize: "clamp(28px, 4vw, 40px)", fontWeight: 800, letterSpacing: "-1px", marginBottom: 8 }}>
+                Top-Rated <span style={{ background: "linear-gradient(135deg, #6366f1, #a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Services</span>
+              </h2>
+              <p style={{ color: "rgba(248,250,252,0.5)", fontSize: 15 }}>Hire experts. Pay only on delivery.</p>
             </div>
+            <Link href="/services" style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.12)", color: "rgba(248,250,252,0.8)", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>
+              Browse All <ArrowRight size={16} />
+            </Link>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[
-                { title: "Brand Identity Design", author: "Yacine M.", rating: 4.9, price: "From 15,000 DZD", category: "Design", color: "from-blue-600 to-indigo-600" },
-                { title: "React/Next.js Development", author: "Karim B.", rating: 5.0, price: "From 45,000 DZD", category: "Tech", color: "from-emerald-600 to-teal-600" },
-                { title: "SEO Arabic Copywriting", author: "Nassima B.", rating: 4.8, price: "From 2,500 DZD", category: "Writing", color: "from-orange-600 to-red-600" },
-                { title: "Social Media Management", author: "Amine K.", rating: 4.7, price: "From 20,000 DZD", category: "Marketing", color: "from-fuchsia-600 to-pink-600" },
-              ].map((service, i) => (
-                <div key={i} className="group rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden hover:border-slate-700 transition-all hover:shadow-2xl hover:shadow-indigo-500/10 hover:-translate-y-1">
-                  <div className={`h-40 bg-gradient-to-br ${service.color} opacity-80 group-hover:opacity-100 transition-opacity p-6 flex flex-col justify-end relative overflow-hidden`}>
-                    <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
-                    <Badge className="w-max bg-white/20 hover:bg-white/30 text-white border-none backdrop-blur-md mb-2">{service.category}</Badge>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 20 }}>
+            {SERVICES.map((s, i) => (
+              <div key={i} style={{ borderRadius: 20, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden", transition: "all 0.25s ease", cursor: "pointer" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(-4px)"; (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(99,102,241,0.4)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 20px 60px rgba(99,102,241,0.15)" }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(255,255,255,0.08)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "none" }}>
+                <div style={{ height: 140, background: `linear-gradient(135deg, hsl(${200 + i * 30}, 70%, 25%), hsl(${220 + i * 30}, 80%, 18%))`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48 }}>
+                  {s.emoji}
+                </div>
+                <div style={{ padding: 20 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#818cf8", textTransform: "uppercase", letterSpacing: 1 }}>{s.category}</span>
+                  <h3 style={{ fontSize: 16, fontWeight: 700, margin: "8px 0 12px", lineHeight: 1.4 }}>{s.title}</h3>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 16, color: "rgba(248,250,252,0.5)", fontSize: 13 }}>
+                    <div style={{ width: 24, height: 24, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>{s.author.charAt(0)}</div>
+                    {s.author}
                   </div>
-                  <div className="p-5">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold">{service.author.charAt(0)}</div>
-                      <span className="text-sm font-medium text-slate-300">{service.author}</span>
-                    </div>
-                    <h3 className="font-semibold text-lg text-white mb-4 line-clamp-2 leading-tight group-hover:text-indigo-400 transition-colors">{service.title}</h3>
-                    <div className="flex items-center justify-between border-t border-slate-800 pt-4">
-                      <div className="flex items-center text-amber-400 text-sm font-medium">
-                        <Star className="w-4 h-4 fill-current mr-1" /> {service.rating}
-                      </div>
-                      <span className="text-sm font-semibold text-white">{service.price}</span>
-                    </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 14 }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 4, color: "#fbbf24", fontSize: 13, fontWeight: 700 }}>
+                      <Star size={14} fill="#fbbf24" /> {s.rating}
+                    </span>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "#a5f3fc" }}>{s.price}</span>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* DIGITAL PRODUCTS SECTION (DISTINCT DESIGN) */}
-        <section className="py-24 px-6 sm:px-12 bg-slate-900/50 relative border-t border-slate-900 overflow-hidden">
-          {/* Decorative blur */}
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-fuchsia-600/10 rounded-full blur-[100px] -z-10"></div>
-          
-          <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col sm:flex-row justify-between items-end mb-12 gap-6">
-              <div>
-                <Badge variant="outline" className="mb-4 border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-300 py-1.5 px-3">
-                  <Zap className="w-3.5 h-3.5 mr-1.5" /> Instant Access
-                </Badge>
-                <h2 className="text-3xl sm:text-4xl font-display font-bold text-white mb-3">Premium <span className="text-fuchsia-400">Digital Tools</span></h2>
-                <p className="text-slate-400 max-w-lg">Ready-to-use templates, assets, and ebooks to speed up your workflow. Buy once, use forever.</p>
               </div>
-              <Button variant="outline" className="border-slate-800 hover:bg-slate-900 text-slate-300 group">
-                Explore Digital Assets <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {[
-                { title: "Ultimate UI/UX Design System", author: "DigitHup Pro", type: "Figma Template", price: "5,000 DZD", sales: 124 },
-                { title: "Freelancer Contract Templates", author: "LegalDZ", type: "Document", price: "1,500 DZD", sales: 342 },
-                { title: "E-Commerce Masterclass 2026", author: "E-Com DZ", type: "Video Course", price: "12,000 DZD", sales: 89 },
-              ].map((product, i) => (
-                <div key={i} className="group relative rounded-3xl bg-slate-950 border border-slate-800 p-2 hover:border-fuchsia-500/30 transition-colors">
-                  <div className="absolute inset-0 bg-gradient-to-b from-fuchsia-500/5 to-transparent opacity-0 group-hover:opacity-100 rounded-3xl transition-opacity"></div>
-                  <div className="h-48 rounded-2xl bg-slate-900 border border-slate-800/50 flex items-center justify-center p-6 mb-4 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjIiIGN5PSIyIiByPSIyIiBmaWxsPSJyZ2JhKDI1NSwgMjU1LCAyNTUsIDAuMDUpIi8+Cjwvc3ZnPg==')] opacity-50"></div>
-                    <Package className="w-16 h-16 text-slate-700 group-hover:text-fuchsia-500/50 transition-colors" />
-                    <Badge className="absolute top-4 left-4 bg-slate-950/80 border-slate-800 text-slate-300 backdrop-blur-md">{product.type}</Badge>
-                  </div>
-                  <div className="px-4 pb-4">
-                    <h3 className="font-semibold text-lg text-white mb-2 line-clamp-1">{product.title}</h3>
-                    <p className="text-sm text-slate-400 mb-4">{product.author} • {product.sales} sales</p>
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-fuchsia-400">{product.price}</span>
-                      <Button size="sm" className="bg-white text-slate-950 hover:bg-slate-200 rounded-full px-5">Get it now</Button>
-                    </div>
+      {/* ── DIGITAL PRODUCTS SECTION ── */}
+      <section style={{ padding: "80px 24px", background: "linear-gradient(180deg, transparent, rgba(168,85,247,0.05), transparent)", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <div style={{ maxWidth: 1280, margin: "0 auto" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48, flexWrap: "wrap", gap: 16 }}>
+            <div>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 14px", borderRadius: 100, border: "1px solid rgba(168,85,247,0.4)", background: "rgba(168,85,247,0.1)", color: "#c084fc", fontSize: 12, fontWeight: 700, marginBottom: 12 }}>
+                <Zap size={12} /> Instant Access
+              </div>
+              <h2 style={{ fontSize: "clamp(28px, 4vw, 40px)", fontWeight: 800, letterSpacing: "-1px", marginBottom: 8 }}>
+                Premium <span style={{ background: "linear-gradient(135deg, #c084fc, #f0abfc)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Digital Tools</span>
+              </h2>
+              <p style={{ color: "rgba(248,250,252,0.5)", fontSize: 15 }}>Instantly unlock templates, courses & resources.</p>
+            </div>
+            <Link href="/store" style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.12)", color: "rgba(248,250,252,0.8)", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>
+              Explore All <ArrowRight size={16} />
+            </Link>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 24 }}>
+            {PRODUCTS.map((p, i) => (
+              <div key={i} style={{ borderRadius: 24, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", padding: 8, transition: "all 0.25s ease", cursor: "pointer" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(168,85,247,0.4)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 20px 60px rgba(168,85,247,0.12)" }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(255,255,255,0.07)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "none" }}>
+                <div style={{ height: 160, borderRadius: 18, background: `linear-gradient(135deg, rgba(168,85,247,0.${12 + i * 3}), rgba(99,102,241,0.15))`, border: "1px solid rgba(255,255,255,0.05)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", marginBottom: 16, position: "relative", overflow: "hidden" }}>
+                  <Package size={52} color="rgba(168,85,247,0.4)" />
+                  <div style={{ position: "absolute", top: 12, left: 12, padding: "4px 10px", borderRadius: 8, background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(248,250,252,0.7)", fontSize: 11, fontWeight: 600, backdropFilter: "blur(8px)" }}>
+                    {p.type}
                   </div>
                 </div>
-              ))}
-            </div>
+                <div style={{ padding: "4px 12px 12px" }}>
+                  <h3 style={{ fontSize: 17, fontWeight: 700, marginBottom: 6, lineHeight: 1.3 }}>{p.title}</h3>
+                  <p style={{ fontSize: 13, color: "rgba(248,250,252,0.4)", marginBottom: 16 }}>{p.author} • {p.sales} sales</p>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 14 }}>
+                    <span style={{ fontSize: 18, fontWeight: 800, color: "#e879f9" }}>{p.price}</span>
+                    <button style={{ padding: "9px 20px", borderRadius: 10, background: "rgba(248,250,252,0.95)", color: "#020817", fontWeight: 700, fontSize: 13, border: "none", cursor: "pointer" }}>Get it now</button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* TRUST / WHY US */}
-        <section className="py-24 px-6 sm:px-12 bg-slate-950 border-t border-slate-900">
-          <div className="max-w-7xl mx-auto rounded-3xl bg-gradient-to-br from-indigo-900/40 via-slate-900 to-slate-900 border border-slate-800 p-8 sm:p-16 text-center relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-[80px]"></div>
-            
-            <h2 className="text-3xl sm:text-4xl font-display font-bold text-white mb-6">Why independent professionals choose Digit Hup</h2>
-            <p className="text-slate-400 max-w-2xl mx-auto mb-16">The most secure and professional way to conduct freelance business in Algeria.</p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-left">
-              <div>
-                <div className="w-12 h-12 rounded-xl bg-indigo-500/20 flex items-center justify-center mb-6">
-                  <ShieldCheck className="w-6 h-6 text-indigo-400" />
+      {/* ── WHY DIGIT HUP ── */}
+      <section style={{ padding: "80px 24px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 64 }}>
+            <h2 style={{ fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 800, letterSpacing: "-1px", marginBottom: 16 }}>
+              Why professionals choose <span style={{ background: "linear-gradient(135deg, #6366f1, #a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>DigitHup</span>
+            </h2>
+            <p style={{ color: "rgba(248,250,252,0.5)", fontSize: 16, maxWidth: 480, margin: "0 auto" }}>The most trusted and secure platform for Algerian freelancers and businesses.</p>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 28 }}>
+            {[
+              { icon: <ShieldCheck size={28} color="#34d399" />, bg: "rgba(52,211,153,0.1)", title: "100% Secure Payments", desc: "Funds held safely. Released only after successful delivery. COD-ready for Algeria." },
+              { icon: <Users size={28} color="#818cf8" />, bg: "rgba(99,102,241,0.1)", title: "Verified Professionals", desc: "Elite sellers pass portfolio verification. Only the best get the badge." },
+              { icon: <Star size={28} color="#fbbf24" />, bg: "rgba(251,191,36,0.1)", title: "Quality Guaranteed", desc: "Built-in dispute resolution and milestone tracking. You always get what you paid for." },
+            ].map((f, i) => (
+              <div key={i} style={{ padding: 28, borderRadius: 20, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                <div style={{ width: 52, height: 52, borderRadius: 14, background: f.bg, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
+                  {f.icon}
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-3">100% Secure Payments</h3>
-                <p className="text-slate-400">Funds are held securely. Sellers get paid via Post / Bank transfer after successful project delivery, solving the local payment gap.</p>
+                <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>{f.title}</h3>
+                <p style={{ color: "rgba(248,250,252,0.5)", fontSize: 14, lineHeight: 1.7 }}>{f.desc}</p>
               </div>
-              <div>
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center mb-6">
-                  <Users className="w-6 h-6 text-emerald-400" />
-                </div>
-                <h3 className="text-xl font-semibold text-white mb-3">Vetted Professionals</h3>
-                <p className="text-slate-400">Our elite seller tier requires portfolio verification to ensure you only work with the absolute best in the industry.</p>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA ── */}
+      <section style={{ padding: "80px 24px 120px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <div style={{ maxWidth: 700, margin: "0 auto", textAlign: "center", padding: "60px 32px", borderRadius: 28, background: "linear-gradient(135deg, rgba(99,102,241,0.15), rgba(168,85,247,0.1))", border: "1px solid rgba(99,102,241,0.25)" }}>
+          <h2 style={{ fontSize: "clamp(28px, 4vw, 42px)", fontWeight: 800, letterSpacing: "-1px", marginBottom: 16 }}>Ready to get started?</h2>
+          <p style={{ color: "rgba(248,250,252,0.6)", fontSize: 16, marginBottom: 36 }}>Join thousands of Algerian freelancers and businesses already on DigitHup.</p>
+          <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
+            <Link href="/register" style={{ padding: "14px 36px", borderRadius: 14, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "white", textDecoration: "none", fontSize: 15, fontWeight: 700 }}>
+              Create Free Account
+            </Link>
+            <Link href="/how-it-works" style={{ padding: "14px 36px", borderRadius: 14, border: "1px solid rgba(255,255,255,0.2)", color: "rgba(248,250,252,0.85)", textDecoration: "none", fontSize: 15, fontWeight: 600 }}>
+              How It Works
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FOOTER ── */}
+      <footer style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "48px 24px", background: "rgba(0,0,0,0.3)" }}>
+        <div style={{ maxWidth: 1280, margin: "0 auto", display: "flex", flexWrap: "wrap", gap: 40, justifyContent: "space-between" }}>
+          <div>
+            <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", marginBottom: 12 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Zap size={16} color="white" />
               </div>
-              <div>
-                <div className="w-12 h-12 rounded-xl bg-fuchsia-500/20 flex items-center justify-center mb-6">
-                  <Star className="w-6 h-6 text-fuchsia-400" />
-                </div>
-                <h3 className="text-xl font-semibold text-white mb-3">Quality Guaranteed</h3>
-                <p className="text-slate-400">Built-in dispute resolution and milestone tracking ensures you get exactly what you paid for, stress-free.</p>
+              <span style={{ fontSize: 17, fontWeight: 800, color: "#f8fafc" }}>DigitHup</span>
+            </Link>
+            <p style={{ color: "rgba(248,250,252,0.4)", fontSize: 13, maxWidth: 220, lineHeight: 1.7 }}>Algeria's first premium freelance & digital products marketplace.</p>
+          </div>
+          {[
+            { title: "Platform", links: [{ href: "/services", l: "Services" }, { href: "/store", l: "Products" }, { href: "/become-a-seller", l: "Become a Seller" }] },
+            { title: "Company", links: [{ href: "/about", l: "About Us" }, { href: "/blog", l: "Blog" }, { href: "/careers", l: "Careers" }] },
+            { title: "Support", links: [{ href: "/help", l: "Help Center" }, { href: "/terms", l: "Terms" }, { href: "/privacy", l: "Privacy" }] },
+          ].map(col => (
+            <div key={col.title}>
+              <h4 style={{ fontSize: 13, fontWeight: 700, color: "rgba(248,250,252,0.6)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 16 }}>{col.title}</h4>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {col.links.map(lk => (
+                  <Link key={lk.href} href={lk.href} style={{ color: "rgba(248,250,252,0.4)", textDecoration: "none", fontSize: 14 }}>{lk.l}</Link>
+                ))}
               </div>
             </div>
-          </div>
-        </section>
-      </main>
+          ))}
+        </div>
+        <div style={{ maxWidth: 1280, margin: "32px auto 0", paddingTop: 24, borderTop: "1px solid rgba(255,255,255,0.06)", color: "rgba(248,250,252,0.3)", fontSize: 13, display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+          <span>© 2026 Digit Hup. Made with ❤️ in Algeria.</span>
+          <span>All rights reserved.</span>
+        </div>
+      </footer>
 
-      <Footer />
+      <style>{`
+        @media (max-width: 768px) {
+          .hidden-mobile { display: none !important; }
+          .show-mobile { display: flex !important; }
+        }
+        @media (min-width: 769px) {
+          .show-mobile { display: none !important; }
+        }
+      `}</style>
     </div>
   )
 }
