@@ -1,422 +1,226 @@
 "use client"
 
-import { useState } from "react"
-import Image from "next/image"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import React, { useState, useEffect } from "react"
+import { Save, Camera, User, Lock, Bell, Shield, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import {
-  User,
-  Bell,
-  Shield,
-  CreditCard,
-  Globe,
-  Camera,
-  Check,
-  AlertCircle,
-} from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState("profile")
+  const supabase = createClient()
+  const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [form, setForm] = useState({
+    full_name: "",
+    username: "",
+    bio: "",
+    city: "",
+    phone_whatsapp: "",
+  })
+
+  useEffect(() => {
+    const load = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setUser(user)
+        const { data: profile } = await supabase.from("Profile").select("*").eq("id", user.id).single()
+        if (profile) {
+          setProfile(profile)
+          setForm({
+            full_name: profile.full_name || "",
+            username: profile.username || "",
+            bio: profile.bio || "",
+            city: profile.city || "",
+            phone_whatsapp: profile.phone_whatsapp || "",
+          })
+        }
+      }
+      setLoading(false)
+    }
+    load()
+  }, [])
+
+  const handleSave = async () => {
+    if (!user) return
+    setSaving(true)
+    const { error } = await supabase.from("Profile").update({
+      full_name: form.full_name,
+      username: form.username,
+      bio: form.bio,
+      city: form.city,
+      phone_whatsapp: form.phone_whatsapp,
+    }).eq("id", user.id)
+    setSaving(false)
+    if (!error) {
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    }
+  }
+
+  const displayName = profile?.full_name || user?.email?.split("@")[0] || "User"
+  const initials = displayName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-8 max-w-3xl animate-slide-up">
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold">Settings</h1>
-        <p className="text-muted-foreground mt-1">Manage your account and preferences</p>
+        <h1 className="text-3xl font-display font-semibold mb-1">Settings</h1>
+        <p className="text-muted-foreground">Manage your account and profile information.</p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-transparent p-0 gap-2 flex-wrap">
-          <TabsTrigger value="profile" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <User className="h-4 w-4 mr-2" />
-            Profile
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <Bell className="h-4 w-4 mr-2" />
-            Notifications
-          </TabsTrigger>
-          <TabsTrigger value="security" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <Shield className="h-4 w-4 mr-2" />
-            Security
-          </TabsTrigger>
-          <TabsTrigger value="billing" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <CreditCard className="h-4 w-4 mr-2" />
-            Billing
-          </TabsTrigger>
+      <Tabs defaultValue="profile">
+        <TabsList className="mb-6">
+          <TabsTrigger value="profile" className="gap-2"><User className="w-4 h-4" />Profile</TabsTrigger>
+          <TabsTrigger value="security" className="gap-2"><Lock className="w-4 h-4" />Security</TabsTrigger>
+          <TabsTrigger value="notifications" className="gap-2"><Bell className="w-4 h-4" />Notifications</TabsTrigger>
         </TabsList>
 
         {/* Profile Tab */}
-        <TabsContent value="profile" className="mt-6 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile Picture</CardTitle>
-              <CardDescription>Update your profile photo</CardDescription>
-            </CardHeader>
+        <TabsContent value="profile" className="space-y-6">
+          {/* Avatar */}
+          <Card className="border-border shadow-sm">
+            <CardHeader><CardTitle>Profile Picture</CardTitle></CardHeader>
             <CardContent>
               <div className="flex items-center gap-6">
                 <div className="relative">
-                  <Image
-                    src="/placeholder.svg?height=96&width=96"
-                    alt="Profile"
-                    width={96}
-                    height={96}
-                    className="rounded-full"
-                  />
-                  <Button
-                    size="icon"
-                    className="absolute bottom-0 right-0 h-8 w-8 rounded-full"
-                  >
-                    <Camera className="h-4 w-4" />
-                  </Button>
+                  <Avatar className="h-20 w-20">
+                    <AvatarImage src={profile?.avatar_url || ""} />
+                    <AvatarFallback className="text-xl">{initials}</AvatarFallback>
+                  </Avatar>
+                  <button className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md hover:bg-primary/90 transition-colors">
+                    <Camera className="w-3.5 h-3.5" />
+                  </button>
                 </div>
                 <div>
-                  <p className="font-medium">John Doe</p>
-                  <p className="text-sm text-muted-foreground">@johndoe</p>
-                  <div className="flex gap-2 mt-2">
-                    <Button variant="outline" size="sm">Change Photo</Button>
-                    <Button variant="ghost" size="sm" className="text-red-500">Remove</Button>
-                  </div>
+                  <p className="font-semibold">{displayName}</p>
+                  <p className="text-sm text-muted-foreground mb-2">{user?.email}</p>
+                  <Badge variant="outline" className="text-xs capitalize">{profile?.role}</Badge>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          {/* Personal Info */}
+          <Card className="border-border shadow-sm">
             <CardHeader>
               <CardTitle>Personal Information</CardTitle>
-              <CardDescription>Update your personal details</CardDescription>
+              <CardDescription>Update your public profile details.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
+            <CardContent className="space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input id="firstName" defaultValue="John" />
+                  <Label htmlFor="full_name">Full Name</Label>
+                  <Input id="full_name" value={form.full_name} onChange={e => setForm({...form, full_name: e.target.value})} placeholder="e.g. Yacine Medjber" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input id="lastName" defaultValue="Doe" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <div className="flex gap-2">
-                  <Input id="email" type="email" defaultValue="john.doe@email.com" />
-                  <Badge className="bg-green-500/10 text-green-600 shrink-0">
-                    <Check className="h-3 w-3 mr-1" />
-                    Verified
-                  </Badge>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">digithup.com/</span>
-                  <Input id="username" defaultValue="johndoe" className="flex-1" />
+                  <Label htmlFor="username">Username</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
+                    <Input id="username" className="pl-7" value={form.username} onChange={e => setForm({...form, username: e.target.value})} placeholder="yourhandle" />
+                  </div>
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="bio">Bio</Label>
-                <Textarea
-                  id="bio"
-                  defaultValue="Professional graphic designer with 5+ years of experience in brand identity and web design."
-                  rows={4}
-                />
+                <Textarea id="bio" rows={3} value={form.bio} onChange={e => setForm({...form, bio: e.target.value})} placeholder="Tell buyers about yourself, your skills, and experience..." />
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div className="space-y-2">
-                  <Label htmlFor="country">Country</Label>
-                  <Input id="country" defaultValue="United States" />
+                  <Label htmlFor="city">City</Label>
+                  <Input id="city" value={form.city} onChange={e => setForm({...form, city: e.target.value})} placeholder="e.g. Algiers" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="timezone">Timezone</Label>
-                  <Input id="timezone" defaultValue="(GMT-05:00) Eastern Time" />
+                  <Label htmlFor="phone">WhatsApp Number</Label>
+                  <Input id="phone" value={form.phone_whatsapp} onChange={e => setForm({...form, phone_whatsapp: e.target.value})} placeholder="+213 5XX XX XX XX" />
                 </div>
               </div>
-              <Button>Save Changes</Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Professional Details</CardTitle>
-              <CardDescription>Information shown on your seller profile</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="title">Professional Title</Label>
-                <Input id="title" defaultValue="Senior Graphic Designer" />
+              <div className="pt-2">
+                <Button onClick={handleSave} disabled={saving} className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground min-w-32">
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  {saved ? "Saved!" : saving ? "Saving..." : "Save Changes"}
+                </Button>
               </div>
-              <div className="space-y-2">
-                <Label>Skills</Label>
-                <div className="flex flex-wrap gap-2">
-                  {["Logo Design", "Brand Identity", "Web Design", "UI/UX", "Illustration"].map((skill) => (
-                    <Badge key={skill} variant="secondary" className="cursor-pointer">
-                      {skill} ×
-                    </Badge>
-                  ))}
-                  <Button variant="outline" size="sm">Add Skill</Button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Languages</Label>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary">English - Native</Badge>
-                  <Badge variant="secondary">Spanish - Conversational</Badge>
-                  <Button variant="outline" size="sm">Add Language</Button>
-                </div>
-              </div>
-              <Button>Save Changes</Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Notifications Tab */}
-        <TabsContent value="notifications" className="mt-6 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Email Notifications</CardTitle>
-              <CardDescription>Choose what emails you want to receive</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {[
-                { id: "orders", label: "New Orders", description: "Get notified when you receive a new order", default: true },
-                { id: "messages", label: "Messages", description: "Get notified when you receive a new message", default: true },
-                { id: "marketing", label: "Marketing", description: "Receive tips, product updates and promotions", default: false },
-                { id: "reviews", label: "Reviews", description: "Get notified when someone leaves a review", default: true },
-              ].map((item) => (
-                <div key={item.id} className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">{item.label}</p>
-                    <p className="text-sm text-muted-foreground">{item.description}</p>
-                  </div>
-                  <Switch defaultChecked={item.default} />
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Push Notifications</CardTitle>
-              <CardDescription>Manage your push notification preferences</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {[
-                { id: "push-orders", label: "Order Updates", description: "Real-time updates on your orders", default: true },
-                { id: "push-messages", label: "Direct Messages", description: "Instant message notifications", default: true },
-                { id: "push-promotions", label: "Promotions", description: "Special offers and discounts", default: false },
-              ].map((item) => (
-                <div key={item.id} className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">{item.label}</p>
-                    <p className="text-sm text-muted-foreground">{item.description}</p>
-                  </div>
-                  <Switch defaultChecked={item.default} />
-                </div>
-              ))}
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* Security Tab */}
-        <TabsContent value="security" className="mt-6 space-y-6">
-          <Card>
+        <TabsContent value="security" className="space-y-6">
+          <Card className="border-border shadow-sm">
             <CardHeader>
-              <CardTitle>Password</CardTitle>
-              <CardDescription>Change your password</CardDescription>
+              <CardTitle>Change Password</CardTitle>
+              <CardDescription>Update your account password.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="currentPassword">Current Password</Label>
-                <Input id="currentPassword" type="password" />
+                <Label>Current Password</Label>
+                <Input type="password" placeholder="••••••••" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="newPassword">New Password</Label>
-                <Input id="newPassword" type="password" />
+                <Label>New Password</Label>
+                <Input type="password" placeholder="••••••••" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                <Input id="confirmPassword" type="password" />
+                <Label>Confirm New Password</Label>
+                <Input type="password" placeholder="••••••••" />
               </div>
-              <Button>Update Password</Button>
+              <Button className="gap-2"><Lock className="w-4 h-4" />Update Password</Button>
             </CardContent>
           </Card>
-
-          <Card>
+          <Card className="border-border shadow-sm border-destructive/20 bg-destructive/5">
             <CardHeader>
-              <CardTitle>Two-Factor Authentication</CardTitle>
-              <CardDescription>Add an extra layer of security to your account</CardDescription>
+              <CardTitle className="text-destructive flex items-center gap-2"><Shield className="w-5 h-5" />Danger Zone</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Shield className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Two-Factor Authentication</p>
-                    <p className="text-sm text-muted-foreground">Currently disabled</p>
-                  </div>
-                </div>
-                <Button>Enable</Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Active Sessions</CardTitle>
-              <CardDescription>Manage your active sessions across devices</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {[
-                { device: "Chrome on Windows", location: "New York, US", current: true },
-                { device: "Safari on iPhone", location: "New York, US", current: false },
-                { device: "Firefox on MacOS", location: "Boston, US", current: false },
-              ].map((session, index) => (
-                <div key={index} className="flex items-center justify-between p-4 rounded-xl border">
-                  <div className="flex items-center gap-4">
-                    <Globe className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">
-                        {session.device}
-                        {session.current && (
-                          <Badge className="ml-2 bg-green-500/10 text-green-600">Current</Badge>
-                        )}
-                      </p>
-                      <p className="text-sm text-muted-foreground">{session.location}</p>
-                    </div>
-                  </div>
-                  {!session.current && (
-                    <Button variant="ghost" size="sm" className="text-red-500">
-                      Revoke
-                    </Button>
-                  )}
-                </div>
-              ))}
-              <Button variant="outline" className="w-full text-red-500">
-                Sign Out All Other Devices
-              </Button>
+              <p className="text-sm text-muted-foreground mb-4">Once you delete your account, there is no going back. Please be certain.</p>
+              <Button variant="destructive" size="sm">Delete Account</Button>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Billing Tab */}
-        <TabsContent value="billing" className="mt-6 space-y-6">
-          <Card>
+        {/* Notifications Tab */}
+        <TabsContent value="notifications">
+          <Card className="border-border shadow-sm">
             <CardHeader>
-              <CardTitle>Current Plan</CardTitle>
-              <CardDescription>Your subscription details</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="p-6 rounded-xl bg-primary/5 border border-primary/20">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-xl font-bold">Pro Seller</h3>
-                      <Badge>Active</Badge>
-                    </div>
-                    <p className="text-muted-foreground mt-1">$29/month • Renews on Feb 15, 2024</p>
-                  </div>
-                  <Button variant="outline">Change Plan</Button>
-                </div>
-                <div className="mt-4 grid gap-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span>Unlimited services</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span>Featured listings</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span>Priority support</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span>Analytics dashboard</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Payment Method</CardTitle>
-              <CardDescription>Manage your payment methods</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 rounded-xl border flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
-                    <CreditCard className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="font-medium">•••• •••• •••• 4242</p>
-                    <p className="text-sm text-muted-foreground">Expires 12/25</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">Default</Badge>
-                  <Button variant="ghost" size="sm">Edit</Button>
-                </div>
-              </div>
-              <Button variant="outline">Add Payment Method</Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Billing History</CardTitle>
-              <CardDescription>Your recent invoices</CardDescription>
+              <CardTitle>Email Notifications</CardTitle>
+              <CardDescription>Choose which emails you receive from Digit Hup.</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {[
-                  { date: "Jan 15, 2024", amount: "$29.00", status: "Paid" },
-                  { date: "Dec 15, 2023", amount: "$29.00", status: "Paid" },
-                  { date: "Nov 15, 2023", amount: "$29.00", status: "Paid" },
-                ].map((invoice, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 rounded-xl border">
+                  { label: "New Orders", desc: "Get notified when someone places an order." },
+                  { label: "New Messages", desc: "Get notified when you receive a message." },
+                  { label: "Order Updates", desc: "Updates on order status changes." },
+                  { label: "New Reviews", desc: "When a buyer leaves you a review." },
+                  { label: "Platform News", desc: "Updates about Digit Hup features and announcements." },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center justify-between py-3 border-b border-border last:border-0">
                     <div>
-                      <p className="font-medium">Pro Seller Plan</p>
-                      <p className="text-sm text-muted-foreground">{invoice.date}</p>
+                      <p className="font-medium text-sm">{item.label}</p>
+                      <p className="text-xs text-muted-foreground">{item.desc}</p>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <Badge className="bg-green-500/10 text-green-600">{invoice.status}</Badge>
-                      <span className="font-medium">{invoice.amount}</span>
-                      <Button variant="ghost" size="sm">Download</Button>
-                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" defaultChecked={i < 3} className="sr-only peer" />
+                      <div className="w-9 h-5 bg-muted rounded-full peer peer-checked:bg-primary transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
+                    </label>
                   </div>
                 ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-red-200">
-            <CardHeader>
-              <CardTitle className="text-red-500">Danger Zone</CardTitle>
-              <CardDescription>Irreversible actions</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/20 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <AlertCircle className="h-5 w-5 text-red-500" />
-                  <div>
-                    <p className="font-medium">Delete Account</p>
-                    <p className="text-sm text-muted-foreground">Permanently delete your account and all data</p>
-                  </div>
-                </div>
-                <Button variant="destructive">Delete Account</Button>
               </div>
             </CardContent>
           </Card>

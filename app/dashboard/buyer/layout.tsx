@@ -13,44 +13,33 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Badge } from "@/components/ui/badge"
 import {
   LayoutDashboard,
-  Briefcase,
   ShoppingBag,
-  MessageSquare,
-  FileText,
-  Settings,
-  CreditCard,
-  BarChart3,
   Heart,
+  MessageSquare,
+  Star,
+  Settings,
   Menu,
   X,
   Bell,
-  Search,
   ChevronDown,
   LogOut,
   User,
-  HelpCircle,
-  Plus,
-  Package,
+  Store,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
 const sidebarItems = [
-  { title: "Overview", href: "/dashboard", icon: LayoutDashboard },
-  { title: "My Services", href: "/dashboard/services", icon: Briefcase },
-  { title: "My Products", href: "/dashboard/products", icon: Package },
-  { title: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
-  { title: "Messages", href: "/dashboard/messages", icon: MessageSquare },
-  { title: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
-  { title: "Earnings", href: "/dashboard/earnings", icon: CreditCard },
-  { title: "Favorites", href: "/dashboard/favorites", icon: Heart },
-  { title: "Reviews", href: "/dashboard/reviews", icon: FileText },
+  { title: "Overview", href: "/dashboard/buyer", icon: LayoutDashboard },
+  { title: "My Orders", href: "/dashboard/buyer/orders", icon: ShoppingBag },
+  { title: "Saved Items", href: "/dashboard/buyer/saved", icon: Heart },
+  { title: "Messages", href: "/dashboard/buyer/messages", icon: MessageSquare },
+  { title: "My Reviews", href: "/dashboard/buyer/reviews", icon: Star },
   { title: "Settings", href: "/dashboard/settings", icon: Settings },
 ]
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function BuyerLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
@@ -65,7 +54,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         setUser(user)
         const { data: profile } = await supabase
           .from("Profile")
-          .select("full_name, avatar_url, role, seller_level, username")
+          .select("full_name, avatar_url, role, username")
           .eq("id", user.id)
           .single()
         setProfile(profile)
@@ -82,7 +71,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const displayName = profile?.full_name || user?.email?.split("@")[0] || "User"
   const initials = displayName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
-  const levelLabel = profile?.seller_level ? profile.seller_level.charAt(0).toUpperCase() + profile.seller_level.slice(1) + " Seller" : "Seller"
 
   return (
     <div className="min-h-screen bg-background">
@@ -93,7 +81,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Sidebar */}
       <aside className={`fixed top-0 left-0 z-50 h-full w-64 bg-card border-r transform transition-transform duration-200 lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="flex flex-col h-full">
-          {/* Logo */}
           <div className="flex items-center justify-between h-16 px-4 border-b">
             <Link href="/" className="flex items-center gap-3">
               <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
@@ -101,16 +88,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
               <span className="font-bold text-lg">Digit Hup</span>
             </Link>
-            <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-muted-foreground hover:text-foreground">
+            <button onClick={() => setSidebarOpen(false)} className="lg:hidden">
               <X className="h-5 w-5" />
             </button>
           </div>
 
-          {/* Navigation */}
           <nav className="flex-1 overflow-y-auto p-4">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-3">Buyer Menu</p>
             <ul className="space-y-1">
               {sidebarItems.map((item) => {
-                const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
+                const isActive = pathname === item.href
                 return (
                   <li key={item.href}>
                     <Link
@@ -119,25 +106,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
                     >
                       <item.icon className="h-5 w-5 shrink-0" />
-                      <span className="flex-1">{item.title}</span>
+                      <span>{item.title}</span>
                     </Link>
                   </li>
                 )
               })}
             </ul>
+
+            <div className="mt-6">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-3">Quick Links</p>
+              <Link href="/services" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                <Store className="h-5 w-5" />
+                <span>Browse Services</span>
+              </Link>
+              <Link href="/become-seller" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                <User className="h-5 w-5" />
+                <span>Become a Seller</span>
+              </Link>
+            </div>
           </nav>
 
-          {/* Quick Action */}
-          <div className="p-4 border-t">
-            <Button className="w-full" asChild>
-              <Link href="/dashboard/services/new">
-                <Plus className="h-4 w-4 mr-2" />
-                New Service
-              </Link>
-            </Button>
-          </div>
-
-          {/* User Profile */}
           <div className="p-4 border-t">
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
@@ -146,7 +134,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm truncate">{displayName}</p>
-                <p className="text-xs text-muted-foreground truncate">{levelLabel}</p>
+                <p className="text-xs text-muted-foreground">Buyer Account</p>
               </div>
             </div>
           </div>
@@ -155,33 +143,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main Content */}
       <div className="lg:pl-64">
-        {/* Top Header */}
         <header className="sticky top-0 z-30 h-16 border-b bg-card/80 backdrop-blur-sm">
           <div className="flex items-center justify-between h-full px-4">
-            <div className="flex items-center gap-4">
-              <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-muted-foreground hover:text-foreground">
-                <Menu className="h-6 w-6" />
-              </button>
-              <div className="hidden sm:flex items-center gap-2 bg-muted rounded-lg px-3 py-2 w-64">
-                <Search className="h-4 w-4 text-muted-foreground" />
-                <input type="text" placeholder="Search..." className="bg-transparent border-none outline-none text-sm flex-1" />
-              </div>
+            <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-muted-foreground">
+              <Menu className="h-6 w-6" />
+            </button>
+            <div className="hidden sm:block text-sm text-muted-foreground">
+              Welcome back, <span className="font-semibold text-foreground">{displayName.split(" ")[0]}</span> 👋
             </div>
-
             <div className="flex items-center gap-3">
-              {/* Notifications */}
               <Button variant="ghost" size="icon" className="relative" asChild>
-                <Link href="/dashboard/messages">
+                <Link href="/dashboard/buyer/messages">
                   <Bell className="h-5 w-5" />
-                  <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
                 </Link>
               </Button>
-
-              <Button variant="ghost" size="icon" className="hidden sm:flex" asChild>
-                <Link href="/faq"><HelpCircle className="h-5 w-5" /></Link>
-              </Button>
-
-              {/* User Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center gap-2">
@@ -189,7 +164,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <AvatarImage src={profile?.avatar_url || ""} />
                       <AvatarFallback>{initials}</AvatarFallback>
                     </Avatar>
-                    <span className="hidden sm:inline font-medium">{displayName.split(" ")[0]}</span>
                     <ChevronDown className="h-4 w-4 text-muted-foreground" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -202,14 +176,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href={`/sellers/${profile?.username || "me"}`}>
-                      <User className="h-4 w-4 mr-2" />View Profile
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/settings">
-                      <Settings className="h-4 w-4 mr-2" />Settings
-                    </Link>
+                    <Link href="/dashboard/settings"><Settings className="h-4 w-4 mr-2" />Settings</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem className="text-red-500 cursor-pointer" onClick={handleLogout}>
@@ -220,7 +187,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
         </header>
-
         <main className="p-4 md:p-6 lg:p-8">{children}</main>
       </div>
     </div>
