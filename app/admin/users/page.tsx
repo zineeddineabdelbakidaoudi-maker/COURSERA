@@ -54,6 +54,18 @@ export default function AdminUsersPage() {
     }
   }
 
+  const togglePublisherStatus = async (userId: string, currentStatus: string) => {
+    const newStatus = currentStatus === "enabled" ? "disabled" : "enabled"
+    const { error } = await supabase
+      .from("Profile")
+      .update({ publisher_status: newStatus })
+      .eq("id", userId)
+    
+    if (!error) {
+      setUsers(users.map(u => u.id === userId ? { ...u, publisher_status: newStatus } : u))
+    }
+  }
+
   const filtered = users.filter(u =>
     (u.full_name || "").toLowerCase().includes(search.toLowerCase()) ||
     (u.email || "").toLowerCase().includes(search.toLowerCase())
@@ -142,10 +154,18 @@ export default function AdminUsersPage() {
                         </div>
                       </td>
                       <td className="p-4">
-                        <Badge variant="outline" className={`gap-1.5 ${role.class}`}>
-                          <RoleIcon className="w-3 h-3" />
-                          {roleName}
-                        </Badge>
+                        <div className="flex flex-col gap-1.5 items-start">
+                          <Badge variant="outline" className={`gap-1.5 ${role.class}`}>
+                            <RoleIcon className="w-3 h-3" />
+                            {roleName}
+                          </Badge>
+                          {user.publisher_status === "enabled" && (
+                            <Badge variant="outline" className="gap-1.5 bg-purple-500/10 text-purple-600 border-purple-200">
+                              <BookOpen className="w-3 h-3" />
+                              Publisher
+                            </Badge>
+                          )}
+                        </div>
                       </td>
                       <td className="p-4 text-muted-foreground hidden sm:table-cell">{dateJoined}</td>
                       <td className="p-4 hidden md:table-cell">
@@ -165,8 +185,9 @@ export default function AdminUsersPage() {
                             <DropdownMenuItem className="cursor-pointer" onClick={() => changeUserRole(user.id, "admin")}>
                               <Shield className="w-4 h-4 mr-2" />Make Admin
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer" onClick={() => changeUserRole(user.id, "publisher")}>
-                              <BookOpen className="w-4 h-4 mr-2" />Make Publisher
+                            <DropdownMenuItem className="cursor-pointer" onClick={() => togglePublisherStatus(user.id, user.publisher_status)}>
+                              <BookOpen className="w-4 h-4 mr-2" />
+                              {user.publisher_status === "enabled" ? "Revoke Publisher" : "Enable Publisher"}
                             </DropdownMenuItem>
                             <DropdownMenuItem className="cursor-pointer" onClick={() => changeUserRole(user.id, "seller")}>
                               <Briefcase className="w-4 h-4 mr-2" />Make Seller

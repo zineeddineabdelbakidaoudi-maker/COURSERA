@@ -39,11 +39,12 @@ export async function updateSession(request: NextRequest) {
   if (user) {
     const { data: profile } = await supabase
       .from('Profile')
-      .select('role')
+      .select('role, publisher_status')
       .eq('id', user.id)
       .single()
 
     const role = profile?.role
+    const publisherStatus = profile?.publisher_status
 
     // Admin routes: only admins
     if (pathname.startsWith('/admin') && role !== 'admin') {
@@ -51,14 +52,14 @@ export async function updateSession(request: NextRequest) {
     }
 
     // Publisher routes: only publishers and admins
-    if (pathname.startsWith('/publisher') && role !== 'publisher' && role !== 'admin') {
+    if (pathname.startsWith('/publisher') && role !== 'admin' && publisherStatus !== 'enabled') {
       return NextResponse.redirect(new URL('/dashboard/buyer', request.url))
     }
 
     // Seller dashboard: only sellers and admins
     if (pathname === '/dashboard' && role !== 'seller' && role !== 'admin') {
       if (role === 'buyer') return NextResponse.redirect(new URL('/dashboard/buyer', request.url))
-      if (role === 'publisher') return NextResponse.redirect(new URL('/publisher', request.url))
+      if (publisherStatus === 'enabled') return NextResponse.redirect(new URL('/publisher', request.url))
     }
 
     // Buyer dashboard: only buyers and admins

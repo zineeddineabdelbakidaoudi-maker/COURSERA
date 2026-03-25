@@ -34,6 +34,7 @@ import {
   HelpCircle,
   Plus,
   Package,
+  BookOpen,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
@@ -65,7 +66,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         setUser(user)
         const { data: profile } = await supabase
           .from("Profile")
-          .select("full_name, avatar_url, role, seller_level, username")
+          .select("full_name, avatar_url, role, seller_level, username, publisher_status")
           .eq("id", user.id)
           .single()
         setProfile(profile)
@@ -206,6 +207,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <User className="h-4 w-4 mr-2" />View Profile
                     </Link>
                   </DropdownMenuItem>
+                  {profile?.publisher_status === "enabled" && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/publisher">
+                        <BookOpen className="h-4 w-4 mr-2 text-purple-600" />
+                        <span className="text-purple-600 font-medium">Switch to Publisher</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem asChild>
                     <Link href="/dashboard/settings">
                       <Settings className="h-4 w-4 mr-2" />Settings

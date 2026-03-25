@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Badge } from "@/components/ui/badge"
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -27,6 +28,7 @@ import {
   LogOut,
   User,
   Store,
+  BookOpen,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
@@ -54,7 +56,7 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
         setUser(user)
         const { data: profile } = await supabase
           .from("Profile")
-          .select("full_name, avatar_url, role, username")
+          .select("full_name, avatar_url, role, username, publisher_status")
           .eq("id", user.id)
           .single()
         setProfile(profile)
@@ -134,7 +136,14 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
               </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm truncate">{displayName}</p>
-                <p className="text-xs text-muted-foreground">Buyer Account</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <p className="text-xs text-muted-foreground">Buyer Account</p>
+                  {profile?.publisher_status === "enabled" && (
+                    <Badge variant="outline" className="text-[10px] h-4 px-1 py-0 bg-purple-500/10 text-purple-600 border-purple-200">
+                      Publisher
+                    </Badge>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -175,6 +184,14 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  {profile?.publisher_status === "enabled" && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/publisher">
+                        <BookOpen className="h-4 w-4 mr-2 text-purple-600" />
+                        <span className="text-purple-600 font-medium">Switch to Publisher</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem asChild>
                     <Link href="/dashboard/buyer/settings"><Settings className="h-4 w-4 mr-2" />Settings</Link>
                   </DropdownMenuItem>
