@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { createClient } from "@/lib/supabase/client"
+import { togglePublisherAction, changeUserRoleAction } from "@/app/admin/actions"
 
 const roleConfig: Record<string, { class: string; icon: any }> = {
   admin: { class: "bg-red-500/10 text-red-600 border-red-200", icon: Shield },
@@ -44,26 +45,20 @@ export default function AdminUsersPage() {
   }
 
   const changeUserRole = async (userId: string, newRole: string) => {
-    const { error } = await supabase
-      .from("Profile")
-      .update({ role: newRole })
-      .eq("id", userId)
-    
-    if (!error) {
-      setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u))
+    const result = await changeUserRoleAction(userId, newRole)
+    if (result.error) {
+      alert("Role change failed: " + result.error)
+    } else {
+      await fetchUsers()
     }
   }
 
   const togglePublisherStatus = async (userId: string, currentStatus: string) => {
-    const newStatus = currentStatus === "enabled" ? "disabled" : "enabled"
-    const { error } = await supabase
-      .from("Profile")
-      .update({ publisher_status: newStatus })
-      .eq("id", userId)
-    if (error) {
-      alert("Error updating publisher status: " + error.message)
+    const result = await togglePublisherAction(userId, currentStatus)
+    if (result.error) {
+      alert("Publisher toggle failed: " + result.error)
     } else {
-      // Re-fetch from DB to guarantee UI matches real state
+      // Re-fetch from DB to guarantee UI matches real DB state
       await fetchUsers()
     }
   }

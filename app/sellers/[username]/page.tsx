@@ -1,438 +1,231 @@
 "use client"
 
-import * as React from "react"
+import { useState, useEffect } from "react"
+import { useParams } from "next/navigation"
 import Link from "next/link"
-import { 
-  ChevronRight,
-  Star,
-  Clock,
-  Package,
-  CheckCircle2,
-  MessageCircle,
-  MapPin,
-  Calendar,
-  Globe,
-  Zap,
-  ThumbsUp,
+import { createClient } from "@/lib/supabase/client"
+import {
+  Star, MapPin, Clock, Award, Briefcase, MessageSquare, Heart, Share2,
+  CheckCircle2, Shield, Globe, Twitter, Linkedin, ArrowLeft, Package
 } from "lucide-react"
-import { Navbar } from "@/components/layout/navbar"
-import { Footer } from "@/components/layout/footer"
-import { ServiceCard } from "@/components/marketplace/service-card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Progress } from "@/components/ui/progress"
-import { cn } from "@/lib/utils"
-import { featuredServices } from "@/lib/data"
+import { Loader2 } from "lucide-react"
 
-// ━━━ MOCK SELLER PROFILE DATA ━━━
-const sellerProfile = {
-  username: "yacine-m",
-  name: "Yacine M.",
-  tagline: "Professional Graphic Designer & Brand Strategist",
-  level: "pro" as const,
-  verified: true,
-  avatar: "Y",
-  coverGradient: "from-primary/30 via-accent/20 to-primary/10",
-  memberSince: "March 2024",
-  location: "Algiers, Algeria",
-  responseTime: "< 1 hour",
-  lastDelivery: "3 hours ago",
-  completedOrders: 234,
-  rating: 4.9,
-  reviewCount: 189,
-  bio: `Hello! I'm Yacine, a passionate graphic designer with over 5 years of experience helping businesses and startups create memorable brand identities.
+const DEMO_SERVICES = [
+  { title: "Brand Identity Design Bundle", rating: 5.0, reviews: 142, price: 15000, delivery: "5 days", level: "Elite" },
+  { title: "Logo Design x3 Concepts", rating: 4.9, reviews: 89, price: 5000, delivery: "3 days", level: "Elite" },
+  { title: "Business Card + Letterhead", rating: 4.8, reviews: 54, price: 3500, delivery: "4 days", level: "Pro" },
+]
 
-Based in Algiers, I've had the pleasure of working with clients across Algeria and internationally. My design philosophy centers on creating clean, timeless visuals that effectively communicate your brand's values.
-
-**What I specialize in:**
-- Logo Design & Brand Identity
-- Social Media Graphics
-- Marketing Materials
-- UI/UX Design
-
-I believe in clear communication, meeting deadlines, and delivering quality work that exceeds expectations. Let's bring your vision to life!`,
-  languages: ["Arabic (Native)", "French (Fluent)", "English (Professional)"],
-  skills: ["Logo Design", "Brand Identity", "Adobe Illustrator", "Adobe Photoshop", "Figma", "Social Media Design", "Print Design"],
-  tools: ["Adobe Creative Suite", "Figma", "Canva Pro", "Procreate"],
-  education: "Bachelor's in Visual Communication - University of Algiers",
-  stats: {
-    totalEarnings: "2.5M+ DZD",
-    repeatClients: "45%",
-    onTimeDelivery: "99%",
-  },
-  services: featuredServices.filter((s) => s.seller.name === "Yacine M." || s.category === "Graphic Design").slice(0, 4),
-  portfolio: [
-    { id: "1", title: "Tech Startup Logo", category: "Logo Design" },
-    { id: "2", title: "Restaurant Branding", category: "Brand Identity" },
-    { id: "3", title: "Social Media Campaign", category: "Social Media" },
-    { id: "4", title: "E-commerce Logo", category: "Logo Design" },
-    { id: "5", title: "Healthcare Brand", category: "Brand Identity" },
-    { id: "6", title: "Fashion Brand Identity", category: "Brand Identity" },
-  ],
-  reviews: [
-    {
-      id: "1",
-      buyer: { name: "Amira S.", avatar: "A" },
-      rating: 5,
-      date: "2 weeks ago",
-      service: "Professional Logo Design",
-      comment: "Yacine is incredibly talented! He understood my vision perfectly and delivered a stunning logo that exceeded my expectations. Highly recommend!",
-      helpful: 24,
-    },
-    {
-      id: "2",
-      buyer: { name: "Mohamed K.", avatar: "M" },
-      rating: 5,
-      date: "1 month ago",
-      service: "Brand Identity Package",
-      comment: "Professional, creative, and fast. This was my third order with Yacine and he never disappoints.",
-      helpful: 18,
-    },
-    {
-      id: "3",
-      buyer: { name: "Sara B.", avatar: "S" },
-      rating: 5,
-      date: "1 month ago",
-      service: "Social Media Design Pack",
-      comment: "Great communication and quality work. Only took one revision to get exactly what I wanted.",
-      helpful: 12,
-    },
-  ],
-  ratingBreakdown: { 5: 85, 4: 10, 3: 3, 2: 1, 1: 1 },
-}
-
-const levelLabels: Record<string, { label: string; className: string }> = {
-  new: { label: "New Seller", className: "bg-secondary text-secondary-foreground" },
-  rising: { label: "Rising Talent", className: "bg-primary/10 text-primary" },
-  pro: { label: "Pro Seller", className: "bg-accent/10 text-accent" },
-  elite: { label: "Elite Partner", className: "bg-warning/10 text-warning" },
-}
+const DEMO_REVIEWS = [
+  { buyer: "Ahmed K.", comment: "Exceptional work! Delivered ahead of time and exceeded every expectation.", rating: 5, date: "Mar 20, 2026" },
+  { buyer: "Sara B.", comment: "Very professional and responsive. Understood the brief perfectly.", rating: 5, date: "Mar 12, 2026" },
+  { buyer: "Nassim D.", comment: "Great quality, would definitely hire again.", rating: 4, date: "Feb 28, 2026" },
+]
 
 export default function SellerProfilePage() {
-  const levelInfo = levelLabels[sellerProfile.level]
+  const params = useParams()
+  const username = params?.username as string
+  const supabase = createClient()
+  const [profile, setProfile] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    supabase.from("Profile").select("*").eq("username", username).single().then(({ data }) => {
+      setProfile(data)
+      setLoading(false)
+    })
+  }, [username])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  // Use DB data if available, fall back to demo display
+  const displayName = profile?.full_name || username?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()) || "Seller"
+  const bio = profile?.bio || "Passionate designer & developer creating premium digital experiences for Algerian businesses."
+  const city = profile?.city || "Algiers"
+  const responseRate = profile?.response_rate || 98
+  const totalReviews = profile?.total_reviews || 285
+  const rating = profile?.rating_avg || 4.9
+  const level = profile?.seller_level || "elite"
+  const memberSince = profile?.created_at ? new Date(profile.created_at).toLocaleDateString("en", { month: "long", year: "numeric" }) : "January 2025"
+  const initials = displayName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
+
+  const levelStyles: Record<string, string> = {
+    elite: "bg-amber-500/10 text-amber-600 border-amber-200",
+    pro: "bg-blue-500/10 text-blue-600 border-blue-200",
+    rising: "bg-green-500/10 text-green-600 border-green-200",
+    new: "bg-gray-500/10 text-gray-600 border-gray-200",
+  }
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+      {/* Banner */}
+      <div className="h-48 bg-gradient-to-br from-primary/30 via-accent/20 to-primary/10 relative">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent" />
+        <div className="absolute top-4 left-4">
+          <Button variant="ghost" size="sm" asChild className="gap-2 bg-background/60 backdrop-blur-sm">
+            <Link href="/services"><ArrowLeft className="w-4 h-4" /> Back</Link>
+          </Button>
+        </div>
+      </div>
 
-      <main className="pt-20 pb-16">
-        {/* Cover & Profile Header */}
-        <div className="relative">
-          {/* Cover */}
-          <div className={cn("h-48 lg:h-64 bg-gradient-to-br", sellerProfile.coverGradient)} />
-          
-          {/* Profile Info */}
-          <div className="container mx-auto px-4 lg:px-8">
-            <div className="relative -mt-16 lg:-mt-20 mb-6">
-              <div className="flex flex-col lg:flex-row lg:items-end gap-4 lg:gap-6">
-                {/* Avatar */}
-                <div className="relative w-28 h-28 lg:w-36 lg:h-36 rounded-2xl bg-background border-4 border-background shadow-lg flex items-center justify-center bg-gradient-to-br from-primary/30 to-accent/30">
-                  <span className="text-4xl lg:text-5xl font-bold text-foreground">
-                    {sellerProfile.avatar}
-                  </span>
-                  {sellerProfile.verified && (
-                    <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-lg">
-                      <CheckCircle2 className="w-5 h-5 text-primary-foreground" />
-                    </div>
+      <div className="max-w-5xl mx-auto px-4 pb-16">
+        {/* Profile Header */}
+        <div className="relative -mt-16 mb-8">
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+            <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-end">
+              <Avatar className="h-28 w-28 border-4 border-background shadow-lg -mt-14 sm:-mt-20 shrink-0">
+                <AvatarImage src={profile?.avatar_url || ""} />
+                <AvatarFallback className="text-3xl font-bold bg-primary/10 text-primary">{initials}</AvatarFallback>
+              </Avatar>
+
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-3 mb-2">
+                  <h1 className="text-2xl font-display font-bold">{displayName}</h1>
+                  {profile?.is_verified && <CheckCircle2 className="w-5 h-5 text-blue-500" />}
+                  <Badge variant="outline" className={levelStyles[level]}>
+                    {level.charAt(0).toUpperCase() + level.slice(1)} Seller
+                  </Badge>
+                  {profile?.publisher_status === "enabled" && (
+                    <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-200">Publisher</Badge>
                   )}
                 </div>
-
-                {/* Info */}
-                <div className="flex-1">
-                  <div className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-4 mb-2">
-                    <h1 className="text-2xl lg:text-3xl font-bold">{sellerProfile.name}</h1>
-                    <Badge className={cn("w-fit", levelInfo.className)}>
-                      {levelInfo.label}
-                    </Badge>
-                  </div>
-                  <p className="text-muted-foreground mb-3">{sellerProfile.tagline}</p>
-                  
-                  {/* Stats Row */}
-                  <div className="flex flex-wrap items-center gap-4 lg:gap-6 text-sm">
-                    <div className="flex items-center gap-1">
-                      <Star className="w-4 h-4 fill-warning text-warning" />
-                      <span className="font-semibold">{sellerProfile.rating}</span>
-                      <span className="text-muted-foreground">({sellerProfile.reviewCount} reviews)</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                      <Package className="w-4 h-4" />
-                      <span>{sellerProfile.completedOrders} orders</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                      <Clock className="w-4 h-4" />
-                      <span>Responds {sellerProfile.responseTime}</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                      <Calendar className="w-4 h-4" />
-                      <span>Joined {sellerProfile.memberSince}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-3 mt-4 lg:mt-0">
-                  <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    Contact Me
-                  </Button>
+                <p className="text-muted-foreground text-sm mb-3 max-w-xl">{bio}</p>
+                <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" />{city}, Algeria</span>
+                  <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" />Member since {memberSince}</span>
+                  <span className="flex items-center gap-1.5 text-amber-500 font-semibold">
+                    <Star className="w-4 h-4 fill-current" />{Number(rating).toFixed(1)} ({totalReviews} reviews)
+                  </span>
                 </div>
               </div>
+
+              <div className="flex flex-wrap gap-2 shrink-0">
+                <Button variant="outline" size="sm" className="gap-2" onClick={() => setSaved(!saved)}>
+                  <Heart className={`w-4 h-4 ${saved ? "fill-red-500 text-red-500" : ""}`} />
+                  {saved ? "Saved" : "Save"}
+                </Button>
+                <Button size="sm" className="gap-2"><MessageSquare className="w-4 h-4" />Message</Button>
+              </div>
+            </div>
+
+            {/* Stats Bar */}
+            <div className="grid grid-cols-3 sm:grid-cols-3 gap-4 mt-6 pt-6 border-t border-border">
+              {[
+                { icon: Briefcase, label: "Services", val: DEMO_SERVICES.length },
+                { icon: Star, label: "Avg Rating", val: Number(rating).toFixed(1) },
+                { icon: Clock, label: "Response Rate", val: `${responseRate}%` },
+              ].map(s => {
+                const Icon = s.icon
+                return (
+                  <div key={s.label} className="text-center">
+                    <Icon className="w-5 h-5 mx-auto text-primary mb-1" />
+                    <p className="text-xl font-bold">{s.val}</p>
+                    <p className="text-xs text-muted-foreground">{s.label}</p>
+                  </div>
+                )
+              })}
             </div>
           </div>
         </div>
 
-        <div className="container mx-auto px-4 lg:px-8">
-          <div className="flex flex-col lg:flex-row gap-8">
-            {/* Main Content */}
-            <div className="flex-1 min-w-0">
-              <Tabs defaultValue="services" className="w-full">
-                <TabsList className="w-full justify-start h-auto p-1 mb-6 overflow-x-auto">
-                  <TabsTrigger value="services" className="px-6">Services</TabsTrigger>
-                  <TabsTrigger value="portfolio" className="px-6">Portfolio</TabsTrigger>
-                  <TabsTrigger value="reviews" className="px-6">Reviews</TabsTrigger>
-                  <TabsTrigger value="about" className="px-6">About</TabsTrigger>
-                </TabsList>
+        {/* Tabs */}
+        <Tabs defaultValue="services">
+          <TabsList className="mb-6">
+            <TabsTrigger value="services" className="gap-2"><Briefcase className="w-4 h-4" />Services</TabsTrigger>
+            <TabsTrigger value="reviews" className="gap-2"><Star className="w-4 h-4" />Reviews</TabsTrigger>
+            <TabsTrigger value="about" className="gap-2"><Shield className="w-4 h-4" />About</TabsTrigger>
+          </TabsList>
 
-                {/* Services Tab */}
-                <TabsContent value="services">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    {sellerProfile.services.map((service) => (
-                      <ServiceCard key={service.id || ""} {...service} />
-                    ))}
+          <TabsContent value="services">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {DEMO_SERVICES.map((s, i) => (
+                <Card key={i} className="border-border shadow-sm hover:shadow-md transition-shadow group">
+                  <div className="h-36 bg-gradient-to-br from-primary/10 to-accent/10 rounded-t-xl flex items-center justify-center group-hover:from-primary/20 transition-colors">
+                    <Package className="w-12 h-12 text-primary/30 group-hover:text-primary/50 transition-colors" />
                   </div>
-                </TabsContent>
-
-                {/* Portfolio Tab */}
-                <TabsContent value="portfolio">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {sellerProfile.portfolio.map((item) => (
-                      <div
-                        key={item.id}
-                        className="group relative aspect-square rounded-2xl bg-gradient-to-br from-primary/20 via-accent/10 to-primary/5 overflow-hidden cursor-pointer"
-                      >
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-                            <span className="text-2xl font-bold text-primary">
-                              {item.title.charAt(0)}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-background/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                          <h3 className="font-semibold text-sm">{item.title}</h3>
-                          <p className="text-xs text-muted-foreground">{item.category}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </TabsContent>
-
-                {/* Reviews Tab */}
-                <TabsContent value="reviews">
-                  {/* Rating Breakdown */}
-                  <div className="flex flex-col sm:flex-row gap-6 p-6 rounded-2xl bg-secondary/30 mb-6">
-                    <div className="text-center">
-                      <div className="text-4xl font-bold mb-1">{sellerProfile.rating}</div>
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Star
-                            key={star}
-                            className={cn(
-                              "w-4 h-4",
-                              star <= Math.round(sellerProfile.rating)
-                                ? "fill-warning text-warning"
-                                : "text-muted-foreground"
-                            )}
-                          />
-                        ))}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {sellerProfile.reviewCount} reviews
-                      </div>
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold text-sm mb-3 line-clamp-2 leading-tight">{s.title}</h3>
+                    <div className="flex items-center justify-between border-t border-border pt-3">
+                      <span className="text-xs text-amber-500 font-semibold flex items-center gap-1">
+                        <Star className="w-3 h-3 fill-current" />{s.rating} ({s.reviews})
+                      </span>
+                      <span className="font-bold text-sm text-primary">From {s.price.toLocaleString()} DZD</span>
                     </div>
-                    <div className="flex-1 space-y-2">
-                      {[5, 4, 3, 2, 1].map((stars) => (
-                        <div key={stars} className="flex items-center gap-3">
-                          <span className="text-sm w-12">{stars} stars</span>
-                          <Progress
-                            value={sellerProfile.ratingBreakdown[stars as keyof typeof sellerProfile.ratingBreakdown]}
-                            className="flex-1 h-2"
-                          />
-                          <span className="text-sm text-muted-foreground w-10">
-                            {sellerProfile.ratingBreakdown[stars as keyof typeof sellerProfile.ratingBreakdown]}%
-                          </span>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="reviews">
+            <div className="space-y-4">
+              {DEMO_REVIEWS.map((r, i) => (
+                <Card key={i} className="border-border shadow-sm">
+                  <CardContent className="p-5 flex items-start gap-4">
+                    <Avatar className="h-10 w-10 shrink-0">
+                      <AvatarFallback>{r.buyer.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
+                        <span className="font-semibold">{r.buyer}</span>
+                        <span className="text-xs text-muted-foreground">{r.date}</span>
+                      </div>
+                      <div className="flex items-center gap-0.5 mb-2 text-amber-400">
+                        {Array.from({ length: r.rating }).map((_, j) => <Star key={j} className="w-4 h-4 fill-current" />)}
+                      </div>
+                      <p className="text-sm text-foreground/80">{r.comment}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="about">
+            <Card className="border-border shadow-sm">
+              <CardContent className="p-6 space-y-6">
+                <div>
+                  <h3 className="font-semibold mb-2">About {displayName}</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{bio}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="text-sm font-semibold mb-3">Details</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2 text-muted-foreground"><MapPin className="w-4 h-4" />{city}, Algeria</div>
+                      <div className="flex items-center gap-2 text-muted-foreground"><Clock className="w-4 h-4" />Member since {memberSince}</div>
+                      <div className="flex items-center gap-2 text-muted-foreground"><Globe className="w-4 h-4" />Arabic · French · English</div>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold mb-3">Certifications</h4>
+                    <div className="space-y-2">
+                      {["Identity Verified", "Portfolio Approved", "Response Rate 98%"].map(c => (
+                        <div key={c} className="flex items-center gap-2 text-sm">
+                          <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                          <span>{c}</span>
                         </div>
                       ))}
                     </div>
                   </div>
-
-                  {/* Review List */}
-                  <div className="space-y-6">
-                    {sellerProfile.reviews.map((review) => (
-                      <div key={review.id} className="border-b border-border pb-6 last:border-0">
-                        <div className="flex items-start gap-3 mb-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center flex-shrink-0">
-                            <span className="font-medium">{review.buyer.avatar}</span>
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <span className="font-medium">{review.buyer.name}</span>
-                              <span className="text-sm text-muted-foreground">{review.date}</span>
-                            </div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <div className="flex items-center gap-1">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                  <Star
-                                    key={star}
-                                    className={cn(
-                                      "w-3.5 h-3.5",
-                                      star <= review.rating
-                                        ? "fill-warning text-warning"
-                                        : "text-muted-foreground"
-                                    )}
-                                  />
-                                ))}
-                              </div>
-                              <span className="text-xs text-muted-foreground">for {review.service}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <p className="text-muted-foreground mb-3">{review.comment}</p>
-                        <button className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                          <ThumbsUp className="w-4 h-4" />
-                          Helpful ({review.helpful})
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </TabsContent>
-
-                {/* About Tab */}
-                <TabsContent value="about">
-                  <div className="space-y-8">
-                    {/* Bio */}
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4">About Me</h3>
-                      <div className="text-muted-foreground whitespace-pre-line">
-                        {sellerProfile.bio}
-                      </div>
-                    </div>
-
-                    {/* Skills */}
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4">Skills</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {sellerProfile.skills.map((skill) => (
-                          <Badge key={skill} variant="secondary">
-                            {skill}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Tools */}
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4">Tools I Use</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {sellerProfile.tools.map((tool) => (
-                          <Badge key={tool} variant="outline">
-                            {tool}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Languages */}
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4">Languages</h3>
-                      <div className="space-y-2">
-                        {sellerProfile.languages.map((lang) => (
-                          <div key={lang} className="flex items-center gap-2">
-                            <Globe className="w-4 h-4 text-muted-foreground" />
-                            <span>{lang}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Education */}
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4">Education</h3>
-                      <p className="text-muted-foreground">{sellerProfile.education}</p>
-                    </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </div>
-
-            {/* Sidebar */}
-            <div className="lg:w-80">
-              <div className="sticky top-24 space-y-6">
-                {/* Hire Card */}
-                <div className="p-6 rounded-2xl border border-border bg-card">
-                  <h3 className="font-semibold mb-4">Hire {sellerProfile.name.split(" ")[0]}</h3>
-                  
-                  {/* Top Service */}
-                  {sellerProfile.services[0] && (
-                    <div className="p-4 rounded-xl bg-secondary/50 mb-4">
-                      <p className="text-xs text-muted-foreground mb-1">Featured Service</p>
-                      <p className="font-medium text-sm mb-1">{sellerProfile.services[0].title}</p>
-                      <p className="text-primary font-mono font-semibold">
-                        From {sellerProfile.services[0].price.toLocaleString()} DZD
-                      </p>
-                    </div>
-                  )}
-
-                  <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
-                    View All Services
-                  </Button>
                 </div>
-
-                {/* Stats Card */}
-                <div className="p-6 rounded-2xl border border-border bg-card">
-                  <h3 className="font-semibold mb-4">Seller Stats</h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Location</span>
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-4 h-4" />
-                        {sellerProfile.location}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Response time</span>
-                      <span className="flex items-center gap-1 text-success">
-                        <Zap className="w-4 h-4" />
-                        {sellerProfile.responseTime}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Last delivery</span>
-                      <span>{sellerProfile.lastDelivery}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">On-time delivery</span>
-                      <span className="text-success">{sellerProfile.stats.onTimeDelivery}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Repeat clients</span>
-                      <span>{sellerProfile.stats.repeatClients}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Contact Button */}
-                <Button variant="outline" className="w-full gap-2">
-                  <MessageCircle className="w-4 h-4" />
-                  Contact Seller
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
-
-      <Footer />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   )
 }
