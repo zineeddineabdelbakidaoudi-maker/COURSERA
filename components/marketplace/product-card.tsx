@@ -52,7 +52,7 @@ export function ProductCard({
   const router = useRouter()
   const addItem = useCartStore((state) => state.addItem)
   const typeInfo = typeConfig[type]
-  const TypeIcon = typeInfo.icon
+  const TypeIcon = typeInfo.icon as any
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault()
