@@ -56,7 +56,7 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
         setUser(user)
         const { data: profile } = await supabase
           .from("Profile")
-          .select("full_name, avatar_url, role, username, publisher_status")
+          .select("full_name, avatar_url, role, username, is_publisher")
           .eq("id", user.id)
           .single()
         setProfile(profile)
@@ -113,7 +113,7 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
                   </li>
                 )
               })}
-              {profile?.publisher_status === "enabled" && (
+              {profile?.is_publisher && (
                 <li className="pt-2 mt-2 border-t border-border">
                   <Link
                     href="/publisher"
@@ -150,7 +150,7 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
                 <p className="font-medium text-sm truncate">{displayName}</p>
                 <div className="flex items-center gap-2 mt-0.5">
                   <p className="text-xs text-muted-foreground">Buyer Account</p>
-                  {profile?.publisher_status === "enabled" && (
+                  {profile?.is_publisher && (
                     <Badge variant="outline" className="text-[10px] h-4 px-1 py-0 bg-purple-500/10 text-purple-600 border-purple-200">
                       Publisher
                     </Badge>

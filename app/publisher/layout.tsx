@@ -30,7 +30,7 @@ export default function PublisherLayout({ children }: { children: React.ReactNod
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
         setUser(user)
-        supabase.from("Profile").select("full_name, avatar_url, role, publisher_status").eq("id", user.id).single().then(({ data }) => setProfile(data))
+        supabase.from("Profile").select("full_name, avatar_url, role, is_publisher").eq("id", user.id).single().then(({ data }) => setProfile(data))
       }
     })
   }, [])

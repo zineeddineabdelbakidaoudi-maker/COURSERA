@@ -54,15 +54,16 @@ export default function AdminUsersPage() {
     }
   }
 
-  const togglePublisherStatus = async (userId: string, currentStatus: string) => {
-    const newStatus = currentStatus === "enabled" ? "disabled" : "enabled"
+  const togglePublisherStatus = async (userId: string, currentValue: boolean) => {
     const { error } = await supabase
       .from("Profile")
-      .update({ publisher_status: newStatus })
+      .update({ is_publisher: !currentValue })
       .eq("id", userId)
     
     if (!error) {
-      setUsers(users.map(u => u.id === userId ? { ...u, publisher_status: newStatus } : u))
+      setUsers(users.map(u => u.id === userId ? { ...u, is_publisher: !currentValue } : u))
+    } else {
+      console.error("Toggle publisher error:", error)
     }
   }
 
@@ -87,14 +88,14 @@ export default function AdminUsersPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {["buyer", "seller", "publisher", "admin"].map(role => {
+        {["buyer", "seller", "admin"].map(role => {
           const count = users.filter(u => u.role === role).length
           const cfg = roleConfig[role]
-          const Icon = cfg.icon
+          const Icon = cfg?.icon
           return (
             <Card key={role} className="border-border shadow-sm">
               <CardContent className="p-4 flex items-center gap-3">
-                <div className={`p-2 rounded-lg border ${cfg.class}`}><Icon className="w-4 h-4" /></div>
+                <div className={`p-2 rounded-lg border ${cfg?.class}`}>{Icon && <Icon className="w-4 h-4" />}</div>
                 <div>
                   <p className="text-xs text-muted-foreground capitalize">{role}s</p>
                   <p className="text-xl font-bold">{count}</p>
@@ -159,7 +160,7 @@ export default function AdminUsersPage() {
                             <RoleIcon className="w-3 h-3" />
                             {roleName}
                           </Badge>
-                          {user.publisher_status === "enabled" && (
+                          {user.is_publisher && (
                             <Badge variant="outline" className="gap-1.5 bg-purple-500/10 text-purple-600 border-purple-200">
                               <BookOpen className="w-3 h-3" />
                               Publisher
@@ -185,9 +186,9 @@ export default function AdminUsersPage() {
                             <DropdownMenuItem className="cursor-pointer" onClick={() => changeUserRole(user.id, "admin")}>
                               <Shield className="w-4 h-4 mr-2" />Make Admin
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer" onClick={() => togglePublisherStatus(user.id, user.publisher_status)}>
+                            <DropdownMenuItem className="cursor-pointer" onClick={() => togglePublisherStatus(user.id, !!user.is_publisher)}>
                               <BookOpen className="w-4 h-4 mr-2" />
-                              {user.publisher_status === "enabled" ? "Revoke Publisher" : "Enable Publisher"}
+                              {user.is_publisher ? "Revoke Publisher" : "Enable Publisher"}
                             </DropdownMenuItem>
                             <DropdownMenuItem className="cursor-pointer" onClick={() => changeUserRole(user.id, "seller")}>
                               <Briefcase className="w-4 h-4 mr-2" />Make Seller
