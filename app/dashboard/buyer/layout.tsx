@@ -36,7 +36,7 @@ const sidebarItems = [
   { title: "Saved Items", href: "/dashboard/buyer/saved", icon: Heart },
   { title: "Messages", href: "/dashboard/buyer/messages", icon: MessageSquare },
   { title: "My Reviews", href: "/dashboard/buyer/reviews", icon: Star },
-  { title: "Settings", href: "/dashboard/settings", icon: Settings },
+  { title: "Settings", href: "/dashboard/buyer/settings", icon: Settings },
 ]
 
 export default function BuyerLayout({ children }: { children: React.ReactNode }) {
@@ -176,7 +176,7 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/dashboard/settings"><Settings className="h-4 w-4 mr-2" />Settings</Link>
+                    <Link href="/dashboard/buyer/settings"><Settings className="h-4 w-4 mr-2" />Settings</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem className="text-red-500 cursor-pointer" onClick={handleLogout}>

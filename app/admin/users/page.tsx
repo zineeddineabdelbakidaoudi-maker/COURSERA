@@ -1,18 +1,19 @@
 "use client"
 
-import React, { useState } from "react"
-import { Users, Search, Filter, UserCog, Shield, Briefcase, Eye, BookOpen } from "lucide-react"
+import React, { useState, useEffect } from "react"
+import { Users, Search, Filter, UserCog, Shield, Briefcase, Eye, BookOpen, Loader2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { createClient } from "@/lib/supabase/client"
 
 const roleConfig: Record<string, { class: string; icon: any }> = {
   admin: { class: "bg-red-500/10 text-red-600 border-red-200", icon: Shield },
@@ -21,20 +22,46 @@ const roleConfig: Record<string, { class: string; icon: any }> = {
   publisher: { class: "bg-purple-500/10 text-purple-600 border-purple-200", icon: BookOpen },
 }
 
-const users = [
-  { id: "1", name: "Yacine Medjber", email: "yacine@gmail.com", role: "seller", joined: "Jan 12, 2026", orders: 34, status: "active" },
-  { id: "2", name: "Karim Belkacem", email: "karim@gmail.com", role: "buyer", joined: "Feb 3, 2026", orders: 8, status: "active" },
-  { id: "3", name: "Nassima Bensalem", email: "nassima@gmail.com", role: "publisher", joined: "Nov 20, 2025", orders: 0, status: "active" },
-  { id: "4", name: "Amine Khaldi", email: "amine@gmail.com", role: "seller", joined: "Mar 1, 2026", orders: 12, status: "suspended" },
-  { id: "5", name: "Sara Mokrane", email: "sara@gmail.com", role: "buyer", joined: "Mar 15, 2026", orders: 2, status: "active" },
-]
-
 export default function AdminUsersPage() {
+  const supabase = createClient()
+  const [users, setUsers] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
+
+  useEffect(() => {
+    fetchUsers()
+  }, [])
+
+  const fetchUsers = async () => {
+    setLoading(true)
+    const { data, error } = await supabase
+      .from("Profile")
+      .select("*")
+      .order("created_at", { ascending: false })
+    
+    if (data) setUsers(data)
+    setLoading(false)
+  }
+
+  const changeUserRole = async (userId: string, newRole: string) => {
+    const { error } = await supabase
+      .from("Profile")
+      .update({ role: newRole })
+      .eq("id", userId)
+    
+    if (!error) {
+      setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u))
+    }
+  }
+
   const filtered = users.filter(u =>
-    u.name.toLowerCase().includes(search.toLowerCase()) ||
-    u.email.toLowerCase().includes(search.toLowerCase())
+    (u.full_name || "").toLowerCase().includes(search.toLowerCase()) ||
+    (u.email || "").toLowerCase().includes(search.toLowerCase())
   )
+
+  if (loading) {
+    return <div className="flex h-64 items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+  }
 
   return (
     <div className="space-y-8 animate-slide-up">
@@ -70,11 +97,8 @@ export default function AdminUsersPage() {
       <div className="flex gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input className="pl-9" placeholder="Search users..." value={search} onChange={e => setSearch(e.target.value)} />
+          <Input className="pl-9" placeholder="Search users by name or email..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <Button variant="outline" className="gap-2">
-          <Filter className="w-4 h-4" />Filter
-        </Button>
       </div>
 
       {/* Table */}
@@ -92,18 +116,27 @@ export default function AdminUsersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {filtered.map(user => {
-                  const role = roleConfig[user.role]
+                {filtered.length === 0 ? (
+                  <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No users found.</td></tr>
+                ) : filtered.map(user => {
+                  const roleName = user.role || "buyer"
+                  const role = roleConfig[roleName] || roleConfig.buyer
                   const RoleIcon = role.icon
+                  const dateJoined = new Date(user.created_at).toLocaleDateString()
+                  // Compute status based on seller/publisher flags or just default active
+                  let status = "active"
+                  if (user.seller_status === 'suspended') status = 'suspended'
+                  
                   return (
                     <tr key={user.id} className="hover:bg-muted/30 transition-colors">
                       <td className="p-4">
                         <div className="flex items-center gap-3">
                           <Avatar className="h-9 w-9">
-                            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                            <AvatarImage src={user.avatar_url || ""} />
+                            <AvatarFallback>{(user.full_name || user.email || "U").charAt(0).toUpperCase()}</AvatarFallback>
                           </Avatar>
                           <div>
-                            <p className="font-medium">{user.name}</p>
+                            <p className="font-medium">{user.full_name || "Unknown"}</p>
                             <p className="text-xs text-muted-foreground">{user.email}</p>
                           </div>
                         </div>
@@ -111,13 +144,13 @@ export default function AdminUsersPage() {
                       <td className="p-4">
                         <Badge variant="outline" className={`gap-1.5 ${role.class}`}>
                           <RoleIcon className="w-3 h-3" />
-                          {user.role}
+                          {roleName}
                         </Badge>
                       </td>
-                      <td className="p-4 text-muted-foreground hidden sm:table-cell">{user.joined}</td>
+                      <td className="p-4 text-muted-foreground hidden sm:table-cell">{dateJoined}</td>
                       <td className="p-4 hidden md:table-cell">
-                        <Badge variant="outline" className={user.status === "active" ? "text-green-600 border-green-200 bg-green-500/10" : "text-red-500 border-red-200 bg-red-500/10"}>
-                          {user.status}
+                        <Badge variant="outline" className={status === "active" ? "text-green-600 border-green-200 bg-green-500/10" : "text-red-500 border-red-200 bg-red-500/10"}>
+                          {status}
                         </Badge>
                       </td>
                       <td className="p-4 text-right">
@@ -129,19 +162,16 @@ export default function AdminUsersPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <Eye className="w-4 h-4 mr-2" />View Profile
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem className="cursor-pointer" onClick={() => changeUserRole(user.id, "admin")}>
                               <Shield className="w-4 h-4 mr-2" />Make Admin
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem className="cursor-pointer" onClick={() => changeUserRole(user.id, "publisher")}>
                               <BookOpen className="w-4 h-4 mr-2" />Make Publisher
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem className="cursor-pointer" onClick={() => changeUserRole(user.id, "seller")}>
                               <Briefcase className="w-4 h-4 mr-2" />Make Seller
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem className="cursor-pointer" onClick={() => changeUserRole(user.id, "buyer")}>
                               <Users className="w-4 h-4 mr-2" />Make Buyer
                             </DropdownMenuItem>
                           </DropdownMenuContent>
