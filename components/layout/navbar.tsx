@@ -5,6 +5,8 @@ import Link from "next/link"
 import { Menu, ChevronRight, Zap, Globe, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,12 +15,21 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { GlobalSearch } from "@/components/ui/global-search"
+import { createClient } from "@/lib/supabase/client"
+import { useRouter } from "next/navigation"
+import { 
+  User as UserIcon, 
+  LogOut, 
+  LayoutDashboard, 
+  Settings, 
+  ShoppingBag, 
+  Heart 
+} from "lucide-react"
 
 const navLinks = [
   { href: "/services", label: "Explore Services" },
   { href: "/store", label: "Browse Products" },
   { href: "/how-it-works", label: "How It Works" },
-  { href: "/pricing", label: "Pricing" },
 ]
 
 const languages = [
@@ -28,18 +39,66 @@ const languages = [
 ]
 
 export function Navbar() {
+  const supabase = createClient()
+  const router = useRouter()
   const [scrolled, setScrolled] = React.useState(false)
   const [currentLang, setCurrentLang] = React.useState("en")
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
   const [searchOpen, setSearchOpen] = React.useState(false)
+  const [user, setUser] = React.useState<any>(null)
+  const [profile, setProfile] = React.useState<any>(null)
+  const [loading, setLoading] = React.useState(true)
 
   React.useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20)
     }
     window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
+
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+      if (user) {
+        const { data: profile } = await supabase
+          .from('Profile')
+          .select('*')
+          .eq('id', user.id)
+          .single()
+        setProfile(profile)
+      }
+      setLoading(false)
+    }
+
+    fetchUser()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+      if (!session) {
+        setProfile(null)
+      } else {
+        fetchUser()
+      }
+    })
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll)
+      subscription.unsubscribe()
+    }
   }, [])
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push("/")
+    router.refresh()
+  }
+
+  const getDashboardLink = () => {
+    if (!profile) return "/dashboard"
+    if (profile.role === 'admin') return "/admin"
+    if (profile.role === 'publisher') return "/publisher"
+    if (profile.role === 'buyer') return "/dashboard/buyer"
+    return "/dashboard"
+  }
 
   return (
     <header
@@ -107,18 +166,80 @@ export function Navbar() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Link href="/login">
-            <Button variant="ghost" size="sm">
-              Sign In
-            </Button>
-          </Link>
-
-          <Link href="/register">
-            <Button size="sm" className="rounded-full gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground">
-              Get Started
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </Link>
+          {!loading && user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full border border-border p-0 overflow-hidden">
+                  <Avatar className="h-full w-full">
+                    <AvatarImage src={profile?.avatar_url || ""} />
+                    <AvatarFallback>
+                      <UserIcon className="h-5 w-5 text-muted-foreground" />
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <div className="flex items-center justify-start gap-2 p-2">
+                  <div className="flex flex-col space-y-1 leading-none">
+                    <p className="font-medium text-sm">{profile?.full_name || user.email}</p>
+                    <p className="text-xs text-muted-foreground truncate w-[180px]">{user.email}</p>
+                  </div>
+                </div>
+                <hr className="my-1 border-border" />
+                <DropdownMenuItem asChild>
+                  <Link href={getDashboardLink()} className="cursor-pointer gap-2">
+                    <LayoutDashboard className="h-4 w-4" />
+                    Dashboard
+                    {profile?.role && <Badge variant="outline" className="ml-auto text-[10px] px-1.5 py-0 uppercase">{profile.role}</Badge>}
+                  </Link>
+                </DropdownMenuItem>
+                {profile?.role === 'buyer' && (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard/orders" className="cursor-pointer gap-2">
+                        <ShoppingBag className="h-4 w-4" />
+                        My Orders
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard/saved" className="cursor-pointer gap-2">
+                        <Heart className="h-4 w-4" />
+                        Saved Items
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/settings" className="cursor-pointer gap-2">
+                    <Settings className="h-4 w-4" />
+                    Settings
+                  </Link>
+                </DropdownMenuItem>
+                <hr className="my-1 border-border" />
+                <DropdownMenuItem 
+                  className="cursor-pointer gap-2 text-destructive focus:text-destructive"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <>
+              <Link href="/login">
+                <Button variant="ghost" size="sm">
+                  Sign In
+                </Button>
+              </Link>
+              <Link href="/register">
+                <Button size="sm" className="rounded-full gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground">
+                  Get Started
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu */}

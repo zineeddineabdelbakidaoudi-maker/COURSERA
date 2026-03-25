@@ -39,6 +39,36 @@ export default function LoginPage() {
       return
     }
 
+    // Fetch user profile to determine role-based redirect
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (user) {
+      const { data: profile } = await supabase
+        .from('Profile')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      if (profile) {
+        if (profile.role === 'admin') {
+          router.push("/admin")
+          return
+        }
+        if (profile.role === 'publisher') {
+          router.push("/publisher")
+          return
+        }
+        if (profile.role === 'seller') {
+          router.push("/dashboard")
+          return
+        }
+        if (profile.role === 'buyer') {
+          router.push("/dashboard/buyer")
+          return
+        }
+      }
+    }
+
     router.push("/dashboard")
   }
 

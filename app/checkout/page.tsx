@@ -5,8 +5,9 @@ import Link from "next/link"
 import { Navbar } from "@/components/layout/navbar"
 import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
-import { CreditCard, CheckCircle2, ShieldCheck, FileText } from "lucide-react"
+import { CreditCard, CheckCircle2, ShieldCheck, FileText, DollarSign } from "lucide-react"
 import { useCartStore } from "@/store/useCartStore"
+import { Badge } from "@/components/ui/badge"
 
 export default function CheckoutPage() {
   const { items, subtotal } = useCartStore()
@@ -34,31 +35,55 @@ export default function CheckoutPage() {
             <div className="space-y-6">
               <h3 className="text-xl font-semibold mb-6">Payment Method</h3>
               
-              {/* CIB / Edahabia Card Selection */}
-              <label className="flex items-center justify-between p-4 rounded-xl border-2 border-primary bg-primary/5 cursor-pointer transition-colors relative">
+              {/* Cash on Delivery (Active) */}
+              <label className="flex items-center justify-between p-5 rounded-2xl border-2 border-primary bg-primary/5 cursor-pointer shadow-premium transition-all">
                 <div className="flex items-center gap-4">
-                  <div className="w-5 h-5 rounded-full border border-primary flex items-center justify-center">
-                    <div className="w-2.5 h-2.5 bg-primary rounded-full" />
+                  <div className="w-6 h-6 rounded-full border-2 border-primary flex items-center justify-center">
+                    <div className="w-3 h-3 bg-primary rounded-full" />
                   </div>
                   <div>
-                    <p className="font-semibold text-foreground">CIB / Edahabia</p>
-                    <p className="text-sm text-muted-foreground">Local Algerian Cards</p>
+                    <h4 className="font-bold text-foreground">Cash on Delivery (COD)</h4>
+                    <p className="text-sm text-muted-foreground">Pay when you receive your service</p>
                   </div>
                 </div>
-                <CreditCard className="w-6 h-6 text-primary" />
+                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
+                  <DollarSign className="w-5 h-5 text-primary" />
+                </div>
               </label>
 
-              {/* Stripe / International Card Selection */}
-              <label className="flex items-center justify-between p-4 rounded-xl border border-border bg-card hover:bg-secondary/50 cursor-pointer transition-colors opacity-60">
-                <div className="flex items-center gap-4">
-                  <div className="w-5 h-5 rounded-full border border-border flex items-center justify-center" />
-                  <div>
-                    <p className="font-semibold text-foreground">Credit Card (Stripe)</p>
-                    <p className="text-sm text-muted-foreground">Visa, Mastercard (Coming Soon)</p>
+              {/* CIB / Edahabia Card Selection (Coming Soon) */}
+              <div className="relative group overflow-hidden rounded-2xl border border-border grayscale-[0.5] opacity-60">
+                <div className="flex items-center justify-between p-5 bg-card/50 blur-[1px]">
+                  <div className="flex items-center gap-4">
+                    <div className="w-6 h-6 rounded-full border-2 border-muted flex items-center justify-center" />
+                    <div>
+                      <p className="font-semibold text-foreground">CIB / Edahabia</p>
+                      <p className="text-sm text-muted-foreground">Local Algerian Cards</p>
+                    </div>
                   </div>
+                  <CreditCard className="w-6 h-6 text-muted-foreground" />
                 </div>
-                <CreditCard className="w-6 h-6 text-muted-foreground" />
-              </label>
+                <div className="absolute inset-0 flex items-center justify-center bg-background/20 backdrop-blur-[2px]">
+                  <Badge variant="secondary" className="px-3 py-1 bg-background/80 text-foreground border-border shadow-sm font-medium">Coming Soon</Badge>
+                </div>
+              </div>
+
+              {/* Stripe / International Card Selection (Coming Soon) */}
+              <div className="relative group overflow-hidden rounded-2xl border border-border grayscale-[0.5] opacity-60">
+                <div className="flex items-center justify-between p-5 bg-card/50 blur-[1px]">
+                  <div className="flex items-center gap-4">
+                    <div className="w-6 h-6 rounded-full border-2 border-muted flex items-center justify-center" />
+                    <div>
+                      <p className="font-semibold text-foreground">Credit Card (Stripe)</p>
+                      <p className="text-sm text-muted-foreground">Visa, Mastercard, etc.</p>
+                    </div>
+                  </div>
+                  <CreditCard className="w-6 h-6 text-muted-foreground" />
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center bg-background/20 backdrop-blur-[2px]">
+                  <Badge variant="secondary" className="px-3 py-1 bg-background/80 text-foreground border-border shadow-sm font-medium">Coming Soon</Badge>
+                </div>
+              </div>
 
               {/* Checkout Form Simulation */}
               <div className="bg-card p-6 rounded-2xl border border-border mt-8">

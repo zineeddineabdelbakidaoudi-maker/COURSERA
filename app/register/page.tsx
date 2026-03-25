@@ -52,6 +52,8 @@ export default function RegisterPage() {
     setIsLoading(false)
     if (accountType === "seller") {
       router.push("/become-seller")
+    } else if (accountType === "buyer") {
+      router.push("/dashboard/buyer")
     } else {
       router.push("/dashboard")
     }
