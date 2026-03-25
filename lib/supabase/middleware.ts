@@ -39,12 +39,12 @@ export async function updateSession(request: NextRequest) {
   if (user) {
     const { data: profile } = await supabase
       .from('Profile')
-      .select('role, is_publisher')
+      .select('role, publisher_status')
       .eq('id', user.id)
       .single()
 
     const role = profile?.role
-    const isPublisher = !!profile?.is_publisher
+    const isPublisher = profile?.publisher_status === 'enabled'
 
     // Admin routes: only admins
     if (pathname.startsWith('/admin') && role !== 'admin') {

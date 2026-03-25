@@ -54,16 +54,17 @@ export default function AdminUsersPage() {
     }
   }
 
-  const togglePublisherStatus = async (userId: string, currentValue: boolean) => {
+  const togglePublisherStatus = async (userId: string, currentStatus: string) => {
+    const newStatus = currentStatus === "enabled" ? "disabled" : "enabled"
     const { error } = await supabase
       .from("Profile")
-      .update({ is_publisher: !currentValue })
+      .update({ publisher_status: newStatus })
       .eq("id", userId)
-    
-    if (!error) {
-      setUsers(users.map(u => u.id === userId ? { ...u, is_publisher: !currentValue } : u))
+    if (error) {
+      alert("Error updating publisher status: " + error.message)
     } else {
-      console.error("Toggle publisher error:", error)
+      // Re-fetch from DB to guarantee UI matches real state
+      await fetchUsers()
     }
   }
 
@@ -160,7 +161,7 @@ export default function AdminUsersPage() {
                             <RoleIcon className="w-3 h-3" />
                             {roleName}
                           </Badge>
-                          {user.is_publisher && (
+                          {user.publisher_status === "enabled" && (
                             <Badge variant="outline" className="gap-1.5 bg-purple-500/10 text-purple-600 border-purple-200">
                               <BookOpen className="w-3 h-3" />
                               Publisher
@@ -186,9 +187,9 @@ export default function AdminUsersPage() {
                             <DropdownMenuItem className="cursor-pointer" onClick={() => changeUserRole(user.id, "admin")}>
                               <Shield className="w-4 h-4 mr-2" />Make Admin
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer" onClick={() => togglePublisherStatus(user.id, !!user.is_publisher)}>
+                            <DropdownMenuItem className="cursor-pointer" onClick={() => togglePublisherStatus(user.id, user.publisher_status ?? "disabled")}>
                               <BookOpen className="w-4 h-4 mr-2" />
-                              {user.is_publisher ? "Revoke Publisher" : "Enable Publisher"}
+                              {user.publisher_status === "enabled" ? "✅ Revoke Publisher" : "⭐ Enable Publisher"}
                             </DropdownMenuItem>
                             <DropdownMenuItem className="cursor-pointer" onClick={() => changeUserRole(user.id, "seller")}>
                               <Briefcase className="w-4 h-4 mr-2" />Make Seller

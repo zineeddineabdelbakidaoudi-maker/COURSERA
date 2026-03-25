@@ -66,7 +66,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         setUser(user)
         const { data: profile } = await supabase
           .from("Profile")
-          .select("full_name, avatar_url, role, seller_level, username, is_publisher")
+          .select("full_name, avatar_url, role, seller_level, username, publisher_status")
           .eq("id", user.id)
           .single()
         setProfile(profile)
@@ -126,7 +126,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 )
               })}
             </ul>
-              {profile?.is_publisher && (
+              {profile?.publisher_status === "enabled" && (
               <div className="pt-2 mt-2 border-t border-border">
                 <Link
                   href="/publisher"
