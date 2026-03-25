@@ -103,7 +103,7 @@ export default function AdminProductsPage() {
                   </div>
                   <div className="space-y-2">
                     <Label>License Type</Label>
-                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background disabled:cursor-not-allowed disabled:opacity-50">
+                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background flex-1">
                       <option>Personal Use</option>
                       <option>Commercial Use</option>
                       <option>Extended License</option>
@@ -111,10 +111,26 @@ export default function AdminProductsPage() {
                   </div>
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-2">
+                  <div className="space-y-2">
+                    <Label>Target Level</Label>
+                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background">
+                      <option>All Levels</option>
+                      <option>Beginner</option>
+                      <option>Intermediate</option>
+                      <option>Advanced / Pro</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Destined To (Audience)</Label>
+                    <Input placeholder="e.g. Freelancers, Students, Businesses" required />
+                  </div>
+                </div>
+
                 <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:bg-muted/30 transition-colors cursor-pointer">
                   <UploadCloud className="w-10 h-10 mx-auto text-primary mb-3" />
-                  <p className="font-medium">Click to upload product files</p>
-                  <p className="text-xs text-muted-foreground mt-1">ZIP, PDF, MP4 up to 500MB</p>
+                  <p className="font-medium">Upload Product Files & Cover Photos</p>
+                  <p className="text-xs text-muted-foreground mt-1">ZIP, PDF, JPG, PNG, MP4 up to 500MB</p>
                 </div>
 
                 <div className="pt-4 flex justify-end gap-3">

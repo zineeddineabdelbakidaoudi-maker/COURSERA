@@ -113,6 +113,18 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
                   </li>
                 )
               })}
+              {profile?.publisher_status === "enabled" && (
+                <li className="pt-2 mt-2 border-t border-border">
+                  <Link
+                    href="/publisher"
+                    onClick={() => setSidebarOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors bg-purple-500/10 text-purple-600 hover:bg-purple-500/20"
+                  >
+                    <BookOpen className="h-5 w-5 shrink-0" />
+                    <span className="font-medium">Publisher Dash</span>
+                  </Link>
+                </li>
+              )}
             </ul>
 
             <div className="mt-6">
@@ -184,14 +196,6 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {profile?.publisher_status === "enabled" && (
-                    <DropdownMenuItem asChild>
-                      <Link href="/publisher">
-                        <BookOpen className="h-4 w-4 mr-2 text-purple-600" />
-                        <span className="text-purple-600 font-medium">Switch to Publisher</span>
-                      </Link>
-                    </DropdownMenuItem>
-                  )}
                   <DropdownMenuItem asChild>
                     <Link href="/dashboard/buyer/settings"><Settings className="h-4 w-4 mr-2" />Settings</Link>
                   </DropdownMenuItem>

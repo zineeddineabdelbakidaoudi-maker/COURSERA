@@ -126,6 +126,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 )
               })}
             </ul>
+            {profile?.publisher_status === "enabled" && (
+              <div className="pt-2 mt-2 border-t border-border">
+                <Link
+                  href="/publisher"
+                  onClick={() => setSidebarOpen(false)}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors bg-purple-500/10 text-purple-600 hover:bg-purple-500/20"
+                >
+                  <BookOpen className="h-5 w-5 shrink-0" />
+                  <span className="font-medium">Publisher Dash</span>
+                </Link>
+              </div>
+            )}
           </nav>
 
           {/* Quick Action */}
@@ -202,19 +214,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href={`/sellers/${profile?.username || "me"}`}>
-                      <User className="h-4 w-4 mr-2" />View Profile
-                    </Link>
-                  </DropdownMenuItem>
-                  {profile?.publisher_status === "enabled" && (
-                    <DropdownMenuItem asChild>
-                      <Link href="/publisher">
-                        <BookOpen className="h-4 w-4 mr-2 text-purple-600" />
-                        <span className="text-purple-600 font-medium">Switch to Publisher</span>
-                      </Link>
-                    </DropdownMenuItem>
-                  )}
                   <DropdownMenuItem asChild>
                     <Link href="/dashboard/settings">
                       <Settings className="h-4 w-4 mr-2" />Settings
