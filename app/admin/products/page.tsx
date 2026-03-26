@@ -14,6 +14,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/client"
 import { createDigitalProductAction, uploadFileAction } from "@/app/actions/item-actions"
+import { Loader2, Trash2 } from "lucide-react"
+
 export default function AdminProductsPage() {
   const [search, setSearch] = useState("")
   const [activeTab, setActiveTab] = useState("directory")
@@ -23,6 +25,30 @@ export default function AdminProductsPage() {
   const [tagInput, setTagInput] = useState("")
   const [previewImages, setPreviewImages] = useState<string[]>([])
   const supabase = createClient()
+  
+  const [products, setProducts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  React.useEffect(() => {
+    fetchProducts()
+  }, [])
+
+  const fetchProducts = async () => {
+    setLoading(true)
+    const { data } = await supabase
+      .from("DigitalProduct")
+      .select("id, title, status, price_dzd, cover_url, created_at, Category(name_en)")
+      .order("created_at", { ascending: false })
+    
+    setProducts(data || [])
+    setLoading(false)
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this product?")) return
+    await supabase.from("DigitalProduct").delete().eq("id", id)
+    setProducts(products.filter(p => p.id !== id))
+  }
   const [formData, setFormData] = useState({
     title: "", description: "", shortDesc: "", category: "Templates & UI Kits", type: "Template",
     price: "", discount: "", license: "Personal Use Only", level: "All Levels", destined: "", language: "English (EN)",
@@ -143,13 +169,48 @@ export default function AdminProductsPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input className="pl-9" placeholder="Search by product name..." value={search} onChange={e => setSearch(e.target.value)} />
           </div>
-          <Card className="border-border shadow-sm">
-            <CardContent className="p-16 text-center">
-              <Package className="w-12 h-12 mx-auto text-muted-foreground/20 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No products yet</h3>
-              <p className="text-muted-foreground max-w-sm mx-auto text-sm">Use the Publish tab to add official platform products.</p>
-            </CardContent>
-          </Card>
+          
+          {loading ? (
+            <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+          ) : products.length === 0 ? (
+            <Card className="border-border shadow-sm">
+              <CardContent className="p-16 text-center">
+                <Package className="w-12 h-12 mx-auto text-muted-foreground/20 mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No products yet</h3>
+                <p className="text-muted-foreground max-w-sm mx-auto text-sm">Use the Publish tab to add official platform products.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {products.filter(p => p.title.toLowerCase().includes(search.toLowerCase())).map(product => (
+                <Card key={product.id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                  <div className="aspect-video bg-muted border-b border-border overflow-hidden">
+                    {product.cover_url ? (
+                      <img src={product.cover_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center"><Package className="w-8 h-8 text-muted-foreground/30" /></div>
+                    )}
+                  </div>
+                  <CardContent className="p-5">
+                    <div className="flex justify-between items-start gap-2 mb-2">
+                      <h4 className="font-semibold text-lg leading-tight line-clamp-1">{product.title}</h4>
+                      {product.status === 'live' ? 
+                        <Badge className="bg-green-500/10 text-green-600">Live</Badge> : 
+                        <Badge variant="secondary">Draft</Badge>
+                      }
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-4">{product.Category?.name_en || "Uncategorized"}</p>
+                    <div className="flex items-center justify-between mt-auto">
+                      <span className="font-bold">{product.price_dzd === 0 ? "Free" : `${product.price_dzd} DZD`}</span>
+                      <Button variant="ghost" size="sm" onClick={() => handleDelete(product.id)} className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="publish">
