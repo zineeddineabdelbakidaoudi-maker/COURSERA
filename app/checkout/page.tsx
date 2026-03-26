@@ -67,6 +67,7 @@ export default function CheckoutPage() {
         const fee = Math.round(item.price * 0.05)
         const payout = item.price - fee
         const { error } = await supabase.from('Order').insert({
+          id: crypto.randomUUID(),
           order_number: orderNumber,
           buyer_id: user.id,
           seller_id: item.seller_id,
@@ -76,7 +77,7 @@ export default function CheckoutPage() {
           platform_fee_dzd: fee,
           seller_payout_dzd: payout,
           requirements_data: { notes: form.notes, address: form.address, phone: form.phone },
-          status: 'pending_requirements' // Set appropriately based on COD wait
+          status: 'pending_requirements' 
         })
         if (error) allSuccess = false
       } else if (item.type === 'product') {
@@ -84,6 +85,7 @@ export default function CheckoutPage() {
         const payout = item.price - fee
         const token = `dl_${Math.random().toString(36).substring(2, 15)}`
         const { error } = await supabase.from('ProductPurchase').insert({
+          id: crypto.randomUUID(),
           buyer_id: user.id,
           product_id: item.id,
           price_paid_dzd: item.price,

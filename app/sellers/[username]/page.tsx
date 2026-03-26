@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
@@ -27,9 +28,8 @@ const DEMO_REVIEWS = [
   { buyer: "Nassim D.", comment: "Great quality, would definitely hire again.", rating: 4, date: "Feb 28, 2026" },
 ]
 
-export default function SellerProfilePage() {
-  const params = useParams()
-  const username = params?.username as string
+export default function SellerProfilePage({ params }: { params: Promise<{ username: string }> }) {
+  const { username } = React.use(params)
   const supabase = createClient()
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -47,18 +47,10 @@ export default function SellerProfilePage() {
 
       try {
         const isMe = username?.toLowerCase() === "me"
-        let targetId = username
-
-        if (isMe) {
-          const { data: { user } } = await supabase.auth.getUser()
-          if (user) targetId = user.id
-          else throw new Error("Please log in to view your profile.")
-        }
-
-        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{8}-[0-9a-f]{12}$/i.test(targetId) || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId)
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(username)
         const query = supabase.from("Profile").select("*")
         
-        const { data, error: profileError } = await (isUuid ? query.eq("id", targetId) : query.eq("username", targetId)).single()
+        const { data, error: profileError } = await (isUuid ? query.eq("id", username) : query.eq("username", username)).single()
         
         if (profileError) throw profileError
         if (!data) throw new Error("Profile not found.")
@@ -78,9 +70,9 @@ export default function SellerProfilePage() {
         setReviews(revs || [])
 
         // Is Saved?
-        const { data: { user: me } } = await supabase.auth.getUser()
-        if (me) {
-          const { data: ws } = await supabase.from("Wishlist").select("id").eq("user_id", me.id).eq("item_type", "service").eq("service_id", data.id).single()
+        const { data: { user: currentUser } } = await supabase.auth.getUser()
+        if (currentUser) {
+          const { data: ws } = await supabase.from("Wishlist").select("id").eq("user_id", currentUser.id).eq("item_type", "service").eq("service_id", data.id).single()
           if (ws) setSaved(true)
         }
 
@@ -105,6 +97,7 @@ export default function SellerProfilePage() {
       window.location.href = `/dashboard/messages?id=${conv.id}`
     } else {
       const { data: newConv } = await supabase.from("Conversation").insert({
+        id: crypto.randomUUID(),
         participant_ids: [me.id, profile.id]
       }).select("id").single()
       if (newConv) window.location.href = `/dashboard/messages?id=${newConv.id}`
@@ -119,7 +112,12 @@ export default function SellerProfilePage() {
       await supabase.from("Wishlist").delete().eq("user_id", me.id).eq("service_id", profile.id)
       setSaved(false)
     } else {
-      await supabase.from("Wishlist").insert({ user_id: me.id, item_type: "service", service_id: profile.id })
+      await supabase.from("Wishlist").insert({
+        id: crypto.randomUUID(),
+        user_id: me.id,
+        item_type: "service",
+        service_id: profile.id
+      })
       setSaved(true)
     }
   }

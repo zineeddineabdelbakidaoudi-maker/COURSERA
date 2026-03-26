@@ -56,3 +56,16 @@ GRANT ALL ON public."Conversation" TO authenticated;
 GRANT ALL ON public."Message" TO authenticated;
 GRANT SELECT ON public."Order" TO authenticated;
 GRANT ALL ON public."Review" TO authenticated;
+
+-- 8. Add UUID Defaults (Fix for "null value in column id" error)
+ALTER TABLE public."CartItem" ALTER COLUMN id SET DEFAULT gen_random_uuid();
+ALTER TABLE public."Wishlist" ALTER COLUMN id SET DEFAULT gen_random_uuid();
+ALTER TABLE public."Conversation" ALTER COLUMN id SET DEFAULT gen_random_uuid();
+ALTER TABLE public."Message" ALTER COLUMN id SET DEFAULT gen_random_uuid();
+ALTER TABLE public."Order" ALTER COLUMN id SET DEFAULT gen_random_uuid();
+ALTER TABLE public."Review" ALTER COLUMN id SET DEFAULT gen_random_uuid();
+ALTER TABLE public."ProductPurchase" ALTER COLUMN id SET DEFAULT gen_random_uuid();
+ALTER TABLE public."Notification" ALTER COLUMN id SET DEFAULT gen_random_uuid();
+ALTER TABLE public."Category" ALTER COLUMN id SET DEFAULT gen_random_uuid();
+ALTER TABLE public."Service" ALTER COLUMN id SET DEFAULT gen_random_uuid();
+ALTER TABLE public."DigitalProduct" ALTER COLUMN id SET DEFAULT gen_random_uuid();

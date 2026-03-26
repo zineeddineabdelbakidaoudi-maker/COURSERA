@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import {
-  ChevronRight, Star, Download, CheckCircle2, Shield, CreditCard, ThumbsUp, BookOpen, FileText, Users, Clock, Play, File, Sparkles, AlertTriangle, Package, Heart, Share2
+  ChevronRight, Star, Download, CheckCircle2, Shield, CreditCard, ThumbsUp, BookOpen, FileText, Users, Clock, Play, File, Sparkles, AlertTriangle, Package, Heart, Share2, MessageCircle
 } from "lucide-react"
 import { Navbar } from "@/components/layout/navbar"
 import { Footer } from "@/components/layout/footer"
@@ -75,6 +75,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
     }
     
     const { error } = await supabase.from('CartItem').insert({
+      id: crypto.randomUUID(),
       user_id: user.id,
       item_type: 'product',
       product_id: product.id,
@@ -99,12 +100,53 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
       setIsSaved(false)
     } else {
       await supabase.from('Wishlist').insert({
+        id: crypto.randomUUID(),
         user_id: user.id,
         item_type: 'product',
         product_id: product.id
       })
       setIsSaved(true)
     }
+  }
+
+  const [messaging, setMessaging] = React.useState(false)
+
+  const handleMessageSeller = async () => {
+    if (!product) return
+    setMessaging(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      router.push("/login")
+      return
+    }
+    if (user.id === product.publisher_id) {
+      alert("You cannot message yourself.")
+      setMessaging(false)
+      return
+    }
+    
+    // Check for existing conversation with these participants
+    const { data: existing } = await supabase
+      .from('Conversation')
+      .select('id')
+      .contains('participant_ids', [user.id, product.publisher_id])
+      .limit(1)
+
+    if (existing && existing.length > 0) {
+      router.push(`/dashboard/messages?id=${existing[0].id}`)
+    } else {
+      const { data, error } = await supabase.from('Conversation').insert({
+        id: crypto.randomUUID(),
+        participant_ids: [user.id, product.publisher_id]
+      }).select().single()
+      
+      if (!error && data) {
+        router.push(`/dashboard/messages?id=${data.id}`)
+      } else if (error) {
+        alert("Failed to start conversation: " + error.message)
+      }
+    }
+    setMessaging(false)
   }
 
   if (loading) return <div className="min-h-screen pt-20 flex items-center justify-center animate-pulse"><div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>
@@ -330,6 +372,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
                     >
                       {addingToCart ? "Processing..." : "Buy Now"}
                     </Button>
+
+                    <Button 
+                        variant="outline" 
+                        className="w-full rounded-2xl h-12 gap-2 font-bold border-slate-200 dark:border-border hover:bg-slate-50 dark:hover:bg-muted text-slate-700 dark:text-slate-300 mb-4"
+                        disabled={messaging}
+                        onClick={handleMessageSeller}
+                      >
+                        <MessageCircle className="w-5 h-5 text-indigo-500" />
+                        {messaging ? "Please wait..." : "Message Publisher"}
+                      </Button>
 
                     <Button variant="outline" className={cn("w-full h-12 rounded-2xl gap-2 font-bold bg-white dark:bg-card shadow-sm border-slate-200 dark:border-border mb-6", isSaved && "text-rose-600 border-rose-200 dark:border-rose-900/50 hover:bg-rose-50 dark:hover:bg-rose-900/10")} onClick={handleToggleSave}>
                       <Heart className={cn("w-5 h-5", isSaved ? "fill-rose-500 text-rose-500" : "text-slate-400")} />

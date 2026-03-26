@@ -69,31 +69,6 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ slug: 
     loadData()
   }, [slug])
 
-  const handleAddToCart = async () => {
-    if (!service) return
-    setAddingToCart(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      router.push("/login")
-      return
-    }
-    const packagesArray = getPackagesArray()
-    const pkg = packagesArray[selectedPackage] || packagesArray[0]
-    
-    // Check if CartItem already exists
-    const { error } = await supabase.from('CartItem').insert({
-      user_id: user.id,
-      item_type: 'service',
-      service_id: service.id,
-      package_name: pkg.name,
-      quantity: 1,
-      addons: { price: pkg.price }
-    })
-    setAddingToCart(false)
-    if (!error) router.push("/cart")
-    else alert("Failed to add to cart: " + error.message)
-  }
-
   const handleMessageSeller = async () => {
     if (!service) return
     setMessaging(true)
@@ -108,14 +83,26 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ slug: 
       return
     }
     
-    const { data: existing } = await supabase.from('Conversation').select('*').contains('participant_ids', [user.id, service.seller_id])
+    // Check for existing conversation with these participants
+    const { data: existing } = await supabase
+      .from('Conversation')
+      .select('id')
+      .contains('participant_ids', [user.id, service.seller_id])
+      .limit(1)
+
     if (existing && existing.length > 0) {
-      router.push(`/dashboard/buyer/messages?id=${existing[0].id}`)
+      router.push(`/dashboard/messages?id=${existing[0].id}`)
     } else {
       const { data, error } = await supabase.from('Conversation').insert({
+        id: crypto.randomUUID(),
         participant_ids: [user.id, service.seller_id]
       }).select().single()
-      if (!error && data) router.push(`/dashboard/buyer/messages?id=${data.id}`)
+      
+      if (!error && data) {
+        router.push(`/dashboard/messages?id=${data.id}`)
+      } else if (error) {
+        alert("Failed to start conversation: " + error.message)
+      }
     }
     setMessaging(false)
   }
@@ -132,12 +119,36 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ slug: 
       setIsSaved(false)
     } else {
       await supabase.from('Wishlist').insert({
+        id: crypto.randomUUID(),
         user_id: user.id,
         item_type: 'service',
         service_id: service.id
       })
       setIsSaved(true)
     }
+  }
+
+  const handleAddToCart = async () => {
+    setAddingToCart(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      router.push("/login")
+      return
+    }
+
+    const { error } = await supabase.from('CartItem').insert({
+      id: crypto.randomUUID(),
+      user_id: user.id,
+      item_type: 'service',
+      service_id: service.id,
+      package_name: packagesArray[selectedPackage]?.name || "Standard",
+      quantity: 1,
+      addons: {}
+    })
+    
+    setAddingToCart(false)
+    if (!error) router.push("/cart")
+    else alert("Failed to add to cart: " + error.message)
   }
 
   if (loading) return <div className="min-h-screen pt-20 flex items-center justify-center animate-pulse"><div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>

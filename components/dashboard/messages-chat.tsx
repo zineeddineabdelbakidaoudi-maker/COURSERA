@@ -38,8 +38,10 @@ export function MessagesChat() {
   }, [messages])
 
   const fetchConversations = async (userId: string) => {
-    // We fetch conversations where the user is a participant.
-    // In PostgreSQL array, we can use the 'cs' (contains) operator.
+    // Get the conversation ID from the URL if it exists
+    const searchParams = new URLSearchParams(window.location.search)
+    const targetConvId = searchParams.get('id')
+
     const { data: convs, error } = await supabase
       .from("Conversation")
       .select(`
@@ -58,7 +60,6 @@ export function MessagesChat() {
       return
     }
 
-    // Now for each conversation, we need the other participant's profile
     const enhancedConvs = await Promise.all(convs.map(async (c: any) => {
       const otherId = c.participant_ids.find((id: string) => id !== userId) || userId
       const { data: profile } = await supabase.from("Profile").select("full_name, avatar_url, role").eq("id", otherId).single()
@@ -73,9 +74,12 @@ export function MessagesChat() {
     }))
 
     setConversations(enhancedConvs)
+    
+    // Select either the target conversation from URL or the first one
     if (enhancedConvs.length > 0) {
-      loadMessages(enhancedConvs[0].id)
-      setActiveConv(enhancedConvs[0])
+      const target = enhancedConvs.find(c => c.id === targetConvId) || enhancedConvs[0]
+      loadMessages(target.id)
+      setActiveConv(target)
     }
     setLoading(false)
   }
