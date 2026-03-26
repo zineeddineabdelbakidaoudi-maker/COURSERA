@@ -36,6 +36,7 @@ export default function SellerProfilePage() {
   const [saved, setSaved] = useState(false)
 
   const [services, setServices] = useState<any[]>([])
+  const [reviews, setReviews] = useState<any[]>([])
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -54,7 +55,7 @@ export default function SellerProfilePage() {
           else throw new Error("Please log in to view your profile.")
         }
 
-        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId) || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId)
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{8}-[0-9a-f]{12}$/i.test(targetId) || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId)
         const query = supabase.from("Profile").select("*")
         
         const { data, error: profileError } = await (isUuid ? query.eq("id", targetId) : query.eq("username", targetId)).single()
@@ -63,8 +64,26 @@ export default function SellerProfilePage() {
         if (!data) throw new Error("Profile not found.")
         
         setProfile(data)
+
+        // Services
         const { data: srvs } = await supabase.from("Service").select("id, title, slug, thumbnail_url, packages").eq("seller_id", data.id).eq("status", "live")
         setServices(srvs || [])
+
+        // Reviews
+        const { data: revs } = await supabase
+          .from("Review")
+          .select("*, buyer:Profile!reviewer_id(full_name, avatar_url)")
+          .eq("reviewed_user_id", data.id)
+          .order("created_at", { ascending: false })
+        setReviews(revs || [])
+
+        // Is Saved?
+        const { data: { user: me } } = await supabase.auth.getUser()
+        if (me) {
+          const { data: ws } = await supabase.from("Wishlist").select("id").eq("user_id", me.id).eq("item_type", "service").eq("service_id", data.id).single()
+          if (ws) setSaved(true)
+        }
+
       } catch (err: any) {
         console.error("Error loading profile:", err)
         setError(err.message)
@@ -74,6 +93,36 @@ export default function SellerProfilePage() {
     }
     loadProfile()
   }, [username])
+
+  const handleMessage = async () => {
+    const { data: { user: me } } = await supabase.auth.getUser()
+    if (!me) { alert("Login to message"); return }
+    if (me.id === profile.id) return
+
+    // Create or find conversation
+    const { data: conv } = await supabase.from("Conversation").select("id").contains("participant_ids", [me.id, profile.id]).limit(1).single()
+    if (conv) {
+      window.location.href = `/dashboard/messages?id=${conv.id}`
+    } else {
+      const { data: newConv } = await supabase.from("Conversation").insert({
+        participant_ids: [me.id, profile.id]
+      }).select("id").single()
+      if (newConv) window.location.href = `/dashboard/messages?id=${newConv.id}`
+    }
+  }
+
+  const handleToggleSave = async () => {
+    const { data: { user: me } } = await supabase.auth.getUser()
+    if (!me) { alert("Login to save"); return }
+    
+    if (saved) {
+      await supabase.from("Wishlist").delete().eq("user_id", me.id).eq("service_id", profile.id)
+      setSaved(false)
+    } else {
+      await supabase.from("Wishlist").insert({ user_id: me.id, item_type: "service", service_id: profile.id })
+      setSaved(true)
+    }
+  }
 
   if (loading) {
     return (
@@ -94,13 +143,12 @@ export default function SellerProfilePage() {
     )
   }
 
-  // Use DB data if available, fall back to demo display
   const displayName = profile?.full_name || (username?.toLowerCase() === "me" ? "My Profile" : username?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())) || "Seller"
   const bio = profile?.bio || "No bio provided yet."
   const city = profile?.city || "Algeria"
   const responseRate = profile?.response_rate || 100
-  const totalReviews = profile?.total_reviews || 0
-  const rating = profile?.rating_avg || 0
+  const totalReviewsCount = reviews.length || profile?.total_reviews || 0
+  const rating = reviews.length > 0 ? (reviews.reduce((a, r) => a + r.rating_overall, 0) / reviews.length).toFixed(1) : profile?.rating_avg || 0
   const level = profile?.seller_level || "new"
   const memberSince = profile?.created_at ? new Date(profile.created_at).toLocaleDateString("en", { month: "long", year: "numeric" }) : "Recently"
   const initials = displayName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
@@ -110,6 +158,7 @@ export default function SellerProfilePage() {
     pro: "bg-blue-500/10 text-blue-600 border-blue-200",
     rising: "bg-green-500/10 text-green-600 border-green-200",
     new: "bg-gray-500/10 text-gray-600 border-gray-200",
+    pro_verified: "bg-indigo-500/10 text-indigo-600 border-indigo-200",
   }
 
   return (
@@ -138,7 +187,7 @@ export default function SellerProfilePage() {
                 <div className="flex flex-wrap items-center gap-3 mb-2">
                   <h1 className="text-2xl font-display font-bold">{displayName}</h1>
                   {profile?.is_verified && <CheckCircle2 className="w-5 h-5 text-blue-500" />}
-                  <Badge variant="outline" className={levelStyles[level]}>
+                  <Badge variant="outline" className={levelStyles[level] || levelStyles.new}>
                     {level.charAt(0).toUpperCase() + level.slice(1)} Seller
                   </Badge>
                   {profile?.publisher_status === "enabled" && (
@@ -150,22 +199,22 @@ export default function SellerProfilePage() {
                   <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" />{city}, Algeria</span>
                   <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" />Member since {memberSince}</span>
                   <span className="flex items-center gap-1.5 text-amber-500 font-semibold">
-                    <Star className="w-4 h-4 fill-current" />{Number(rating).toFixed(1)} ({totalReviews} reviews)
+                    <Star className="w-4 h-4 fill-current" />{Number(rating).toFixed(1)} ({totalReviewsCount} reviews)
                   </span>
                 </div>
               </div>
 
               <div className="flex flex-wrap gap-2 shrink-0">
-                <Button variant="outline" size="sm" className="gap-2" onClick={() => setSaved(!saved)}>
+                <Button variant="outline" size="sm" className="gap-2" onClick={handleToggleSave}>
                   <Heart className={`w-4 h-4 ${saved ? "fill-red-500 text-red-500" : ""}`} />
                   {saved ? "Saved" : "Save"}
                 </Button>
-                <Button size="sm" className="gap-2"><MessageSquare className="w-4 h-4" />Message</Button>
+                <Button size="sm" className="gap-2" onClick={handleMessage}><MessageSquare className="w-4 h-4" />Message</Button>
               </div>
             </div>
 
             {/* Stats Bar */}
-            <div className="grid grid-cols-3 sm:grid-cols-3 gap-4 mt-6 pt-6 border-t border-border">
+            <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-border">
               {[
                 { icon: Briefcase, label: "Services", val: services.length },
                 { icon: Star, label: "Avg Rating", val: Number(rating).toFixed(1) },
@@ -207,12 +256,12 @@ export default function SellerProfilePage() {
                       )}
                     </div>
                     <CardContent className="p-4">
-                      <h3 className="font-semibold text-sm mb-3 line-clamp-2 leading-tight group-hover:text-primary transition-colors">{s.title}</h3>
+                      <h3 className="font-semibold text-sm mb-3 line-clamp-2 leading-tight group-hover:text-primary transition-colors h-10">{s.title}</h3>
                       <div className="flex items-center justify-between border-t border-border pt-3">
                         <span className="text-xs text-amber-500 font-semibold flex items-center gap-1">
                           <Star className="w-3 h-3 fill-current" />5.0
                         </span>
-                        <span className="font-bold text-sm text-primary">From {s.packages?.basic?.price || s.packages?.Basic?.price || "0"} DZD</span>
+                        <span className="font-bold text-sm text-primary">From {parseFloat(s.packages?.basic?.price || s.packages?.Basic?.price || "0").toLocaleString()} DZD</span>
                       </div>
                     </CardContent>
                   </Card>
@@ -227,25 +276,30 @@ export default function SellerProfilePage() {
 
           <TabsContent value="reviews">
             <div className="space-y-4">
-              {DEMO_REVIEWS.map((r, i) => (
+              {reviews.length > 0 ? reviews.map((r, i) => (
                 <Card key={i} className="border-border shadow-sm">
                   <CardContent className="p-5 flex items-start gap-4">
                     <Avatar className="h-10 w-10 shrink-0">
-                      <AvatarFallback>{r.buyer.charAt(0)}</AvatarFallback>
+                      <AvatarImage src={r.buyer?.avatar_url || ""} />
+                      <AvatarFallback>{r.buyer?.full_name?.charAt(0) || "U"}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
                       <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
-                        <span className="font-semibold">{r.buyer}</span>
-                        <span className="text-xs text-muted-foreground">{r.date}</span>
+                        <span className="font-semibold">{r.buyer?.full_name || "Buyer"}</span>
+                        <span className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</span>
                       </div>
                       <div className="flex items-center gap-0.5 mb-2 text-amber-400">
-                        {Array.from({ length: r.rating }).map((_, j) => <Star key={j} className="w-4 h-4 fill-current" />)}
+                        {Array.from({ length: r.rating_overall || 5 }).map((_, j) => <Star key={j} className="w-4 h-4 fill-current" />)}
                       </div>
                       <p className="text-sm text-foreground/80">{r.comment}</p>
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              )) : (
+                <div className="py-12 text-center text-muted-foreground border-2 border-dashed border-border rounded-xl">
+                  No reviews yet for this seller.
+                </div>
+              )}
             </div>
           </TabsContent>
 

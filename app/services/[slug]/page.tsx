@@ -49,6 +49,12 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ slug: 
 
         if (data) {
           setService(data)
+          // Check if it's saved by current user
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) {
+            const { data: saved } = await supabase.from('Wishlist').select('id').eq('user_id', user.id).eq('service_id', data.id).single()
+            setIsSaved(!!saved)
+          }
           // Load some related ones
           const { data: related } = await supabase.from('Service').select('*, seller:Profile!seller_id(full_name, avatar_url)').eq('status', 'live').neq('id', data.id).limit(4)
           setRelatedServices(related || [])
@@ -112,6 +118,26 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ slug: 
       if (!error && data) router.push(`/dashboard/buyer/messages?id=${data.id}`)
     }
     setMessaging(false)
+  }
+
+  const handleToggleSave = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      router.push("/login")
+      return
+    }
+
+    if (isSaved) {
+      await supabase.from('Wishlist').delete().eq('user_id', user.id).eq('service_id', service.id)
+      setIsSaved(false)
+    } else {
+      await supabase.from('Wishlist').insert({
+        user_id: user.id,
+        item_type: 'service',
+        service_id: service.id
+      })
+      setIsSaved(true)
+    }
   }
 
   if (loading) return <div className="min-h-screen pt-20 flex items-center justify-center animate-pulse"><div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>
@@ -420,7 +446,7 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ slug: 
                 </div>
 
                 <div className="flex items-center gap-4 mt-6">
-                  <Button variant="outline" className={cn("flex-1 h-12 rounded-2xl gap-2 font-bold bg-white dark:bg-card shadow-sm border-slate-200 dark:border-border", isSaved && "text-rose-600 border-rose-200 dark:border-rose-900/50 hover:bg-rose-50 dark:hover:bg-rose-900/10")} onClick={() => setIsSaved(!isSaved)}>
+                  <Button variant="outline" className={cn("flex-1 h-12 rounded-2xl gap-2 font-bold bg-white dark:bg-card shadow-sm border-slate-200 dark:border-border", isSaved && "text-rose-600 border-rose-200 dark:border-rose-900/50 hover:bg-rose-50 dark:hover:bg-rose-900/10")} onClick={handleToggleSave}>
                     <Heart className={cn("w-5 h-5", isSaved ? "fill-rose-500 text-rose-500" : "text-slate-400")} />
                     {isSaved ? "Saved" : "Save List"}
                   </Button>

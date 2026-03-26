@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import {
-  ChevronRight, Star, Download, CheckCircle2, Shield, CreditCard, ThumbsUp, BookOpen, FileText, Users, Clock, Play, File, Sparkles, AlertTriangle, Package
+  ChevronRight, Star, Download, CheckCircle2, Shield, CreditCard, ThumbsUp, BookOpen, FileText, Users, Clock, Play, File, Sparkles, AlertTriangle, Package, Heart, Share2
 } from "lucide-react"
 import { Navbar } from "@/components/layout/navbar"
 import { Footer } from "@/components/layout/footer"
@@ -22,6 +22,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
   const [loading, setLoading] = React.useState(true)
   const [addingToCart, setAddingToCart] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [isSaved, setIsSaved] = React.useState(false)
 
   // In Next.js 15/16, params is a Promise in page components
   const { slug } = React.use(params)
@@ -45,6 +46,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
 
         if (data) {
           setProduct(data)
+          // Check if saved
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) {
+            const { data: saved } = await supabase.from('Wishlist').select('id').eq('user_id', user.id).eq('product_id', data.id).single()
+            setIsSaved(!!saved)
+          }
           const { data: related } = await supabase.from('DigitalProduct').select('*, publisher:Profile!publisher_id(full_name, avatar_url)').eq('status', 'live').neq('id', data.id).limit(4)
           setRelatedProducts(related || [])
         }
@@ -78,6 +85,26 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
     setAddingToCart(false)
     if (!error) router.push("/cart")
     else alert("Failed to add to cart: " + error.message)
+  }
+
+  const handleToggleSave = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      router.push("/login")
+      return
+    }
+
+    if (isSaved) {
+      await supabase.from('Wishlist').delete().eq('user_id', user.id).eq('product_id', product.id)
+      setIsSaved(false)
+    } else {
+      await supabase.from('Wishlist').insert({
+        user_id: user.id,
+        item_type: 'product',
+        product_id: product.id
+      })
+      setIsSaved(true)
+    }
   }
 
   if (loading) return <div className="min-h-screen pt-20 flex items-center justify-center animate-pulse"><div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>
@@ -302,6 +329,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
                       onClick={handleAddToCart}
                     >
                       {addingToCart ? "Processing..." : "Buy Now"}
+                    </Button>
+
+                    <Button variant="outline" className={cn("w-full h-12 rounded-2xl gap-2 font-bold bg-white dark:bg-card shadow-sm border-slate-200 dark:border-border mb-6", isSaved && "text-rose-600 border-rose-200 dark:border-rose-900/50 hover:bg-rose-50 dark:hover:bg-rose-900/10")} onClick={handleToggleSave}>
+                      <Heart className={cn("w-5 h-5", isSaved ? "fill-rose-500 text-rose-500" : "text-slate-400")} />
+                      {isSaved ? "Saved" : "Save List"}
                     </Button>
 
                     <div className="flex items-center justify-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 mb-6 font-bold bg-emerald-50 dark:bg-emerald-500/10 py-2.5 rounded-xl border border-emerald-100 dark:border-emerald-500/20">
