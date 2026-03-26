@@ -35,11 +35,22 @@ export default function SellerProfilePage() {
   const [loading, setLoading] = useState(true)
   const [saved, setSaved] = useState(false)
 
+  const [services, setServices] = useState<any[]>([])
+
   useEffect(() => {
-    supabase.from("Profile").select("*").eq("username", username).single().then(({ data }) => {
-      setProfile(data)
-      setLoading(false)
-    })
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(username)
+    const query = supabase.from("Profile").select("*")
+    
+    ;(isUuid ? query.eq("id", username) : query.eq("username", username))
+      .single()
+      .then(async ({ data }) => {
+        setProfile(data)
+        if (data?.id) {
+          const { data: srvs } = await supabase.from("Service").select("id, title, slug, thumbnail_url, packages").eq("seller_id", data.id).eq("status", "live")
+          setServices(srvs || [])
+        }
+        setLoading(false)
+      })
   }, [username])
 
   if (loading) {
@@ -123,7 +134,7 @@ export default function SellerProfilePage() {
             {/* Stats Bar */}
             <div className="grid grid-cols-3 sm:grid-cols-3 gap-4 mt-6 pt-6 border-t border-border">
               {[
-                { icon: Briefcase, label: "Services", val: DEMO_SERVICES.length },
+                { icon: Briefcase, label: "Services", val: services.length },
                 { icon: Star, label: "Avg Rating", val: Number(rating).toFixed(1) },
                 { icon: Clock, label: "Response Rate", val: `${responseRate}%` },
               ].map(s => {
@@ -150,22 +161,34 @@ export default function SellerProfilePage() {
 
           <TabsContent value="services">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {DEMO_SERVICES.map((s, i) => (
-                <Card key={i} className="border-border shadow-sm hover:shadow-md transition-shadow group">
-                  <div className="h-36 bg-gradient-to-br from-primary/10 to-accent/10 rounded-t-xl flex items-center justify-center group-hover:from-primary/20 transition-colors">
-                    <Package className="w-12 h-12 text-primary/30 group-hover:text-primary/50 transition-colors" />
-                  </div>
-                  <CardContent className="p-4">
-                    <h3 className="font-semibold text-sm mb-3 line-clamp-2 leading-tight">{s.title}</h3>
-                    <div className="flex items-center justify-between border-t border-border pt-3">
-                      <span className="text-xs text-amber-500 font-semibold flex items-center gap-1">
-                        <Star className="w-3 h-3 fill-current" />{s.rating} ({s.reviews})
-                      </span>
-                      <span className="font-bold text-sm text-primary">From {s.price.toLocaleString()} DZD</span>
+              {services.length > 0 ? services.map((s, i) => (
+                <Link href={`/services/${s.slug || s.id}`} key={i}>
+                  <Card className="border-border shadow-sm hover:shadow-md transition-all group overflow-hidden">
+                    <div className="h-36 bg-muted relative border-b border-border">
+                      {s.thumbnail_url ? (
+                        <img src={s.thumbnail_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent/10 group-hover:from-primary/20 transition-colors">
+                          <Package className="w-12 h-12 text-primary/30 group-hover:text-primary/50" />
+                        </div>
+                      )}
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    <CardContent className="p-4">
+                      <h3 className="font-semibold text-sm mb-3 line-clamp-2 leading-tight group-hover:text-primary transition-colors">{s.title}</h3>
+                      <div className="flex items-center justify-between border-t border-border pt-3">
+                        <span className="text-xs text-amber-500 font-semibold flex items-center gap-1">
+                          <Star className="w-3 h-3 fill-current" />5.0
+                        </span>
+                        <span className="font-bold text-sm text-primary">From {s.packages?.basic?.price || s.packages?.Basic?.price || "0"} DZD</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              )) : (
+                <div className="col-span-full py-12 text-center text-muted-foreground border-2 border-dashed border-border rounded-xl">
+                  No active services found for this seller.
+                </div>
+              )}
             </div>
           </TabsContent>
 
