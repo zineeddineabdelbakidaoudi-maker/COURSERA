@@ -59,6 +59,7 @@ async function ensureCategory(name: string, type: "services" | "products" | "bot
   const { data: newCat, error } = await admin
     .from("Category")
     .insert({
+      id: crypto.randomUUID(),
       name_en: name,
       name_ar: name, // Simplified for now
       name_fr: name,
@@ -100,6 +101,7 @@ export async function createDigitalProductAction(payload: any) {
     const { data, error } = await admin
       .from("DigitalProduct")
       .insert({
+        id: crypto.randomUUID(),
         publisher_id: user.id,
         title: payload.title,
         slug: payload.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + Math.floor(Math.random() * 10000),
@@ -139,6 +141,7 @@ export async function createServiceAction(payload: any) {
     const { data, error } = await admin
       .from("Service")
       .insert({
+        id: crypto.randomUUID(),
         seller_id: user.id,
         title: payload.title,
         slug: payload.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + Math.floor(Math.random() * 10000),
