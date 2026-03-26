@@ -38,19 +38,29 @@ export default function SellerProfilePage() {
   const [services, setServices] = useState<any[]>([])
 
   useEffect(() => {
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(username)
-    const query = supabase.from("Profile").select("*")
-    
-    ;(isUuid ? query.eq("id", username) : query.eq("username", username))
-      .single()
-      .then(async ({ data }) => {
+    async function loadProfile() {
+      const isMe = username?.toLowerCase() === "me"
+      let targetId = username
+
+      if (isMe) {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) targetId = user.id
+        else { setLoading(false); return }
+      }
+
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId)
+      const query = supabase.from("Profile").select("*")
+      
+      const { data } = await (isUuid ? query.eq("id", targetId) : query.eq("username", targetId)).single()
+      
+      if (data) {
         setProfile(data)
-        if (data?.id) {
-          const { data: srvs } = await supabase.from("Service").select("id, title, slug, thumbnail_url, packages").eq("seller_id", data.id).eq("status", "live")
-          setServices(srvs || [])
-        }
-        setLoading(false)
-      })
+        const { data: srvs } = await supabase.from("Service").select("id, title, slug, thumbnail_url, packages").eq("seller_id", data.id).eq("status", "live")
+        setServices(srvs || [])
+      }
+      setLoading(false)
+    }
+    loadProfile()
   }, [username])
 
   if (loading) {
@@ -62,14 +72,14 @@ export default function SellerProfilePage() {
   }
 
   // Use DB data if available, fall back to demo display
-  const displayName = profile?.full_name || username?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()) || "Seller"
-  const bio = profile?.bio || "Passionate designer & developer creating premium digital experiences for Algerian businesses."
-  const city = profile?.city || "Algiers"
-  const responseRate = profile?.response_rate || 98
-  const totalReviews = profile?.total_reviews || 285
-  const rating = profile?.rating_avg || 4.9
-  const level = profile?.seller_level || "elite"
-  const memberSince = profile?.created_at ? new Date(profile.created_at).toLocaleDateString("en", { month: "long", year: "numeric" }) : "January 2025"
+  const displayName = profile?.full_name || (username?.toLowerCase() === "me" ? "My Profile" : username?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())) || "Seller"
+  const bio = profile?.bio || "No bio provided yet."
+  const city = profile?.city || "Algeria"
+  const responseRate = profile?.response_rate || 100
+  const totalReviews = profile?.total_reviews || 0
+  const rating = profile?.rating_avg || 0
+  const level = profile?.seller_level || "new"
+  const memberSince = profile?.created_at ? new Date(profile.created_at).toLocaleDateString("en", { month: "long", year: "numeric" }) : "Recently"
   const initials = displayName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
 
   const levelStyles: Record<string, string> = {

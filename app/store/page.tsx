@@ -1,23 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Search, Package, Star, ShoppingCart, X, Zap } from "lucide-react"
+import { Search, Package, Star, ShoppingCart, X, Zap, Loader2 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-
-const CATEGORIES = ["All", "Templates", "E-books", "Courses", "Documents", "Tools", "Bundles"]
-
-const products = [
-  { title: "Ultimate Figma UI Design System 2026", author: "DigitHup Pro", type: "Template", price: 5000, rating: 4.9, sales: 342, emoji: "🎨", tags: ["figma", "ui kit"] },
-  { title: "Freelancer Starter Bundle (Contract + Invoice)", author: "LegalDZ", type: "Documents", price: 1500, rating: 4.8, sales: 812, emoji: "📄", tags: ["legal", "freelance"] },
-  { title: "E-Commerce Masterclass 2026 (Arabic)", author: "E-Com DZ", type: "Course", price: 12000, rating: 4.9, sales: 198, emoji: "🎓", tags: ["ecommerce", "arabic"] },
-  { title: "Brand Identity Presentation Template", author: "Design Studio DZ", type: "Template", price: 2500, rating: 4.7, sales: 456, emoji: "🖼️", tags: ["powerpoint", "pitch"] },
-  { title: "Social Media Scheduler Script (Python)", author: "DevAlgeria", type: "Tools", price: 3000, rating: 4.6, sales: 87, emoji: "🤖", tags: ["python", "script"] },
-  { title: "Arabic SEO Complete Guide 2026", author: "SEO DZ", type: "E-books", price: 800, rating: 4.8, sales: 1203, emoji: "📖", tags: ["seo", "arabic"] },
-]
+import { createClient } from "@/lib/supabase/client"
 
 const GRADIENT_PAIRS = [
   "from-violet-500/15 to-purple-500/10",
@@ -28,15 +18,52 @@ const GRADIENT_PAIRS = [
   "from-emerald-500/15 to-teal-500/10",
 ]
 
+const TYPE_EMOJI: Record<string, string> = {
+  template: "🎨",
+  ebook: "📖",
+  course: "🎓",
+  toolkit: "🤖",
+  bundle: "📦",
+}
+
 export default function StorePage() {
+  const supabase = createClient()
+  const [products, setProducts] = useState<any[]>([])
+  const [categories, setCategories] = useState<string[]>(["All"])
+  const [loading, setLoading] = useState(true)
   const [cat, setCat] = useState("All")
   const [q, setQ] = useState("")
 
+  useEffect(() => {
+    async function fetchData() {
+      const { data: prods } = await supabase
+        .from("DigitalProduct")
+        .select("*, publisher:Profile!publisher_id(full_name), category:Category!category_id(name_en)")
+        .eq("status", "live")
+      setProducts(prods || [])
+
+      const { data: cats } = await supabase.from("Category").select("name_en").eq("type", "products")
+      if (cats) {
+        setCategories(["All", ...cats.map(c => c.name_en)])
+      }
+      setLoading(false)
+    }
+    fetchData()
+  }, [])
+
   const filtered = products.filter(p => {
-    if (cat !== "All" && p.type !== cat) return false
-    if (q && !p.title.toLowerCase().includes(q.toLowerCase())) return false
+    const pCat = p.category?.name_en || "Other"
+    const pTitle = p.title?.toLowerCase() || ""
+    if (cat !== "All" && pCat !== cat) return false
+    if (q && !pTitle.includes(q.toLowerCase())) return false
     return true
   })
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-background">
@@ -60,7 +87,7 @@ export default function StorePage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {CATEGORIES.map(c => (
+            {categories.map(c => (
               <button key={c} onClick={() => setCat(c)}
                 className={`px-4 py-2 rounded-full text-sm font-semibold border transition-all duration-150 ${cat === c ? "bg-primary text-primary-foreground border-primary shadow-sm" : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground bg-background"}`}>
                 {c}
@@ -81,33 +108,30 @@ export default function StorePage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((p, i) => (
-              <Card key={i} className="border-border shadow-sm hover:shadow-lg hover:border-primary/30 transition-all duration-200 overflow-hidden group">
-                {/* Header */}
-                <div className={`h-40 bg-gradient-to-br ${GRADIENT_PAIRS[i % GRADIENT_PAIRS.length]} flex flex-col items-center justify-center relative gap-2`}>
-                  <span className="text-5xl">{p.emoji}</span>
-                  <Badge variant="outline" className="text-xs bg-background/60 backdrop-blur-sm shadow-sm">{p.type}</Badge>
-                  <div className="absolute top-3 right-3 flex items-center gap-1 text-xs font-bold text-amber-500 bg-background/70 backdrop-blur-sm px-2 py-1 rounded-lg border border-amber-200/30">
-                    <Star className="w-3 h-3 fill-current" /> {p.rating}
+              <Card key={p.id || i} className="border-border shadow-sm hover:shadow-lg hover:border-primary/30 transition-all duration-200 overflow-hidden group">
+                <Link href={`/store/${p.slug || p.id}`} className="absolute inset-0 z-10" />
+                <div className={`h-40 bg-muted relative flex flex-col items-center justify-center gap-2 overflow-hidden`}>
+                  {p.cover_url ? (
+                    <img src={p.cover_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  ) : (
+                    <span className="text-5xl">{TYPE_EMOJI[p.type] || "📦"}</span>
+                  )}
+                  <Badge variant="outline" className="text-xs bg-background/60 backdrop-blur-sm shadow-sm absolute bottom-3 left-3 z-20 uppercase tracking-widest">{p.type}</Badge>
+                  <div className="absolute top-3 right-3 flex items-center gap-1 text-xs font-bold text-amber-500 bg-background/70 backdrop-blur-sm px-2 py-1 rounded-lg border border-amber-200/30 z-20">
+                    <Star className="w-3 h-3 fill-current" /> 5.0
                   </div>
                 </div>
 
-                <CardContent className="p-5">
-                  <h3 className="font-bold text-base leading-snug mb-1 group-hover:text-primary transition-colors line-clamp-2">{p.title}</h3>
-                  <p className="text-xs text-muted-foreground mb-3">by {p.author} · <span className="font-semibold">{p.sales.toLocaleString()} sales</span></p>
-
-                  <div className="flex flex-wrap gap-1.5 mb-4">
-                    {p.tags.map(tag => (
-                      <span key={tag} className="text-[10px] font-bold px-2 py-0.5 rounded bg-muted text-muted-foreground uppercase tracking-wide">{tag}</span>
-                    ))}
-                  </div>
+                <CardContent className="p-5 relative z-20 pointer-events-none">
+                  <h3 className="font-bold text-base leading-snug mb-1 group-hover:text-primary transition-colors line-clamp-2 h-10">{p.title}</h3>
+                  <p className="text-xs text-muted-foreground mb-3 font-medium">by {p.publisher?.full_name || "Anonymous"}</p>
 
                   <div className="flex items-center justify-between border-t border-border pt-4">
                     <div>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Price</p>
-                      <p className="text-xl font-black text-primary">{p.price.toLocaleString()} <span className="text-xs font-semibold text-muted-foreground">DZD</span></p>
+                      <p className="text-xl font-black text-primary">{Number(p.price_dzd).toLocaleString()} <span className="text-xs font-semibold text-muted-foreground">DZD</span></p>
                     </div>
-                    <Button size="sm" className="gap-2 shadow-sm">
-                      <ShoppingCart className="w-3.5 h-3.5" /> Add to Cart
+                    <Button size="sm" className="gap-2 shadow-sm pointer-events-auto relative z-30">
+                      <ShoppingCart className="w-3.5 h-3.5" /> Buy
                     </Button>
                   </div>
                 </CardContent>

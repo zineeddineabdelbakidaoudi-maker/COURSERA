@@ -1,31 +1,21 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Search, Star, Clock, ArrowRight, SlidersHorizontal, X } from "lucide-react"
+import { Search, Star, Clock, ArrowRight, SlidersHorizontal, X, Loader2, Briefcase } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-
-const CATEGORIES = ["All", "Design", "Web Dev", "Marketing", "Writing", "Video", "Music", "Business"]
-
-const services = [
-  { title: "Premium Brand Identity Design", seller: "Yacine M.", rating: 5.0, reviews: 142, price: 15000, delivery: "5 days", level: "Elite", category: "Design", tags: ["logo", "branding"] },
-  { title: "Full-Stack Web App (Next.js)", seller: "Karim B.", rating: 4.9, reviews: 89, price: 45000, delivery: "14 days", level: "Elite", category: "Web Dev", tags: ["react", "api"] },
-  { title: "SEO Articles x5 (Arabic/French)", seller: "Nassima B.", rating: 4.8, reviews: 214, price: 2500, delivery: "3 days", level: "Pro", category: "Writing", tags: ["seo", "content"] },
-  { title: "Social Media 30-Post Pack", seller: "Amine K.", rating: 4.7, reviews: 67, price: 8000, delivery: "7 days", level: "Pro", category: "Marketing", tags: ["instagram", "canva"] },
-  { title: "Motion Graphics & Intro Video", seller: "Sofiane R.", rating: 4.9, reviews: 53, price: 12000, delivery: "10 days", level: "Elite", category: "Video", tags: ["after effects", "animation"] },
-  { title: "Professional Logo Design x3", seller: "Rania M.", rating: 4.6, reviews: 178, price: 3500, delivery: "4 days", level: "Rising", category: "Design", tags: ["logo", "illustrator"] },
-  { title: "Landing Page (HTML/CSS)", seller: "Bilal Z.", rating: 4.5, reviews: 34, price: 6000, delivery: "6 days", level: "Rising", category: "Web Dev", tags: ["html", "css"] },
-  { title: "Arabic Podcast Editing & Mix", seller: "Djamel S.", rating: 4.8, reviews: 41, price: 4000, delivery: "3 days", level: "Pro", category: "Music", tags: ["audio", "podcast"] },
-]
+import { createClient } from "@/lib/supabase/client"
 
 const LEVEL_STYLE: Record<string, string> = {
-  Elite: "bg-amber-500/10 text-amber-600 border-amber-200",
-  Pro: "bg-blue-500/10 text-blue-600 border-blue-200",
-  Rising: "bg-green-500/10 text-green-600 border-green-200",
+  elite: "bg-amber-500/10 text-amber-600 border-amber-200",
+  pro: "bg-blue-500/10 text-blue-600 border-blue-200",
+  rising: "bg-green-500/10 text-green-600 border-green-200",
+  new: "bg-gray-500/10 text-gray-600 border-gray-200",
 }
+
 const GRADIENT_PAIRS = [
   "from-violet-500/15 to-indigo-500/10",
   "from-sky-500/15 to-cyan-500/10",
@@ -38,17 +28,50 @@ const GRADIENT_PAIRS = [
 ]
 
 export default function ServicesPage() {
+  const supabase = createClient()
+  const [services, setServices] = useState<any[]>([])
+  const [categories, setCategories] = useState<string[]>(["All"])
+  const [loading, setLoading] = useState(true)
   const [cat, setCat] = useState("All")
   const [q, setQ] = useState("")
-  const [maxPrice, setMaxPrice] = useState(100000)
+  const [maxPrice, setMaxPrice] = useState(200000)
   const [showFilters, setShowFilters] = useState(false)
 
+  useEffect(() => {
+    async function fetchData() {
+      const { data: srvs } = await supabase
+        .from("Service")
+        .select("*, seller:Profile!seller_id(full_name, seller_level), category:Category!category_id(name_en)")
+        .eq("status", "live")
+      
+      setServices(srvs || [])
+
+      const { data: cats } = await supabase.from("Category").select("name_en").eq("type", "services")
+      if (cats) {
+        setCategories(["All", ...cats.map(c => c.name_en)])
+      }
+      setLoading(false)
+    }
+    fetchData()
+  }, [])
+
   const filtered = services.filter(s => {
-    if (cat !== "All" && s.category !== cat) return false
-    if (q && !s.title.toLowerCase().includes(q.toLowerCase()) && !s.seller.toLowerCase().includes(q.toLowerCase())) return false
-    if (s.price > maxPrice) return false
+    const sCat = s.category?.name_en || "Other"
+    const sTitle = s.title?.toLowerCase() || ""
+    const sSeller = s.seller?.full_name?.toLowerCase() || ""
+    const basePrice = s.packages?.basic?.price || s.packages?.Basic?.price || 0
+
+    if (cat !== "All" && sCat !== cat) return false
+    if (q && !sTitle.includes(q.toLowerCase()) && !sSeller.includes(q.toLowerCase())) return false
+    if (basePrice > maxPrice) return false
     return true
   })
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-background">
@@ -80,13 +103,13 @@ export default function ServicesPage() {
           {showFilters && (
             <div className="mb-4 p-4 rounded-xl border border-border bg-background/60 backdrop-blur-sm">
               <p className="text-sm font-semibold mb-2 text-muted-foreground">Max Price: <span className="text-foreground">{maxPrice.toLocaleString()} DZD</span></p>
-              <input type="range" min={1000} max={100000} step={500} value={maxPrice} onChange={e => setMaxPrice(+e.target.value)} className="w-full max-w-xs accent-primary" />
+              <input type="range" min={1000} max={200000} step={1000} value={maxPrice} onChange={e => setMaxPrice(+e.target.value)} className="w-full max-w-xs accent-primary" />
             </div>
           )}
 
           {/* Category pills */}
           <div className="flex flex-wrap gap-2">
-            {CATEGORIES.map(c => (
+            {categories.map(c => (
               <button key={c} onClick={() => setCat(c)}
                 className={`px-4 py-2 rounded-full text-sm font-semibold border transition-all duration-150 ${cat === c ? "bg-primary text-primary-foreground border-primary shadow-sm" : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground bg-background"}`}>
                 {c}
@@ -106,49 +129,49 @@ export default function ServicesPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {filtered.map((s, i) => (
-              <Link key={i} href={`/services/${i + 1}`} className="group block no-underline">
+            {filtered.map((s, i) => {
+              const basePrice = s.packages?.basic?.price || s.packages?.Basic?.price || 0
+              const sellerName = s.seller?.full_name || "Anonymous"
+              const sellerLevel = s.seller?.seller_level || "new"
+              
+              return (
+              <Link key={s.id || i} href={`/services/${s.slug || s.id}`} className="group block no-underline">
                 <Card className="border-border shadow-sm h-full hover:shadow-lg hover:border-primary/30 transition-all duration-200 overflow-hidden">
-                  {/* Card header with gradient */}
-                  <div className={`h-28 bg-gradient-to-br ${GRADIENT_PAIRS[i % GRADIENT_PAIRS.length]} flex items-center justify-center relative`}>
-                    <span className="text-4xl select-none">
-                      {["🎨","💻","✍️","📱","🎬","✨","🌐","🎙️"][i % 8]}
-                    </span>
-                    <Badge variant="outline" className={`absolute top-2.5 right-2.5 text-[10px] shadow-sm ${LEVEL_STYLE[s.level]}`}>
-                      {s.level}
+                  <div className={`h-28 bg-muted relative border-b border-border overflow-hidden`}>
+                    {s.thumbnail_url ? (
+                      <img src={s.thumbnail_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-500/10 to-purple-500/10">
+                        <Briefcase className="w-10 h-10 text-primary/20" />
+                      </div>
+                    )}
+                    <Badge variant="outline" className={`absolute top-2.5 right-2.5 text-[10px] shadow-sm uppercase ${LEVEL_STYLE[sellerLevel] || LEVEL_STYLE.new}`}>
+                      {sellerLevel}
                     </Badge>
                   </div>
 
                   <CardContent className="p-4">
-                    {/* Seller */}
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                        {s.seller.charAt(0)}
+                        {sellerName.charAt(0)}
                       </div>
-                      <span className="text-xs text-muted-foreground">{s.seller}</span>
+                      <span className="text-xs text-muted-foreground">{sellerName}</span>
                     </div>
 
-                    <h3 className="font-semibold text-sm leading-snug mb-3 line-clamp-2 group-hover:text-primary transition-colors">{s.title}</h3>
+                    <h3 className="font-semibold text-sm leading-snug mb-3 line-clamp-2 group-hover:text-primary transition-colors h-10">{s.title}</h3>
 
-                    {/* Tags */}
-                    <div className="flex flex-wrap gap-1 mb-3">
-                      {s.tags.map(tag => (
-                        <span key={tag} className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground uppercase tracking-wide">{tag}</span>
-                      ))}
-                    </div>
-
-                    {/* Footer */}
-                    <div className="flex items-center justify-between border-t border-border pt-3">
+                    <div className="flex items-center justify-between border-t border-border pt-3 mt-auto">
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1 text-amber-500 font-semibold"><Star className="w-3 h-3 fill-current" />{s.rating}</span>
-                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{s.delivery}</span>
+                        <span className="flex items-center gap-1 text-amber-500 font-semibold"><Star className="w-3 h-3 fill-current" />5.0</span>
+                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{(s.packages?.basic?.delivery || 3)}d</span>
                       </div>
-                      <span className="text-xs font-bold text-primary">{s.price.toLocaleString()} DZD</span>
+                      <span className="text-xs font-bold text-primary">{Number(basePrice).toLocaleString()} DZD</span>
                     </div>
                   </CardContent>
                 </Card>
               </Link>
-            ))}
+              )
+            })}
           </div>
         )}
       </main>
