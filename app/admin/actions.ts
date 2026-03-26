@@ -32,10 +32,15 @@ export async function togglePublisherAction(userId: string, currentStatus: strin
 
   // 2. Perform the update with service role (bypasses RLS)
   const newStatus = currentStatus === "enabled" ? "disabled" : "enabled"
+  const isPublisher = newStatus === "enabled"
   const adminClient = getAdminClient()
+  
   const { error } = await adminClient
     .from("Profile")
-    .update({ publisher_status: newStatus })
+    .update({ 
+      publisher_status: newStatus,
+      is_publisher: isPublisher
+    })
     .eq("id", userId)
 
   if (error) return { error: error.message }

@@ -12,7 +12,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-
+import { createClient } from "@/lib/supabase/client"
+import { createDigitalProductAction, uploadFileAction } from "@/app/actions/item-actions"
 export default function AdminProductsPage() {
   const [search, setSearch] = useState("")
   const [activeTab, setActiveTab] = useState("directory")
@@ -21,15 +22,75 @@ export default function AdminProductsPage() {
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState("")
   const [previewImages, setPreviewImages] = useState<string[]>([])
+  const supabase = createClient()
+  const [formData, setFormData] = useState({
+    title: "", description: "", shortDesc: "", category: "Templates & UI Kits", type: "Template",
+    price: "", discount: "", license: "Personal Use Only", level: "All Levels", destined: "", language: "English (EN)",
+    publishStatus: "live"
+  })
+  const [coverFiles, setCoverFiles] = useState<File[]>([])
+  const [productFiles, setProductFiles] = useState<File[]>([])
 
-  const handlePublish = (e: React.FormEvent) => {
+  const handlePublish = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsPublishing(true)
-    setTimeout(() => {
-      setIsPublishing(false)
+
+    try {
+      let cover_url = null
+      let preview_urls: string[] = []
+      let file_url = ""
+
+      // 1. Upload Covers via server action
+      if (coverFiles.length > 0) {
+        for (let i = 0; i < coverFiles.length; i++) {
+          const fd = new FormData()
+          fd.append("file", coverFiles[i])
+          fd.append("bucket", "products")
+          fd.append("folder", "covers")
+          const res = await uploadFileAction(fd)
+          if (res.url) {
+            if (i === 0) cover_url = res.url
+            else preview_urls.push(res.url)
+          }
+        }
+      }
+
+      // 2. Upload Product File via server action
+      if (productFiles.length > 0) {
+        const fd = new FormData()
+        fd.append("file", productFiles[0])
+        fd.append("bucket", "products")
+        fd.append("folder", "files")
+        const res = await uploadFileAction(fd)
+        if (res.url) file_url = res.url
+      }
+
+      // 3. Save to DB
+      const result = await createDigitalProductAction({
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        type: formData.type,
+        tags: tags,
+        status: formData.publishStatus,
+        cover_url,
+        preview_urls,
+        file_url,
+        file_size_mb: productFiles[0] ? (productFiles[0].size / (1024 * 1024)).toFixed(2) : 0,
+        price_dzd: parseFloat(formData.price || "0"),
+        license: formData.license,
+        language: formData.language
+      })
+
+      if (result.error) throw new Error(result.error)
+
       setPublished(true)
       setTimeout(() => { setPublished(false); setActiveTab("directory") }, 2500)
-    }, 1800)
+    } catch (err: any) {
+      alert("Error publishing: " + err.message)
+    } finally {
+      setIsPublishing(false)
+    }
   }
 
   const addTag = (e: React.KeyboardEvent) => {
@@ -44,6 +105,7 @@ export default function AdminProductsPage() {
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
+    setCoverFiles(prev => [...prev, ...files])
     files.forEach(file => {
       const reader = new FileReader()
       reader.onload = ev => {
@@ -51,6 +113,11 @@ export default function AdminProductsPage() {
       }
       reader.readAsDataURL(file)
     })
+  }
+
+  const handleProductUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    setProductFiles(files)
   }
 
   return (
@@ -102,20 +169,20 @@ export default function AdminProductsPage() {
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
                       <Label>Product Title *</Label>
-                      <Input placeholder="e.g. Ultimate Freelancer Toolkit 2026" required />
+                      <Input placeholder="e.g. Ultimate Freelancer Toolkit 2026" required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
                     </div>
                     <div className="space-y-2">
                       <Label>Short Description (shown in cards)</Label>
-                      <Input placeholder="One-line pitch for the product listing" />
+                      <Input placeholder="One-line pitch for the product listing" value={formData.shortDesc} onChange={e => setFormData({...formData, shortDesc: e.target.value})} />
                     </div>
                     <div className="space-y-2">
                       <Label>Full Description *</Label>
-                      <Textarea rows={5} placeholder="Describe what's included, who it's for, and what problem it solves..." required />
+                      <Textarea rows={5} placeholder="Describe what's included, who it's for, and what problem it solves..." required value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Category *</Label>
-                        <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" required>
+                        <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
                           <option value="">Select category</option>
                           <option>Templates & UI Kits</option>
                           <option>E-books & Guides</option>
@@ -127,7 +194,7 @@ export default function AdminProductsPage() {
                       </div>
                       <div className="space-y-2">
                         <Label>Product Type *</Label>
-                        <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" required>
+                        <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" required value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
                           <option value="">Select type</option>
                           <option>Template</option>
                           <option>E-book</option>
@@ -171,7 +238,10 @@ export default function AdminProductsPage() {
                         {previewImages.map((src, i) => (
                           <div key={i} className="relative rounded-lg overflow-hidden aspect-video border border-border">
                             <img src={src} alt="" className="w-full h-full object-cover" />
-                            <button type="button" onClick={() => setPreviewImages(previewImages.filter((_, j) => j !== i))}
+                            <button type="button" onClick={() => {
+                              setPreviewImages(previewImages.filter((_, j) => j !== i))
+                              setCoverFiles(coverFiles.filter((_, j) => j !== i))
+                            }}
                               className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-0.5 hover:bg-black">
                               <X className="w-3 h-3" />
                             </button>
@@ -181,9 +251,9 @@ export default function AdminProductsPage() {
                     )}
 
                     <label className="border-2 border-dashed border-border/60 rounded-xl p-6 text-center hover:bg-muted/20 transition-colors cursor-pointer block">
-                      <input type="file" multiple accept=".zip,.pdf,.mp4,.figma,.sketch,.psd" className="hidden" />
+                      <input type="file" accept=".zip,.pdf,.mp4,.figma,.sketch,.psd" className="hidden" onChange={handleProductUpload} />
                       <UploadCloud className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                      <p className="text-sm font-medium">Upload product files</p>
+                      <p className="text-sm font-medium">{productFiles.length > 0 ? productFiles[0].name : "Upload product files"}</p>
                       <p className="text-xs text-muted-foreground mt-1">ZIP, PDF, MP4, Figma, PSD · max 500MB total</p>
                     </label>
                   </CardContent>
@@ -197,15 +267,15 @@ export default function AdminProductsPage() {
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
                       <Label>Price (DZD) *</Label>
-                      <Input type="number" min="0" placeholder="0 = Free" required />
+                      <Input type="number" min="0" placeholder="0 = Free" required value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
                     </div>
                     <div className="space-y-2">
                       <Label>Discount Price (optional)</Label>
-                      <Input type="number" min="0" placeholder="Leave blank for no discount" />
+                      <Input type="number" min="0" placeholder="Leave blank for no discount" value={formData.discount} onChange={e => setFormData({...formData, discount: e.target.value})} />
                     </div>
                     <div className="space-y-2">
                       <Label>License Type</Label>
-                      <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                      <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={formData.license} onChange={e => setFormData({...formData, license: e.target.value})}>
                         <option>Personal Use Only</option>
                         <option>Commercial Use</option>
                         <option>Extended License</option>
@@ -220,7 +290,7 @@ export default function AdminProductsPage() {
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
                       <Label>Skill Level</Label>
-                      <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                      <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={formData.level} onChange={e => setFormData({...formData, level: e.target.value})}>
                         <option>All Levels</option>
                         <option>Beginner</option>
                         <option>Intermediate</option>
@@ -229,11 +299,11 @@ export default function AdminProductsPage() {
                     </div>
                     <div className="space-y-2">
                       <Label>Destined For</Label>
-                      <Input placeholder="e.g. Freelancers, Designers, Agencies" />
+                      <Input placeholder="e.g. Freelancers, Designers, Agencies" value={formData.destined} onChange={e => setFormData({...formData, destined: e.target.value})} />
                     </div>
                     <div className="space-y-2">
                       <Label>Language</Label>
-                      <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                      <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={formData.language} onChange={e => setFormData({...formData, language: e.target.value})}>
                         <option>Arabic (AR)</option>
                         <option>French (FR)</option>
                         <option>English (EN)</option>
@@ -248,11 +318,11 @@ export default function AdminProductsPage() {
                   <CardContent className="space-y-3">
                     <div className="flex items-center justify-between">
                       <Label>Publish Immediately</Label>
-                      <input type="radio" name="status" defaultChecked />
+                      <input type="radio" name="status" checked={formData.publishStatus === "live"} onChange={() => setFormData({...formData, publishStatus: "live"})} />
                     </div>
                     <div className="flex items-center justify-between">
                       <Label>Save as Draft</Label>
-                      <input type="radio" name="status" />
+                      <input type="radio" name="status" checked={formData.publishStatus === "draft"} onChange={() => setFormData({...formData, publishStatus: "draft"})} />
                     </div>
                   </CardContent>
                 </Card>

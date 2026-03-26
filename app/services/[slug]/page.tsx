@@ -3,541 +3,441 @@
 import * as React from "react"
 import Link from "next/link"
 import { 
-  ChevronRight,
-  Star,
-  Clock,
-  RefreshCw,
-  CheckCircle2,
-  MessageCircle,
-  Heart,
-  Share2,
-  Shield,
-  CreditCard,
-  ThumbsUp,
-  Calendar,
-  Package,
-  Zap,
+  ChevronRight, Star, Clock, RefreshCw, CheckCircle2, MessageCircle, Heart, Share2, Shield, CreditCard, ThumbsUp, Package, Zap, AlertTriangle
 } from "lucide-react"
 import { Navbar } from "@/components/layout/navbar"
 import { Footer } from "@/components/layout/footer"
 import { ServiceCard } from "@/components/marketplace/service-card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
-import { featuredServices } from "@/lib/data"
+import { createClient } from "@/lib/supabase/client"
+import { useRouter } from "next/navigation"
 
-// ━━━ MOCK SERVICE DETAILS ━━━
-const serviceDetail = {
-  id: "1",
-  slug: "professional-logo-design",
-  title: "I Will Design a Professional Logo for Your Brand",
-  description: `Are you looking for a unique, professional logo that perfectly represents your brand? Look no further!
-
-I specialize in creating modern, memorable logos that help businesses stand out. With over 5 years of experience in brand identity design, I've helped hundreds of clients across Algeria and beyond establish a strong visual presence.
-
-**What makes my logos special:**
-- Clean, modern designs that stand the test of time
-- Multiple concept options to choose from
-- Unlimited revisions until you're 100% satisfied
-- Full ownership and commercial rights
-- Quick turnaround without compromising quality
-
-**My process:**
-1. I start by understanding your brand, target audience, and preferences
-2. I create initial concepts based on your brief
-3. We collaborate on refinements until it's perfect
-4. You receive all final files in multiple formats
-
-Let's create something amazing together!`,
-  seller: {
-    username: "yacine-m",
-    name: "Yacine M.",
-    level: "pro" as const,
-    verified: true,
-    avatar: "Y",
-    memberSince: "March 2024",
-    responseTime: "< 1 hour",
-    completedOrders: 234,
-    rating: 4.9,
-    bio: "Professional graphic designer specializing in brand identity and logo design. Passionate about helping businesses establish a strong visual presence.",
-    languages: ["Arabic", "French", "English"],
-    skills: ["Logo Design", "Brand Identity", "Graphic Design", "Illustration"],
-  },
-  category: "Graphic Design",
-  subcategory: "Logo Design",
-  packages: [
-    {
-      name: "Basic",
-      price: 2500,
-      description: "Simple logo design",
-      deliveryDays: 3,
-      revisions: 2,
-      features: [
-        "1 concept included",
-        "Logo transparency",
-        "Vector file (SVG)",
-        "Printable file (PDF)",
-      ],
-    },
-    {
-      name: "Standard",
-      price: 5000,
-      description: "Professional logo with more options",
-      deliveryDays: 4,
-      revisions: 5,
-      features: [
-        "3 concepts included",
-        "Logo transparency",
-        "Vector file (SVG)",
-        "Printable file (PDF)",
-        "3D mockup",
-        "Social media kit",
-      ],
-    },
-    {
-      name: "Premium",
-      price: 10000,
-      description: "Complete brand identity package",
-      deliveryDays: 7,
-      revisions: -1, // unlimited
-      features: [
-        "5 concepts included",
-        "Logo transparency",
-        "Vector file (SVG)",
-        "Printable file (PDF)",
-        "3D mockup",
-        "Social media kit",
-        "Business card design",
-        "Letterhead design",
-        "Brand guidelines",
-        "Source file",
-      ],
-    },
-  ],
-  whatYouGet: [
-    "High-resolution logo files",
-    "Vector formats (AI, EPS, SVG)",
-    "Web-ready formats (PNG, JPG)",
-    "Print-ready files (PDF, CMYK)",
-    "Full commercial rights",
-    "24/7 support during the project",
-  ],
-  faq: [
-    {
-      question: "What information do you need from me?",
-      answer: "I'll need your company name, industry, target audience, any color preferences, and examples of logos you like. The more details you provide, the better I can capture your vision.",
-    },
-    {
-      question: "Can you match a specific style?",
-      answer: "Yes! If you have reference images or a specific style in mind, please share them and I'll incorporate those elements into the design.",
-    },
-    {
-      question: "What if I don't like any of the concepts?",
-      answer: "No worries! I offer unlimited revisions on the Premium package and multiple revision rounds on other packages. We'll keep working until you're 100% satisfied.",
-    },
-    {
-      question: "Do you provide the source files?",
-      answer: "Source files (Adobe Illustrator) are included in the Premium package. For other packages, they can be added for an additional fee.",
-    },
-  ],
-  reviews: [
-    {
-      id: "1",
-      buyer: { name: "Amira S.", avatar: "A" },
-      rating: 5,
-      date: "2 weeks ago",
-      comment: "Yacine is incredibly talented! He understood my vision perfectly and delivered a stunning logo that exceeded my expectations. Highly recommend!",
-      helpful: 24,
-    },
-    {
-      id: "2",
-      buyer: { name: "Mohamed K.", avatar: "M" },
-      rating: 5,
-      date: "1 month ago",
-      comment: "Professional, creative, and fast. This was my third order with Yacine and he never disappoints. The logo is perfect for my new startup.",
-      helpful: 18,
-    },
-    {
-      id: "3",
-      buyer: { name: "Sara B.", avatar: "S" },
-      rating: 4,
-      date: "1 month ago",
-      comment: "Great communication and quality work. Only took one revision to get exactly what I wanted. Will definitely order again.",
-      helpful: 12,
-    },
-  ],
-  ratingBreakdown: {
-    5: 85,
-    4: 10,
-    3: 3,
-    2: 1,
-    1: 1,
-  },
-  tags: ["logo design", "brand identity", "modern logo", "business logo", "minimalist"],
-}
-
-export default function ServiceDetailPage() {
-  const [selectedPackage, setSelectedPackage] = React.useState(1) // Standard by default
+export default function ServiceDetailPage({ params }: { params: { slug: string } }) {
+  const [selectedPackage, setSelectedPackage] = React.useState(0)
   const [isSaved, setIsSaved] = React.useState(false)
+  const [service, setService] = React.useState<any>(null)
+  const [relatedServices, setRelatedServices] = React.useState<any[]>([])
+  const [loading, setLoading] = React.useState(true)
+  const [addingToCart, setAddingToCart] = React.useState(false)
+  const [messaging, setMessaging] = React.useState(false)
+  
+  const supabase = createClient()
+  const router = useRouter()
 
-  const currentPackage = serviceDetail.packages[selectedPackage]
+  React.useEffect(() => {
+    async function loadData() {
+      if (!params?.slug) return
+
+      // Attempt to load by slug or id
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.slug)
+      const query = supabase.from('Service').select('*, seller:Profile!seller_id(*), category:Category!category_id(*), reviews:Review(*, reviewer:Profile!reviewer_id(full_name, avatar_url))')
+      
+      const { data } = await (isUuid ? query.eq('id', params.slug) : query.eq('slug', params.slug)).single()
+      
+      if (data) {
+        setService(data)
+        // Load some related ones
+        const { data: related } = await supabase.from('Service').select('*, seller:Profile!seller_id(full_name, avatar_url)').eq('status', 'live').neq('id', data.id).limit(4)
+        setRelatedServices(related || [])
+      }
+      setLoading(false)
+    }
+    loadData()
+  }, [params?.slug])
+
+  const handleAddToCart = async () => {
+    if (!service) return
+    setAddingToCart(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      router.push("/login")
+      return
+    }
+    const packagesArray = getPackagesArray()
+    const pkg = packagesArray[selectedPackage] || packagesArray[0]
+    
+    // Check if CartItem already exists
+    const { error } = await supabase.from('CartItem').insert({
+      user_id: user.id,
+      item_type: 'service',
+      service_id: service.id,
+      package_name: pkg.name,
+      quantity: 1,
+      addons: { price: pkg.price }
+    })
+    setAddingToCart(false)
+    if (!error) router.push("/cart")
+    else alert("Failed to add to cart: " + error.message)
+  }
+
+  const handleMessageSeller = async () => {
+    if (!service) return
+    setMessaging(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      router.push("/login")
+      return
+    }
+    if (user.id === service.seller_id) {
+      alert("You cannot message yourself.")
+      setMessaging(false)
+      return
+    }
+    
+    const { data: existing } = await supabase.from('Conversation').select('*').contains('participant_ids', [user.id, service.seller_id])
+    if (existing && existing.length > 0) {
+      router.push(`/dashboard/buyer/messages?id=${existing[0].id}`)
+    } else {
+      const { data, error } = await supabase.from('Conversation').insert({
+        participant_ids: [user.id, service.seller_id]
+      }).select().single()
+      if (!error && data) router.push(`/dashboard/buyer/messages?id=${data.id}`)
+    }
+    setMessaging(false)
+  }
+
+  if (loading) return <div className="min-h-screen pt-20 flex items-center justify-center animate-pulse"><div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>
+  
+  if (!service) {
+    return (
+      <div className="min-h-screen pt-32 pb-16 flex flex-col items-center animate-slide-up">
+        <AlertTriangle className="w-16 h-16 text-muted-foreground/30 mb-6" />
+        <h1 className="text-3xl font-bold mb-4 text-center">Service Not Found</h1>
+        <p className="text-muted-foreground text-center max-w-md mb-8">This service might have been deleted, paused by the seller, or never existed.</p>
+        <Button asChild size="lg" className="rounded-xl"><Link href="/services">Browse Services</Link></Button>
+      </div>
+    )
+  }
+
+  const getPackagesArray = () => {
+    if (Array.isArray(service.packages) && service.packages.length > 0) return service.packages
+    let pkgs = []
+    if (service.packages?.basic) pkgs.push({ ...service.packages.basic, name: "Basic", price: parseFloat(service.packages.basic.price || 0) })
+    if (service.packages?.standard) pkgs.push({ ...service.packages.standard, name: "Standard", price: parseFloat(service.packages.standard.price || 0) })
+    if (service.packages?.premium) pkgs.push({ ...service.packages.premium, name: "Premium", price: parseFloat(service.packages.premium.price || 0) })
+    
+    return pkgs.filter(p => !isNaN(p.price) && p.price > 0).length > 0 ? pkgs : [{ name: "Standard", price: 5000, description: "Standard Package", delivery: 3, revisions: 1, features: ["High Quality"] }]
+  }
+
+  const packagesArray = getPackagesArray()
+  const currentPackage = packagesArray[selectedPackage] || packagesArray[0]
+  const renderedPackageIdx = selectedPackage < packagesArray.length ? selectedPackage : 0
+
+  const reviews = service.reviews || []
+  const ratingAvg = service.rating_avg || 0
+  const seller = service.seller || {}
+
+  // Calculate rating breakdown
+  const breakdown = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }
+  reviews.forEach((r: any) => {
+    if (r.rating_overall >= 1 && r.rating_overall <= 5) breakdown[r.rating_overall as 1|2|3|4|5]++
+  })
+
+  const faqData = service.faq || []
+  const features = Array.isArray(service.order_requirements) ? service.order_requirements : ["High-resolution delivery", "Commercial rights", "Top notch quality"]
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-50 dark:bg-background">
       <Navbar />
 
-      <main className="pt-20 pb-16">
-        <div className="container mx-auto px-4 lg:px-8">
+      <main className="pt-24 pb-16">
+        <div className="container mx-auto px-4 lg:px-8 max-w-7xl animate-fade-in">
           {/* Breadcrumb */}
-          <nav className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+          <nav className="flex items-center gap-2 text-sm text-slate-500 py-4 mb-4">
             <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
             <ChevronRight className="w-4 h-4" />
             <Link href="/services" className="hover:text-foreground transition-colors">Services</Link>
+            {service.category && (
+              <>
+                <ChevronRight className="w-4 h-4" />
+                <span className="hover:text-foreground transition-colors cursor-pointer">{service.category.name_en || service.category.name}</span>
+              </>
+            )}
             <ChevronRight className="w-4 h-4" />
-            <Link href={`/services?category=${serviceDetail.category.toLowerCase().replace(" ", "-")}`} className="hover:text-foreground transition-colors">
-              {serviceDetail.category}
-            </Link>
-            <ChevronRight className="w-4 h-4" />
-            <span className="text-foreground truncate">{serviceDetail.title}</span>
+            <span className="text-foreground truncate font-medium max-w-[200px] sm:max-w-xs">{service.title}</span>
           </nav>
 
-          <div className="flex flex-col lg:flex-row gap-8">
+          <div className="flex flex-col lg:flex-row gap-10">
             {/* Left Column */}
             <div className="flex-1 min-w-0">
               {/* Title */}
-              <h1 className="text-2xl lg:text-3xl font-bold mb-4 text-balance">
-                {serviceDetail.title}
+              <h1 className="text-3xl lg:text-4xl font-extrabold mb-5 text-slate-900 dark:text-foreground text-balance leading-tight">
+                {service.title}
               </h1>
 
               {/* Seller Info */}
-              <div className="flex items-center gap-4 mb-6 flex-wrap">
+              <div className="flex items-center gap-5 mb-8 flex-wrap">
                 <div className="flex items-center gap-3">
-                  <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center">
-                    <span className="text-lg font-bold">{serviceDetail.seller.avatar}</span>
-                    {serviceDetail.seller.verified && (
-                      <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-primary-foreground" />
+                  <div className="relative w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden border border-border shadow-sm">
+                    {seller.avatar_url ? (
+                      <img src={seller.avatar_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-lg font-bold text-slate-500">{seller.full_name?.charAt(0) || "U"}</span>
+                    )}
+                    {seller.is_verified && (
+                      <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center border-2 border-white dark:border-background">
+                        <CheckCircle2 className="w-3 h-3 text-white" />
                       </div>
                     )}
                   </div>
                   <div>
-                    <Link href={`/sellers/${serviceDetail.seller.username}`} className="font-semibold hover:text-primary transition-colors">
-                      {serviceDetail.seller.name}
+                    <Link href={`/sellers/${seller.username || seller.id}`} className="font-bold text-slate-900 dark:text-foreground hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                      {seller.full_name || "Anonymous"}
                     </Link>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Badge variant="secondary" className="text-xs bg-accent/10 text-accent">
-                        Pro Seller
+                    <div className="flex items-center mt-0.5">
+                      <Badge variant="secondary" className="text-[10px] px-2 py-0 h-5 bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400 capitalize hover:bg-indigo-100">
+                        {seller.seller_level || "New"} Seller
                       </Badge>
-                      <span className="text-muted-foreground">Member since {serviceDetail.seller.memberSince}</span>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 text-sm">
-                  <div className="flex items-center gap-1">
-                    <Star className="w-4 h-4 fill-warning text-warning" />
-                    <span className="font-medium">{serviceDetail.seller.rating}</span>
-                    <span className="text-muted-foreground">({serviceDetail.reviews.length} reviews)</span>
+                <div className="flex items-center gap-5 text-sm">
+                  <div className="flex items-center gap-1.5 font-medium">
+                    <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                    <span className="text-foreground">{ratingAvg.toFixed(1)}</span>
+                    <span className="text-slate-500">({reviews.length} reviews)</span>
                   </div>
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <Package className="w-4 h-4" />
-                    <span>{serviceDetail.seller.completedOrders} orders</span>
+                  <div className="flex items-center gap-1.5 font-medium text-slate-500">
+                    <Package className="w-4 h-4 text-slate-400" />
+                    <span>{seller.total_orders_completed || 0} orders</span>
                   </div>
                 </div>
               </div>
 
               {/* Image Gallery */}
-              <div className="mb-8">
-                <div className="aspect-video rounded-2xl bg-gradient-to-br from-primary/20 via-accent/10 to-primary/5 flex items-center justify-center mb-4">
-                  <div className="w-24 h-24 rounded-2xl bg-primary/10 flex items-center justify-center">
-                    <span className="text-4xl font-bold text-primary">Y</span>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  {[1, 2, 3, 4].map((i) => (
-                    <button
-                      key={i}
-                      className="w-20 h-14 rounded-lg bg-gradient-to-br from-primary/10 to-accent/10 border-2 border-transparent hover:border-primary transition-colors"
-                    />
-                  ))}
-                </div>
+              <div className="mb-10 relative rounded-[2rem] overflow-hidden aspect-video bg-slate-100 dark:bg-card border border-border shadow-sm">
+                  <img src={service.thumbnail_url || "https://images.unsplash.com/photo-1626785774573-4b799315345d?auto=format&fit=crop&q=80"} alt={service.title} className="w-full h-full object-cover" />
               </div>
 
               {/* Description */}
-              <div className="prose prose-slate max-w-none mb-8">
-                <h2 className="text-xl font-semibold mb-4">About This Service</h2>
-                <div className="text-muted-foreground whitespace-pre-line">
-                  {serviceDetail.description}
+              <div className="prose prose-slate dark:prose-invert max-w-none mb-10 prose-headings:font-bold prose-headings:text-slate-900 dark:prose-headings:text-foreground prose-p:text-slate-600 dark:prose-p:text-muted-foreground prose-a:text-indigo-600 hover:prose-a:text-indigo-500">
+                <h2 className="text-2xl">About This Service</h2>
+                <div className="whitespace-pre-line leading-relaxed">
+                  {service.description || "No description provided."}
                 </div>
               </div>
 
-              {/* What You'll Get */}
-              <div className="mb-8">
-                <h2 className="text-xl font-semibold mb-4">What You{"'"}ll Get</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {serviceDetail.whatYouGet.map((item, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
-                      <span className="text-sm">{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* FAQ */}
-              <div className="mb-8">
-                <h2 className="text-xl font-semibold mb-4">Frequently Asked Questions</h2>
-                <Accordion type="single" collapsible>
-                  {serviceDetail.faq.map((item, i) => (
-                    <AccordionItem key={i} value={`faq-${i}`}>
-                      <AccordionTrigger className="text-left">{item.question}</AccordionTrigger>
-                      <AccordionContent className="text-muted-foreground">{item.answer}</AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              </div>
-
-              {/* Reviews */}
-              <div>
-                <h2 className="text-xl font-semibold mb-4">Reviews</h2>
-
-                {/* Rating Breakdown */}
-                <div className="flex flex-col sm:flex-row gap-6 p-6 rounded-2xl bg-secondary/30 mb-6">
-                  <div className="text-center">
-                    <div className="text-4xl font-bold mb-1">{serviceDetail.seller.rating}</div>
-                    <div className="flex items-center justify-center gap-1 mb-1">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star
-                          key={star}
-                          className={cn(
-                            "w-4 h-4",
-                            star <= Math.round(serviceDetail.seller.rating)
-                              ? "fill-warning text-warning"
-                              : "text-muted-foreground"
-                          )}
-                        />
-                      ))}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {serviceDetail.reviews.length} reviews
-                    </div>
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    {[5, 4, 3, 2, 1].map((stars) => (
-                      <div key={stars} className="flex items-center gap-3">
-                        <span className="text-sm w-12">{stars} stars</span>
-                        <Progress
-                          value={serviceDetail.ratingBreakdown[stars as keyof typeof serviceDetail.ratingBreakdown]}
-                          className="flex-1 h-2"
-                        />
-                        <span className="text-sm text-muted-foreground w-10">
-                          {serviceDetail.ratingBreakdown[stars as keyof typeof serviceDetail.ratingBreakdown]}%
-                        </span>
+              {/* Features */}
+              {features.length > 0 && (
+                <div className="mb-10 bg-white dark:bg-card rounded-3xl p-8 border border-border shadow-sm">
+                  <h2 className="text-xl font-bold mb-6 text-slate-900 dark:text-foreground">What You'll Get</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {features.map((item: string, i: number) => (
+                      <div key={i} className="flex items-start gap-3">
+                        <div className="mt-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 p-1">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                        </div>
+                        <span className="text-slate-600 dark:text-muted-foreground leading-snug">{item}</span>
                       </div>
                     ))}
                   </div>
                 </div>
+              )}
 
-                {/* Review List */}
-                <div className="space-y-6">
-                  {serviceDetail.reviews.map((review) => (
-                    <div key={review.id} className="border-b border-border pb-6 last:border-0">
-                      <div className="flex items-start gap-3 mb-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center flex-shrink-0">
-                          <span className="font-medium">{review.buyer.avatar}</span>
+              {/* FAQ */}
+              {faqData.length > 0 && (
+                <div className="mb-12">
+                  <h2 className="text-2xl font-bold mb-6 text-slate-900 dark:text-foreground">Frequently Asked Questions</h2>
+                  <Accordion type="single" collapsible className="bg-white dark:bg-card rounded-3xl border border-border overflow-hidden shadow-sm">
+                    {faqData.map((item: any, i: number) => (
+                      <AccordionItem key={i} value={`faq-${i}`} className="px-6 border-b-slate-100 dark:border-border last:border-0">
+                        <AccordionTrigger className="text-left font-semibold text-slate-800 dark:text-foreground py-5 hover:text-indigo-600 transition-colors">{item.question}</AccordionTrigger>
+                        <AccordionContent className="text-slate-600 dark:text-muted-foreground pb-5 leading-relaxed">{item.answer}</AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                </div>
+              )}
+
+              {/* Reviews */}
+              <div className="mb-12">
+                <h2 className="text-2xl font-bold mb-6 text-slate-900 dark:text-foreground">Client Reviews</h2>
+
+                {reviews.length === 0 ? (
+                  <div className="text-center py-10 bg-white dark:bg-card border border-border rounded-3xl shadow-sm">
+                    <Star className="w-12 h-12 text-slate-200 dark:text-slate-700 mx-auto mb-3" />
+                    <p className="text-slate-500 font-medium">No reviews yet for this service.</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Rating Breakdown */}
+                    <div className="flex flex-col sm:flex-row gap-8 p-8 rounded-3xl bg-white dark:bg-card border border-border shadow-sm mb-8">
+                      <div className="text-center sm:pr-8 sm:border-r border-slate-100 dark:border-border flex flex-col justify-center">
+                        <div className="text-5xl font-black mb-2 text-slate-900 dark:text-foreground">{ratingAvg.toFixed(1)}</div>
+                        <div className="flex items-center justify-center gap-1.5 mb-2">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              className={cn("w-5 h-5", star <= Math.round(ratingAvg) ? "fill-amber-400 text-amber-400" : "text-slate-200 dark:text-slate-700")}
+                            />
+                          ))}
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium">{review.buyer.name}</span>
-                            <span className="text-sm text-muted-foreground">{review.date}</span>
-                          </div>
-                          <div className="flex items-center gap-1 mt-1">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <Star
-                                key={star}
-                                className={cn(
-                                  "w-3.5 h-3.5",
-                                  star <= review.rating
-                                    ? "fill-warning text-warning"
-                                    : "text-muted-foreground"
-                                )}
-                              />
-                            ))}
-                          </div>
+                        <div className="text-sm font-medium text-slate-500">
+                          {reviews.length} reviews
                         </div>
                       </div>
-                      <p className="text-muted-foreground mb-3">{review.comment}</p>
-                      <button className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                        <ThumbsUp className="w-4 h-4" />
-                        Helpful ({review.helpful})
-                      </button>
+                      <div className="flex-1 space-y-3 justify-center flex flex-col">
+                        {[5, 4, 3, 2, 1].map((stars) => {
+                          const count = breakdown[stars as 1|2|3|4|5] || 0
+                          const pct = reviews.length > 0 ? (count / reviews.length) * 100 : 0
+                          return (
+                            <div key={stars} className="flex items-center gap-4">
+                              <span className="text-sm font-bold w-12 text-slate-700 dark:text-slate-300">{stars} stars</span>
+                              <div className="flex-1 h-2.5 bg-slate-100 dark:bg-secondary rounded-full overflow-hidden">
+                                <div className="h-full bg-amber-400 rounded-full" style={{ width: `${pct}%` }} />
+                              </div>
+                              <span className="text-sm font-medium text-slate-500 w-8">{count}</span>
+                            </div>
+                          )
+                        })}
+                      </div>
                     </div>
-                  ))}
-                </div>
+
+                    {/* Review List */}
+                    <div className="space-y-6">
+                      {reviews.map((review: any) => (
+                        <div key={review.id} className="bg-white dark:bg-card border border-border p-6 rounded-3xl shadow-sm">
+                          <div className="flex items-start gap-4 mb-4">
+                            <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                              {review.reviewer?.avatar_url ? <img src={review.reviewer.avatar_url} alt="" className="w-full h-full object-cover" /> : <span className="font-bold text-slate-500">{review.reviewer?.full_name?.charAt(0) || "U"}</span>}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-slate-900 dark:text-foreground">{review.reviewer?.full_name || "Unknown"}</span>
+                                <span className="text-xs font-semibold text-slate-400">{new Date(review.created_at).toLocaleDateString()}</span>
+                              </div>
+                              <div className="flex items-center gap-1 mt-1">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <Star key={star} className={cn("w-3.5 h-3.5", star <= review.rating_overall ? "fill-amber-400 text-amber-400" : "text-slate-200 dark:text-slate-700")} />
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-slate-600 dark:text-muted-foreground leading-relaxed mb-4">{review.comment}</p>
+                          <button className="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors">
+                            <ThumbsUp className="w-4 h-4" /> Helpful
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
-            {/* Right Column - Order Card */}
-            <div className="lg:w-96">
-              <div className="sticky top-24">
-                <div className="border border-border rounded-2xl bg-card overflow-hidden">
+            {/* Right Column - Order Sticky Card */}
+            <div className="lg:w-[400px]">
+              <div className="sticky top-28">
+                <div className="border border-border rounded-[2rem] bg-white dark:bg-card shadow-xl shadow-slate-200/50 dark:shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden">
+                  
                   {/* Package Tabs */}
-                  <div className="grid grid-cols-3 border-b border-border">
-                    {serviceDetail.packages.map((pkg, i) => (
+                  <div className="flex bg-slate-50 dark:bg-secondary/20">
+                    {packagesArray.map((pkg: any, i: number) => (
                       <button
-                        key={pkg.name}
+                        key={i}
                         onClick={() => setSelectedPackage(i)}
                         className={cn(
-                          "py-4 text-sm font-medium transition-colors",
-                          selectedPackage === i
-                            ? "bg-primary text-primary-foreground"
-                            : "hover:bg-secondary"
+                          "py-5 px-2 flex-1 text-sm font-bold transition-all text-center border-b-2",
+                          renderedPackageIdx === i
+                            ? "border-indigo-600 text-indigo-700 dark:text-indigo-400 bg-white dark:bg-card"
+                            : "border-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-muted"
                         )}
                       >
-                        {pkg.name}
+                        {pkg.name || "Standard"}
                       </button>
                     ))}
                   </div>
 
                   {/* Package Details */}
-                  <div className="p-6">
+                  <div className="p-8">
                     <div className="flex items-baseline justify-between mb-4">
-                      <span className="font-mono text-3xl font-bold">
+                      <span className="text-4xl font-black text-slate-900 dark:text-foreground tracking-tight">
                         {currentPackage.price.toLocaleString()}
-                        <span className="text-lg ml-1">DZD</span>
+                        <span className="text-xl ml-1 text-slate-500 font-bold">DZD</span>
                       </span>
                     </div>
 
-                    <p className="text-muted-foreground mb-4">{currentPackage.description}</p>
+                    <p className="text-slate-600 dark:text-muted-foreground mb-6 leading-relaxed font-medium">{currentPackage.description || "Get high quality results with this excellent package tailored for your needs."}</p>
 
-                    <div className="flex items-center gap-4 mb-4 text-sm">
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4 text-muted-foreground" />
-                        <span>{currentPackage.deliveryDays} day{currentPackage.deliveryDays > 1 ? 's' : ''} delivery</span>
+                    <div className="flex items-center gap-6 mb-6 text-sm font-bold text-slate-700 dark:text-slate-300">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-indigo-500" />
+                        <span>{currentPackage.delivery || currentPackage.deliveryDays || 3} Days Delivery</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <RefreshCw className="w-4 h-4 text-muted-foreground" />
-                        <span>
-                          {currentPackage.revisions === -1 ? "Unlimited" : currentPackage.revisions} revision{currentPackage.revisions !== 1 ? 's' : ''}
-                        </span>
+                      <div className="flex items-center gap-2">
+                        <RefreshCw className="w-5 h-5 text-indigo-500" />
+                        <span>{currentPackage.revisions === -1 ? "Unlimited" : currentPackage.revisions || 1} Revisions</span>
                       </div>
                     </div>
 
-                    <div className="space-y-2 mb-6">
-                      {currentPackage.features.map((feature, i) => (
-                        <div key={i} className="flex items-center gap-2 text-sm">
-                          <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
+                    <div className="space-y-3 mb-8">
+                      {(currentPackage.features || ["High quality source files", "Commercial use ready", "Fast & priority support"]).map((feature: string, i: number) => (
+                        <div key={i} className="flex items-start gap-3 text-sm font-medium text-slate-600 dark:text-muted-foreground">
+                          <CheckCircle2 className="w-5 h-5 text-indigo-500 flex-shrink-0" />
                           <span>{feature}</span>
                         </div>
                       ))}
                     </div>
 
-                    <Button className="w-full rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground h-12 text-base mb-3">
-                      Continue ({currentPackage.price.toLocaleString()} DZD)
+                    <Button 
+                      className="w-full rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white h-14 text-lg font-bold shadow-[0_4px_20px_rgba(79,70,229,0.3)] hover:shadow-[0_4px_25px_rgba(79,70,229,0.5)] transition-all mb-4"
+                      disabled={addingToCart} 
+                      onClick={handleAddToCart}
+                    >
+                      {addingToCart ? "Adding to Cart..." : "Continue to Order"}
                     </Button>
 
-                    <Button variant="outline" className="w-full rounded-xl h-12 gap-2">
-                      <MessageCircle className="w-4 h-4" />
-                      Contact Seller
+                    <Button variant="outline" className="w-full rounded-2xl h-12 gap-2 font-bold border-slate-200 dark:border-border hover:bg-slate-50 dark:hover:bg-muted text-slate-700 dark:text-slate-300" disabled={messaging} onClick={handleMessageSeller}>
+                      <MessageCircle className="w-5 h-5" />
+                      {messaging ? "Please wait..." : "Message Seller"}
                     </Button>
 
-                    {/* Trust Indicators */}
-                    <div className="flex items-center justify-center gap-4 mt-4 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Shield className="w-3.5 h-3.5" />
-                        <span>Secure Payment</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <CreditCard className="w-3.5 h-3.5" />
-                        <span>Edahabia/CIB</span>
-                      </div>
+                    <div className="flex items-center justify-center gap-6 mt-6 pt-6 border-t border-slate-100 dark:border-border text-xs font-bold text-slate-400">
+                      <div className="flex items-center gap-1.5"><Shield className="w-4 h-4" /> Secure</div>
+                      <div className="flex items-center gap-1.5"><CreditCard className="w-4 h-4" /> Escrow</div>
                     </div>
-                  </div>
-
-                  {/* Seller Mini Profile */}
-                  <div className="border-t border-border p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center">
-                        <span className="text-lg font-bold">{serviceDetail.seller.avatar}</span>
-                        {serviceDetail.seller.verified && (
-                          <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-primary-foreground" />
-                          </div>
-                        )}
-                      </div>
-                      <div>
-                        <Link href={`/sellers/${serviceDetail.seller.username}`} className="font-semibold hover:text-primary transition-colors">
-                          {serviceDetail.seller.name}
-                        </Link>
-                        <Badge variant="secondary" className="text-xs bg-accent/10 text-accent ml-2">
-                          Pro Seller
-                        </Badge>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-                      <div>
-                        <p className="text-muted-foreground">Response time</p>
-                        <p className="font-medium flex items-center gap-1">
-                          <Zap className="w-4 h-4 text-warning" />
-                          {serviceDetail.seller.responseTime}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Completed orders</p>
-                        <p className="font-medium">{serviceDetail.seller.completedOrders}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Member since</p>
-                        <p className="font-medium">{serviceDetail.seller.memberSince}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Rating</p>
-                        <p className="font-medium flex items-center gap-1">
-                          <Star className="w-4 h-4 fill-warning text-warning" />
-                          {serviceDetail.seller.rating}
-                        </p>
-                      </div>
-                    </div>
-
-                    <Link href={`/sellers/${serviceDetail.seller.username}`}>
-                      <Button variant="ghost" className="w-full" size="sm">
-                        View Full Profile
-                      </Button>
-                    </Link>
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex items-center gap-3 mt-4">
-                  <Button
-                    variant="outline"
-                    className="flex-1 gap-2"
-                    onClick={() => setIsSaved(!isSaved)}
-                  >
-                    <Heart className={cn("w-4 h-4", isSaved && "fill-current text-destructive")} />
-                    {isSaved ? "Saved" : "Save"}
+                <div className="flex items-center gap-4 mt-6">
+                  <Button variant="outline" className={cn("flex-1 h-12 rounded-2xl gap-2 font-bold bg-white dark:bg-card shadow-sm border-slate-200 dark:border-border", isSaved && "text-rose-600 border-rose-200 dark:border-rose-900/50 hover:bg-rose-50 dark:hover:bg-rose-900/10")} onClick={() => setIsSaved(!isSaved)}>
+                    <Heart className={cn("w-5 h-5", isSaved ? "fill-rose-500 text-rose-500" : "text-slate-400")} />
+                    {isSaved ? "Saved" : "Save List"}
                   </Button>
-                  <Button variant="outline" className="flex-1 gap-2">
-                    <Share2 className="w-4 h-4" />
-                    Share
+                  <Button variant="outline" className="h-12 w-12 rounded-2xl bg-white dark:bg-card shadow-sm border-slate-200 dark:border-border text-slate-500 hover:text-indigo-600">
+                    <Share2 className="w-5 h-5" />
                   </Button>
                 </div>
               </div>
             </div>
           </div>
-
+          
           {/* Related Services */}
-          <section className="mt-16">
-            <h2 className="text-2xl font-bold mb-6">You May Also Like</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredServices.slice(0, 4).map((service) => (
-                <ServiceCard key={service.id || ""} {...service} />
-              ))}
+          {relatedServices.length > 0 && (
+            <div className="mt-24 pt-16 border-t border-border">
+              <h2 className="text-3xl font-extrabold mb-10 text-slate-900 dark:text-foreground">Similar Services</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {relatedServices.map((svc) => (
+                  <div key={svc.id} className="group bg-white dark:bg-card rounded-[2rem] p-3 border border-slate-200 dark:border-border shadow-sm hover:shadow-[0_20px_40px_rgba(79,70,229,0.1)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col relative">
+                    <Link href={`/services/${svc.slug || svc.id}`} className="absolute inset-0 z-0" />
+                    <div className="h-44 rounded-3xl bg-slate-100 mb-4 overflow-hidden relative">
+                      {svc.thumbnail_url ? <img src={svc.thumbnail_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> : <div className="w-full h-full bg-indigo-50" />}
+                    </div>
+                    <div className="px-3 pb-3 flex-1 flex flex-col z-10">
+                      <h3 className="text-lg font-bold mb-3 line-clamp-2 text-slate-900">{svc.title}</h3>
+                      <div className="flex items-center gap-2 mt-auto">
+                        <div className="font-semibold text-slate-600 text-sm">By {svc.seller?.full_name}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </section>
+          )}
         </div>
       </main>
 

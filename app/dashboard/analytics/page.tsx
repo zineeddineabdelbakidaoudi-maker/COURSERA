@@ -1,42 +1,87 @@
 "use client"
 
-import { BarChart3, TrendingUp, DollarSign, Eye, Star, ArrowUp, ArrowDown } from "lucide-react"
+import { useEffect, useState } from "react"
+import { BarChart3, TrendingUp, DollarSign, Star, Briefcase, Loader2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-
-const stats = [
-  { label: "Total Earnings", value: "48,500 DZD", change: "+12%", up: true, icon: DollarSign, color: "text-green-500" },
-  { label: "Profile Views", value: "1,240", change: "+23%", up: true, icon: Eye, color: "text-blue-500" },
-  { label: "Orders Completed", value: "34", change: "+5%", up: true, icon: BarChart3, color: "text-purple-500" },
-  { label: "Avg. Rating", value: "4.8 ★", change: "-0.1", up: false, icon: Star, color: "text-amber-500" },
-]
-
-const monthly = [
-  { month: "Oct", val: 12000 }, { month: "Nov", val: 18500 }, { month: "Dec", val: 9000 },
-  { month: "Jan", val: 22000 }, { month: "Feb", val: 31000 }, { month: "Mar", val: 48500 },
-]
-const maxVal = Math.max(...monthly.map(m => m.val))
+import { createClient } from "@/lib/supabase/client"
 
 export default function AnalyticsPage() {
+  const supabase = createClient()
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({ earnings: 0, ordersCompleted: 0, avgRating: 0, services: 0 })
+  const [services, setServices] = useState<any[]>([])
+
+  useEffect(() => {
+    fetchAnalytics()
+  }, [])
+
+  const fetchAnalytics = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setLoading(false); return }
+
+    // Orders as seller
+    const { data: orders } = await supabase
+      .from("Order")
+      .select("price_dzd, status, service_id")
+      .eq("seller_id", user.id)
+
+    const completed = (orders || []).filter(o => o.status === "completed")
+    const earnings = completed.reduce((sum, o) => sum + parseFloat(o.price_dzd || 0), 0)
+
+    // Reviews
+    const { data: reviews } = await supabase
+      .from("Review")
+      .select("rating_overall")
+      .eq("reviewed_user_id", user.id)
+    const avgRating = reviews && reviews.length > 0
+      ? (reviews.reduce((s, r) => s + r.rating_overall, 0) / reviews.length)
+      : 0
+
+    // My services
+    const { data: svcData } = await supabase
+      .from("Service")
+      .select("id, title, status")
+      .eq("seller_id", user.id)
+
+    setStats({
+      earnings,
+      ordersCompleted: completed.length,
+      avgRating: parseFloat(avgRating.toFixed(1)),
+      services: (svcData || []).length,
+    })
+    setServices(svcData || [])
+    setLoading(false)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  const statCards = [
+    { label: "Total Earnings", value: `${stats.earnings.toLocaleString()} DZD`, icon: DollarSign, color: "text-green-500" },
+    { label: "Orders Completed", value: stats.ordersCompleted.toString(), icon: BarChart3, color: "text-purple-500" },
+    { label: "Avg. Rating", value: stats.avgRating > 0 ? `${stats.avgRating} ★` : "N/A", icon: Star, color: "text-amber-500" },
+    { label: "My Services", value: stats.services.toString(), icon: Briefcase, color: "text-blue-500" },
+  ]
+
   return (
-    <div className="space-y-8 animate-slide-up">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-display font-semibold mb-1">Analytics</h1>
-        <p className="text-muted-foreground">Track your performance and earnings over time.</p>
+        <h1 className="text-3xl font-bold mb-1">Analytics</h1>
+        <p className="text-muted-foreground">Track your performance and earnings.</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((s) => {
+        {statCards.map((s) => {
           const Icon = s.icon
           return (
             <Card key={s.label} className="border-border shadow-sm">
               <CardContent className="p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <Icon className={`w-5 h-5 ${s.color}`} />
-                  <span className={`text-xs font-semibold flex items-center gap-1 ${s.up ? "text-green-500" : "text-red-500"}`}>
-                    {s.up ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
-                    {s.change}
-                  </span>
-                </div>
+                <Icon className={`w-5 h-5 ${s.color} mb-3`} />
                 <p className="text-2xl font-bold">{s.value}</p>
                 <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
               </CardContent>
@@ -47,56 +92,27 @@ export default function AnalyticsPage() {
 
       <Card className="border-border shadow-sm">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><TrendingUp className="w-5 h-5 text-primary" />Monthly Earnings (DZD)</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-primary" />My Services
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-end gap-4 h-48">
-            {monthly.map((m) => (
-              <div key={m.month} className="flex-1 flex flex-col items-center gap-2">
-                <span className="text-xs text-muted-foreground font-medium">{(m.val / 1000).toFixed(0)}k</span>
-                <div
-                  className="w-full rounded-t-lg bg-primary/80 hover:bg-primary transition-colors"
-                  style={{ height: `${(m.val / maxVal) * 100}%`, minHeight: 8 }}
-                />
-                <span className="text-xs text-muted-foreground">{m.month}</span>
-              </div>
-            ))}
-          </div>
+          {services.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">No services published yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {services.map((svc) => (
+                <div key={svc.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                  <p className="text-sm font-medium">{svc.title}</p>
+                  <span className={`text-xs font-semibold px-2 py-1 rounded-full ${svc.status === "live" ? "bg-green-500/10 text-green-600" : "bg-yellow-500/10 text-yellow-600"}`}>
+                    {svc.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="border-border shadow-sm">
-          <CardHeader><CardTitle className="text-base">Top Performing Services</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            {["Brand Identity Design", "Logo Redesign", "UI Mockup Pack"].map((s, i) => (
-              <div key={s} className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-muted-foreground w-5">#{i + 1}</span>
-                  <span className="text-sm font-medium">{s}</span>
-                </div>
-                <span className="text-sm font-semibold text-primary">{[24, 17, 9][i]} orders</span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-        <Card className="border-border shadow-sm">
-          <CardHeader><CardTitle className="text-base">Traffic Sources</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            {[{ src: "Search", pct: 62 }, { src: "Direct", pct: 28 }, { src: "Social", pct: 10 }].map((t) => (
-              <div key={t.src}>
-                <div className="flex justify-between text-sm mb-1.5">
-                  <span className="font-medium">{t.src}</span>
-                  <span className="text-muted-foreground">{t.pct}%</span>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-primary rounded-full" style={{ width: `${t.pct}%` }} />
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
     </div>
   )
 }

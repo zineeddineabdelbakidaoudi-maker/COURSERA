@@ -1,46 +1,79 @@
 "use client"
 
-import React, { useState } from "react"
-import { ShoppingBag, Clock, CheckCircle2, AlertTriangle, Eye, X, MessageSquare, Package } from "lucide-react"
+import React, { useState, useEffect } from "react"
+import { ShoppingBag, Clock, CheckCircle2, AlertTriangle, Eye, X, MessageSquare, Package, Star, Loader2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-
-const orders = [
-  {
-    id: "#ORD-1042", service: "Brand Identity Design", seller: "Yacine M.",
-    price: "15,000 DZD", status: "in_progress", date: "Mar 20, 2026",
-    deliveryDate: "Apr 3, 2026", requirements: "Logo, business card, brand guidelines",
-    notes: "Please use dark blue and gold palette.", milestones: ["Brief approved", "First concept sent", "Revision requested"]
-  },
-  {
-    id: "#ORD-1031", service: "SEO Copywriting x5", seller: "Nassima B.",
-    price: "5,500 DZD", status: "completed", date: "Mar 10, 2026",
-    deliveryDate: "Mar 14, 2026", requirements: "5 Arabic SEO articles, 500 words each",
-    notes: "Topics sent via message.", milestones: ["Brief approved", "Articles delivered", "Completed ✓"]
-  },
-  {
-    id: "#ORD-1019", service: "React Landing Page", seller: "Karim B.",
-    price: "25,000 DZD", status: "completed", date: "Feb 28, 2026",
-    deliveryDate: "Mar 8, 2026", requirements: "Full landing page with animations",
-    notes: "Used Next.js + Tailwind", milestones: ["Kickoff call", "Draft sent", "Completed ✓"]
-  },
-  {
-    id: "#ORD-1008", service: "Social Media Kit", seller: "Amine K.",
-    price: "8,000 DZD", status: "disputed", date: "Feb 14, 2026",
-    deliveryDate: "Feb 21, 2026", requirements: "10 social media templates",
-    notes: "Delivered work did not match brief.", milestones: ["Brief approved", "Delivered (disputed)"]
-  },
-]
+import { createClient } from "@/lib/supabase/client"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: any }> = {
+  pending_requirements: { label: "Awaiting Req", color: "bg-blue-500/10 text-blue-600 border-blue-200", icon: Clock },
   in_progress: { label: "In Progress", color: "bg-blue-500/10 text-blue-600 border-blue-200", icon: Clock },
+  in_revision: { label: "In Revision", color: "bg-amber-500/10 text-amber-600 border-amber-200", icon: Clock },
+  delivered: { label: "Delivered", color: "bg-purple-500/10 text-purple-600 border-purple-200", icon: Package },
   completed: { label: "Completed", color: "bg-green-500/10 text-green-600 border-green-200", icon: CheckCircle2 },
+  cancelled: { label: "Cancelled", color: "bg-red-500/10 text-red-600 border-red-200", icon: AlertTriangle },
   disputed: { label: "Disputed", color: "bg-red-500/10 text-red-600 border-red-200", icon: AlertTriangle },
 }
 
 export default function BuyerOrdersPage() {
-  const [selected, setSelected] = useState<(typeof orders)[0] | null>(null)
+  const [orders, setOrders] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selected, setSelected] = useState<any | null>(null)
+  
+  // Review state
+  const [showReview, setShowReview] = useState(false)
+  const [submittingReview, setSubmittingReview] = useState(false)
+  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: "" })
+  
+  const supabase = createClient()
+
+  useEffect(() => {
+    fetchOrders()
+  }, [])
+
+  const fetchOrders = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    
+    // Fetch real orders mapping their respective service and seller
+    const { data } = await supabase.from('Order').select('*, service:Service(title), seller:Profile!seller_id(full_name), reviews:Review(id)').eq('buyer_id', user.id).order('created_at', { ascending: false })
+    
+    if (data) setOrders(data)
+    setLoading(false)
+  }
+
+  const handleReviewSubmit = async () => {
+    if (!selected || !reviewForm.comment.trim()) return
+    setSubmittingReview(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    const { error } = await supabase.from('Review').insert({
+      reviewer_id: user?.id,
+      reviewed_user_id: selected.seller_id,
+      service_id: selected.service_id,
+      order_id: selected.id,
+      rating_overall: reviewForm.rating,
+      rating_quality: reviewForm.rating,
+      rating_communication: reviewForm.rating,
+      comment: reviewForm.comment,
+      is_verified_purchase: true,
+      is_visible: true
+    })
+
+    setSubmittingReview(false)
+    if (!error) {
+      alert("Review submitted successfully!")
+      setShowReview(false)
+      setSelected(null)
+      fetchOrders() // Refresh to show it has a review
+    } else {
+      alert("Error submitting review: " + error.message)
+    }
+  }
 
   return (
     <div className="space-y-8 animate-slide-up">
@@ -50,10 +83,14 @@ export default function BuyerOrdersPage() {
       </div>
 
       <div className="grid grid-cols-3 gap-4">
-        {[{ label: "Active", count: 1, color: "text-blue-500" }, { label: "Completed", count: 2, color: "text-green-500" }, { label: "Disputed", count: 1, color: "text-red-500" }].map(s => (
+        {[
+          { label: "Active", count: orders.filter(o => o.status === 'in_progress' || o.status === 'pending_requirements').length, color: "text-blue-500" },
+          { label: "Completed", count: orders.filter(o => o.status === 'completed').length, color: "text-green-500" },
+          { label: "Cancelled", count: orders.filter(o => o.status === 'cancelled' || o.status === 'disputed').length, color: "text-red-500" }
+        ].map(s => (
           <Card key={s.label} className="border-border shadow-sm">
             <CardContent className="p-4 text-center">
-              <p className={`text-3xl font-bold ${s.color}`}>{s.count}</p>
+              <p className={`text-3xl font-bold ${s.color}`}>{loading ? '-' : s.count}</p>
               <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
             </CardContent>
           </Card>
@@ -74,25 +111,29 @@ export default function BuyerOrdersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {orders.map(o => {
-                  const s = STATUS_MAP[o.status]
+                {loading ? (
+                  <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">Loading orders...</td></tr>
+                ) : orders.length === 0 ? (
+                  <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No orders found.</td></tr>
+                ) : orders.map(o => {
+                  const s = STATUS_MAP[o.status] || STATUS_MAP.in_progress
                   const SIcon = s.icon
                   return (
                     <tr key={o.id} className="hover:bg-muted/20 transition-colors">
                       <td className="p-4">
-                        <p className="font-semibold">{o.id}</p>
-                        <p className="text-xs text-muted-foreground line-clamp-1">{o.service}</p>
-                        <p className="text-xs text-muted-foreground">{o.date}</p>
+                        <p className="font-semibold">{o.order_number}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-1">{o.service?.title || o.package_name}</p>
+                        <p className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleDateString()}</p>
                       </td>
-                      <td className="p-4 hidden sm:table-cell text-muted-foreground">{o.seller}</td>
+                      <td className="p-4 hidden sm:table-cell text-muted-foreground">{o.seller?.full_name || "Unknown"}</td>
                       <td className="p-4">
                         <Badge variant="outline" className={`gap-1.5 ${s.color}`}>
                           <SIcon className="w-3 h-3" />{s.label}
                         </Badge>
                       </td>
-                      <td className="p-4 text-right font-semibold">{o.price}</td>
+                      <td className="p-4 text-right font-semibold">{parseFloat(o.price_dzd).toLocaleString()} DZD</td>
                       <td className="p-4 text-right">
-                        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setSelected(o)}>
+                        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => { setSelected(o); setShowReview(false); }}>
                           <Eye className="w-3.5 h-3.5" />View
                         </Button>
                       </td>
@@ -111,60 +152,82 @@ export default function BuyerOrdersPage() {
           <div className="bg-card rounded-2xl shadow-2xl w-full max-w-lg border border-border" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-border">
               <div>
-                <h2 className="font-bold text-lg">{selected.id}</h2>
-                <p className="text-sm text-muted-foreground">{selected.service}</p>
+                <h2 className="font-bold text-lg">{showReview ? "Leave a Review" : selected.order_number}</h2>
+                <p className="text-sm text-muted-foreground">{selected.service?.title}</p>
               </div>
               <button onClick={() => setSelected(null)} className="text-muted-foreground hover:text-foreground transition-colors"><X className="w-5 h-5" /></button>
             </div>
-            <div className="p-5 space-y-5">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="bg-muted/30 p-3 rounded-xl">
-                  <p className="text-xs text-muted-foreground mb-1">Seller</p>
-                  <p className="font-semibold">{selected.seller}</p>
+            
+            {showReview ? (
+              <div className="p-5 space-y-4">
+                <div className="flex flex-col items-center justify-center py-4 border-b border-border">
+                  <p className="text-sm mb-2 font-medium">Rate your experience</p>
+                  <div className="flex gap-2 text-warning">
+                    {[1, 2, 3, 4, 5].map(star => (
+                      <button key={star} onClick={() => setReviewForm({ ...reviewForm, rating: star })}>
+                        <Star className={`w-8 h-8 ${star <= reviewForm.rating ? "fill-warning" : "text-muted border-muted-foreground stroke-1 stroke-muted-foreground fill-none"}`} />
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="bg-muted/30 p-3 rounded-xl">
-                  <p className="text-xs text-muted-foreground mb-1">Total Price</p>
-                  <p className="font-bold text-primary">{selected.price}</p>
-                </div>
-                <div className="bg-muted/30 p-3 rounded-xl">
-                  <p className="text-xs text-muted-foreground mb-1">Order Date</p>
-                  <p className="font-semibold">{selected.date}</p>
-                </div>
-                <div className="bg-muted/30 p-3 rounded-xl">
-                  <p className="text-xs text-muted-foreground mb-1">Delivery Date</p>
-                  <p className="font-semibold">{selected.deliveryDate}</p>
-                </div>
-              </div>
-
-              <div>
-                <p className="text-xs text-muted-foreground mb-2 font-semibold uppercase tracking-wide">Milestones</p>
                 <div className="space-y-2">
-                  {selected.milestones.map((m, i) => (
-                    <div key={i} className="flex items-center gap-3 text-sm">
-                      <div className={`w-2 h-2 rounded-full shrink-0 ${i === selected.milestones.length - 1 ? "bg-primary animate-pulse" : "bg-green-500"}`} />
-                      <span>{m}</span>
-                    </div>
-                  ))}
+                  <Label>Your Comment</Label>
+                  <Textarea 
+                    rows={4} 
+                    placeholder="Describe your experience with this seller..."
+                    value={reviewForm.comment}
+                    onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })}
+                  />
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <Button variant="outline" className="flex-1" onClick={() => setShowReview(false)}>Cancel</Button>
+                  <Button className="flex-1 bg-primary text-primary-foreground" disabled={!reviewForm.comment.trim() || submittingReview} onClick={handleReviewSubmit}>
+                    {submittingReview ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit Review"}
+                  </Button>
                 </div>
               </div>
-
-              {selected.notes && (
-                <div className="bg-amber-500/5 border border-amber-200 rounded-xl p-4 text-sm">
-                  <p className="text-xs text-amber-600 font-semibold uppercase tracking-wide mb-1">Notes</p>
-                  <p className="text-foreground/80">{selected.notes}</p>
+            ) : (
+              <div className="p-5 space-y-5">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="bg-muted/30 p-3 rounded-xl">
+                    <p className="text-xs text-muted-foreground mb-1">Seller</p>
+                    <p className="font-semibold">{selected.seller?.full_name}</p>
+                  </div>
+                  <div className="bg-muted/30 p-3 rounded-xl">
+                    <p className="text-xs text-muted-foreground mb-1">Total Price</p>
+                    <p className="font-bold text-primary">{parseFloat(selected.price_dzd).toLocaleString()} DZD</p>
+                  </div>
+                  <div className="bg-muted/30 p-3 rounded-xl">
+                    <p className="text-xs text-muted-foreground mb-1">Order Date</p>
+                    <p className="font-semibold">{new Date(selected.created_at).toLocaleDateString()}</p>
+                  </div>
+                  <div className="bg-muted/30 p-3 rounded-xl">
+                    <p className="text-xs text-muted-foreground mb-1">Delivery Status</p>
+                    <p className="font-semibold">{STATUS_MAP[selected.status]?.label || selected.status}</p>
+                  </div>
                 </div>
-              )}
 
-              <div className="flex gap-3 pt-2">
-                {selected.status === "in_progress" && (
-                  <Button variant="outline" className="flex-1 gap-2"><MessageSquare className="w-4 h-4" />Message Seller</Button>
+                {selected.requirements_data?.notes && (
+                  <div className="bg-amber-500/5 border border-amber-200 rounded-xl p-4 text-sm">
+                    <p className="text-xs text-amber-600 font-semibold uppercase tracking-wide mb-1">Notes</p>
+                    <p className="text-foreground/80">{selected.requirements_data.notes}</p>
+                  </div>
                 )}
-                {selected.status === "completed" && (
-                  <Button className="flex-1 gap-2"><Package className="w-4 h-4" />Download Files</Button>
-                )}
-                <Button variant="outline" className="flex-1" onClick={() => setSelected(null)}>Close</Button>
+
+                <div className="flex gap-3 pt-2">
+                  {(selected.status === "in_progress" || selected.status === "pending_requirements") && (
+                    <Button variant="outline" className="flex-1 gap-2"><MessageSquare className="w-4 h-4" />Message</Button>
+                  )}
+                  {selected.status === "completed" && selected.reviews?.length === 0 && (
+                    <Button className="flex-1 gap-2 bg-warning text-warning-foreground hover:bg-warning/90" onClick={() => setShowReview(true)}><Star className="w-4 h-4 fill-warning-foreground" />Review Seller</Button>
+                  )}
+                  {selected.status === "completed" && selected.reviews?.length > 0 && (
+                    <Button disabled variant="outline" className="flex-1"><Star className="w-4 h-4 mr-2" />Reviewed</Button>
+                  )}
+                  <Button variant="outline" className="flex-1" onClick={() => setSelected(null)}>Close</Button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}

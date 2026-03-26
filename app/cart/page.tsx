@@ -5,17 +5,55 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { useState } from "react"
-
-const initialItems = [
-  { id: "1", title: "Brand Identity Design", seller: "Yacine M.", price: 15000, qty: 1, type: "service" },
-  { id: "2", title: "Figma UI Kit 2026", seller: "DigitHup Pro", price: 4500, qty: 1, type: "product" },
-]
+import { useState, useEffect } from "react"
+import { createClient } from "@/lib/supabase/client"
+import { useRouter } from "next/navigation"
 
 export default function CartPage() {
-  const [items, setItems] = useState(initialItems)
+  const [items, setItems] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
+  const router = useRouter()
 
-  const remove = (id: string) => setItems(items.filter(i => i.id !== id))
+  useEffect(() => {
+    async function loadCart() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setLoading(false)
+        return
+      }
+      
+      const { data } = await supabase.from('CartItem')
+        .select('*, service:Service(*), product:DigitalProduct(*)')
+        .eq('user_id', user.id)
+      
+      if (data) {
+        const mapped = data.map((item: any) => ({
+          cart_id: item.id,
+          id: item.service_id || item.product_id,
+          title: item.item_type === 'service' ? item.service?.title : item.product?.title,
+          price: item.addons?.price || (item.item_type === 'service' ? 15000 : 4500),
+          qty: item.quantity || 1,
+          type: item.item_type,
+          seller: item.item_type === 'service' ? 'Service Provider' : 'Product Publisher'
+        }))
+        setItems(mapped)
+      }
+      setLoading(false)
+    }
+    loadCart()
+  }, [])
+
+  const remove = async (cart_id: string) => {
+    const prev = [...items]
+    setItems(items.filter(i => i.cart_id !== cart_id))
+    const { error } = await supabase.from('CartItem').delete().eq('id', cart_id)
+    if (error) {
+      alert("Failed to remove item")
+      setItems(prev)
+    }
+  }
+
   const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0)
   const fee = Math.round(subtotal * 0.05)
 
@@ -27,7 +65,12 @@ export default function CartPage() {
           <Badge variant="secondary">{items.length} items</Badge>
         </h1>
 
-        {items.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-24 animate-pulse">
+             <div className="w-16 h-16 mx-auto bg-muted rounded-full mb-4" />
+             <div className="h-6 w-48 bg-muted mx-auto rounded" />
+          </div>
+        ) : items.length === 0 ? (
           <div className="text-center py-24">
             <ShoppingCart className="w-16 h-16 mx-auto text-muted-foreground/20 mb-4" />
             <p className="text-xl font-semibold text-muted-foreground mb-2">Your cart is empty</p>
@@ -37,19 +80,19 @@ export default function CartPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-4">
               {items.map(item => (
-                <Card key={item.id} className="border-border shadow-sm">
+                <Card key={item.cart_id} className="border-border shadow-sm">
                   <CardContent className="p-5 flex items-center gap-4">
                     <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                       <ShoppingCart className="w-6 h-6 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold truncate">{item.title}</p>
+                      <p className="font-semibold truncate">{item.title || "Unknown Item"}</p>
                       <p className="text-sm text-muted-foreground">{item.seller}</p>
                       <Badge variant="outline" className="mt-1 text-xs capitalize">{item.type}</Badge>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                       <span className="font-bold text-lg">{item.price.toLocaleString()} DZD</span>
-                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => remove(item.id)}>
+                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => remove(item.cart_id)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>

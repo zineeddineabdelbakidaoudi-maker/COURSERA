@@ -1,18 +1,54 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { CreditCard, User, MapPin, Phone, CheckCircle2, Loader2 } from "lucide-react"
+import { CreditCard, User, MapPin, Phone, CheckCircle2, Loader2, Package } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import { createClient } from "@/lib/supabase/client"
 
 export default function CheckoutPage() {
   const router = useRouter()
+  const supabase = createClient()
   const [loading, setLoading] = useState(false)
+  const [pageLoading, setPageLoading] = useState(true)
+  const [items, setItems] = useState<any[]>([])
   const [form, setForm] = useState({ name: "", phone: "", city: "", address: "", notes: "" })
+
+  useEffect(() => {
+    async function fetchCart() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push("/login")
+        return
+      }
+
+      const { data } = await supabase.from('CartItem')
+        .select('*, service:Service(*), product:DigitalProduct(*)')
+        .eq('user_id', user.id)
+      
+      if (data && data.length > 0) {
+        const mapped = data.map((item: any) => ({
+          cart_id: item.id,
+          id: item.service_id || item.product_id,
+          title: item.item_type === 'service' ? item.service?.title : item.product?.title,
+          price: item.addons?.price || (item.item_type === 'service' ? 15000 : 4500),
+          qty: item.quantity || 1,
+          type: item.item_type,
+          seller_id: item.item_type === 'service' ? item.service?.seller_id : item.product?.publisher_id,
+          package_name: item.package_name || 'Basic'
+        }))
+        setItems(mapped)
+      } else {
+        router.push("/cart")
+      }
+      setPageLoading(false)
+    }
+    fetchCart()
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -20,9 +56,61 @@ export default function CheckoutPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    // Here we would insert an Order record via Supabase
-    await new Promise(r => setTimeout(r, 1800))
-    router.push("/checkout/success")
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || items.length === 0) return
+
+    let allSuccess = true
+
+    for (const item of items) {
+      if (item.type === 'service') {
+        const orderNumber = `DH-${new Date().getFullYear()}${Math.floor(1000 + Math.random() * 9000)}`
+        const fee = Math.round(item.price * 0.05)
+        const payout = item.price - fee
+        const { error } = await supabase.from('Order').insert({
+          order_number: orderNumber,
+          buyer_id: user.id,
+          seller_id: item.seller_id,
+          service_id: item.id,
+          package_name: item.package_name,
+          price_dzd: item.price,
+          platform_fee_dzd: fee,
+          seller_payout_dzd: payout,
+          requirements_data: { notes: form.notes, address: form.address, phone: form.phone },
+          status: 'pending_requirements' // Set appropriately based on COD wait
+        })
+        if (error) allSuccess = false
+      } else if (item.type === 'product') {
+        const fee = Math.round(item.price * 0.05)
+        const payout = item.price - fee
+        const token = `dl_${Math.random().toString(36).substring(2, 15)}`
+        const { error } = await supabase.from('ProductPurchase').insert({
+          buyer_id: user.id,
+          product_id: item.id,
+          price_paid_dzd: item.price,
+          platform_fee_dzd: fee,
+          publisher_payout_dzd: payout,
+          download_token: token
+        })
+        if (error) allSuccess = false
+      }
+    }
+
+    if (allSuccess) {
+      // Clear Cart
+      await supabase.from('CartItem').delete().eq('user_id', user.id)
+      router.push("/checkout/success")
+    } else {
+      alert("There was an issue processing some items in your order. Please try again.")
+      setLoading(false)
+    }
+  }
+
+  const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0)
+  const fee = Math.round(subtotal * 0.05)
+  const total = subtotal + fee
+
+  if (pageLoading) {
+    return <div className="min-h-screen pt-20 flex items-center justify-center animate-pulse"><div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>
   }
 
   return (
@@ -90,11 +178,18 @@ export default function CheckoutPage() {
                 <CardHeader><CardTitle>Order Total</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-3 text-sm">
-                    <div className="flex justify-between"><span className="text-muted-foreground">Brand Identity Design</span><span>15,000 DZD</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Figma UI Kit 2026</span><span>4,500 DZD</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Platform fee (5%)</span><span>975 DZD</span></div>
+                    {items.map((item, i) => (
+                       <div key={i} className="flex justify-between items-start gap-4">
+                         <span className="text-muted-foreground flex items-center gap-1.5 line-clamp-2">
+                           {item.type === 'product' ? <Package className="w-3.5 h-3.5 shrink-0" /> : <User className="w-3.5 h-3.5 shrink-0" />}
+                           {item.title} x{item.qty}
+                         </span>
+                         <span className="shrink-0">{parseFloat(item.price).toLocaleString()} DZD</span>
+                       </div>
+                    ))}
+                    <div className="flex justify-between"><span className="text-muted-foreground">Platform fee (5%)</span><span>{fee.toLocaleString()} DZD</span></div>
                     <div className="border-t border-border pt-3 flex justify-between font-bold text-base">
-                      <span>Grand Total</span><span className="text-primary">20,475 DZD</span>
+                      <span>Grand Total</span><span className="text-primary">{total.toLocaleString()} DZD</span>
                     </div>
                   </div>
                   <Badge variant="outline" className="w-full text-center justify-center py-2 border-green-200 bg-green-500/10 text-green-700">

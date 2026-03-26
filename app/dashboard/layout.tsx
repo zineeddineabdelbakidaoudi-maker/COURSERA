@@ -41,7 +41,6 @@ import { createClient } from "@/lib/supabase/client"
 const sidebarItems = [
   { title: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { title: "My Services", href: "/dashboard/services", icon: Briefcase },
-  { title: "My Products", href: "/dashboard/products", icon: Package },
   { title: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
   { title: "Messages", href: "/dashboard/messages", icon: MessageSquare },
   { title: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
@@ -214,6 +213,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href={`/sellers/${profile?.username || "me"}`}>
+                      <User className="h-4 w-4 mr-2" />View Profile
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/dashboard/settings">
                       <Settings className="h-4 w-4 mr-2" />Settings

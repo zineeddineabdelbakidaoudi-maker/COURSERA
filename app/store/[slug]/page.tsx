@@ -3,20 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import {
-  ChevronRight,
-  Star,
-  Download,
-  CheckCircle2,
-  Shield,
-  CreditCard,
-  ThumbsUp,
-  BookOpen,
-  FileText,
-  Users,
-  Clock,
-  Play,
-  File,
-  Sparkles,
+  ChevronRight, Star, Download, CheckCircle2, Shield, CreditCard, ThumbsUp, BookOpen, FileText, Users, Clock, Play, File, Sparkles, AlertTriangle, Package
 } from "lucide-react"
 import { Navbar } from "@/components/layout/navbar"
 import { Footer } from "@/components/layout/footer"
@@ -26,445 +13,333 @@ import { Badge } from "@/components/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
-import { featuredProducts } from "@/lib/data"
+import { createClient } from "@/lib/supabase/client"
+import { useRouter } from "next/navigation"
 
-// ━━━ MOCK PRODUCT DETAILS ━━━
-const productDetail = {
-  id: "1",
-  slug: "freelance-starter-pack",
-  title: "Freelance Starter Pack",
-  subtitle: "Everything you need to launch your freelance career in Algeria",
-  description: `Ready to start your freelance journey but don't know where to begin? The Freelance Starter Pack is your comprehensive guide to launching and growing a successful freelance business in Algeria.
+export default function ProductDetailPage({ params }: { params: { slug: string } }) {
+  const [product, setProduct] = React.useState<any>(null)
+  const [relatedProducts, setRelatedProducts] = React.useState<any[]>([])
+  const [loading, setLoading] = React.useState(true)
+  const [addingToCart, setAddingToCart] = React.useState(false)
+  const supabase = createClient()
+  const router = useRouter()
 
-**What's Inside:**
+  React.useEffect(() => {
+    async function loadData() {
+      if (!params?.slug) return
 
-This toolkit includes 15+ templates, guides, and resources covering:
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.slug)
+      const query = supabase.from('DigitalProduct').select('*, publisher:Profile!publisher_id(*), category:Category!category_id(*), reviews:Review(*, reviewer:Profile!reviewer_id(full_name, avatar_url))')
+      
+      const { data } = await (isUuid ? query.eq('id', params.slug) : query.eq('slug', params.slug)).single()
+      
+      if (data) {
+        setProduct(data)
+        const { data: related } = await supabase.from('DigitalProduct').select('*, publisher:Profile!publisher_id(full_name, avatar_url)').eq('status', 'live').neq('id', data.id).limit(4)
+        setRelatedProducts(related || [])
+      }
+      setLoading(false)
+    }
+    loadData()
+  }, [params?.slug])
 
-- **Client Acquisition**: Learn how to find your first clients and build a steady pipeline
-- **Pricing Strategies**: Discover how to price your services competitively in DZD
-- **Contract Templates**: Protect yourself with professional, Algeria-friendly contracts
-- **Invoice Templates**: Get paid faster with professional invoicing
-- **Proposal Templates**: Win more projects with compelling proposals
-- **Portfolio Guide**: Showcase your work effectively even without experience
-- **Time Management**: Balance multiple clients without burning out
-- **Tax Guide**: Understand basic tax obligations for freelancers in Algeria
+  const handleAddToCart = async () => {
+    if (!product) return
+    setAddingToCart(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      router.push("/login")
+      return
+    }
+    
+    const { error } = await supabase.from('CartItem').insert({
+      user_id: user.id,
+      item_type: 'product',
+      product_id: product.id,
+      package_name: 'Digital File',
+      quantity: 1,
+      addons: { price: product.price_dzd }
+    })
+    setAddingToCart(false)
+    if (!error) router.push("/cart")
+    else alert("Failed to add to cart: " + error.message)
+  }
 
-Created by experienced freelancers who have built successful careers in the Algerian market, this pack gives you a head start without the trial and error.`,
-  price: 1500,
-  type: "toolkit" as const,
-  creator: {
-    name: "Digit Hup Team",
-    avatar: "D",
-    totalProducts: 12,
-    rating: 4.9,
-    bio: "The Digit Hup content team creates resources specifically designed for Algerian freelancers.",
-  },
-  rating: 4.9,
-  purchaseCount: 847,
-  isInstantDownload: true,
-  isBestSeller: true,
-  whatYouGet: [
-    "15+ Professional Templates",
-    "Step-by-Step Getting Started Guide",
-    "Client Contract Template (French & Arabic)",
-    "Invoice Template (Excel & Google Sheets)",
-    "Proposal Template Pack",
-    "Portfolio Website Template",
-    "Pricing Calculator",
-    "Tax Checklist for Algeria",
-    "Email Scripts for Client Communication",
-    "Lifetime Updates",
-  ],
-  whoIsThisFor: [
-    "Beginners wanting to start freelancing",
-    "Students looking to earn while studying",
-    "Professionals transitioning to freelance work",
-    "Existing freelancers wanting to professionalize",
-    "Anyone in Algeria wanting location-independent income",
-  ],
-  fileDetails: {
-    format: "ZIP (PDF, DOCX, XLSX)",
-    size: "45 MB",
-    license: "Personal & Commercial Use",
-  },
-  tableOfContents: [
-    {
-      title: "Module 1: Getting Started",
-      items: ["Mindset for Success", "Setting Up Your Workspace", "Choosing Your Niche"],
-    },
-    {
-      title: "Module 2: Finding Clients",
-      items: ["Building Your Online Presence", "Networking Strategies", "Cold Outreach Scripts"],
-    },
-    {
-      title: "Module 3: Winning Projects",
-      items: ["Writing Winning Proposals", "Pricing Your Services", "Negotiation Tips"],
-    },
-    {
-      title: "Module 4: Delivering Excellence",
-      items: ["Project Management", "Client Communication", "Handling Revisions"],
-    },
-    {
-      title: "Module 5: Getting Paid",
-      items: ["Invoicing Best Practices", "Payment Methods in Algeria", "Handling Late Payments"],
-    },
-  ],
-  reviews: [
-    {
-      id: "1",
-      buyer: { name: "Khaled R.", avatar: "K" },
-      rating: 5,
-      date: "1 week ago",
-      comment: "This pack saved me months of trial and error! The contract templates alone are worth the price. Highly recommended for any new freelancer.",
-      helpful: 32,
-    },
-    {
-      id: "2",
-      buyer: { name: "Fatima Z.", avatar: "F" },
-      rating: 5,
-      date: "2 weeks ago",
-      comment: "Finally, resources made specifically for the Algerian market. The pricing guide helped me confidently quote my first client.",
-      helpful: 28,
-    },
-    {
-      id: "3",
-      buyer: { name: "Omar M.", avatar: "O" },
-      rating: 4,
-      date: "1 month ago",
-      comment: "Great value for the price. The templates are professional and easy to customize. Would love to see more advanced content in the future.",
-      helpful: 15,
-    },
-  ],
-  ratingBreakdown: { 5: 82, 4: 12, 3: 4, 2: 1, 1: 1 },
-  faq: [
-    {
-      question: "Is this suitable for complete beginners?",
-      answer: "Absolutely! This pack is designed specifically for people starting their freelance journey. No prior experience is required.",
-    },
-    {
-      question: "Are the templates in Arabic?",
-      answer: "The main guides are in French and English. Key templates like contracts are available in both French and Arabic.",
-    },
-    {
-      question: "Do I get lifetime access?",
-      answer: "Yes! Once you purchase, you get lifetime access to all current materials and any future updates.",
-    },
-    {
-      question: "Can I use these templates commercially?",
-      answer: "Yes, the license includes personal and commercial use. You can use all templates for your client work.",
-    },
-  ],
-}
+  if (loading) return <div className="min-h-screen pt-20 flex items-center justify-center animate-pulse"><div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>
 
-export default function ProductDetailPage() {
+  if (!product) {
+    return (
+      <div className="min-h-screen pt-32 pb-16 flex flex-col items-center animate-slide-up">
+        <AlertTriangle className="w-16 h-16 text-muted-foreground/30 mb-6" />
+        <h1 className="text-3xl font-bold mb-4 text-center">Product Not Found</h1>
+        <p className="text-muted-foreground text-center max-w-md mb-8">This digital product might have been removed, unpublished, or never existed.</p>
+        <Button asChild size="lg" className="rounded-xl"><Link href="/store">Browse Store</Link></Button>
+      </div>
+    )
+  }
+
+  // Mappings
+  const title = product.title
+  const subtitle = product.description?.substring(0, 100) + '...'
+  const type = product.type || "Product"
+  const coverUrl = product.cover_url
+  const price = parseFloat(product.price_dzd)
+  
+  const creatorName = product.publisher?.full_name
+  const creatorBio = product.publisher?.bio
+  const creatorAvatar = product.publisher?.avatar_url
+  
+  const purchaseCount = product.total_sales || 0
+  const ratingAvg = product.rating_avg || 0
+  const reviews = product.reviews || []
+  const reviewCount = reviews.length
+  
+  const whatYouGet = Array.isArray(product.tags) ? product.tags : ["Instant Download", "Lifetime Access"]
+  const fileDetails = { format: product.type || "ZIP", size: `${product.file_size_mb || 0} MB`, license: product.license || "Personal" }
+
+  const breakdown = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }
+  reviews.forEach((r: any) => {
+    if (r.rating_overall >= 1 && r.rating_overall <= 5) breakdown[r.rating_overall as 1|2|3|4|5]++
+  })
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-50 dark:bg-background">
       <Navbar />
 
-      <main className="pt-20 pb-16">
-        <div className="container mx-auto px-4 lg:px-8">
+      <main className="pt-24 pb-16">
+        <div className="container mx-auto px-4 lg:px-8 max-w-7xl animate-fade-in">
           {/* Breadcrumb */}
-          <nav className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+          <nav className="flex items-center gap-2 text-sm text-slate-500 py-4 mb-4">
             <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
             <ChevronRight className="w-4 h-4" />
             <Link href="/store" className="hover:text-foreground transition-colors">Store</Link>
+            {product.category && (
+              <>
+                <ChevronRight className="w-4 h-4" />
+                <span className="hover:text-foreground transition-colors cursor-pointer">{product.category.name_en || product.category.name}</span>
+              </>
+            )}
             <ChevronRight className="w-4 h-4" />
-            <span className="text-foreground truncate">{productDetail.title}</span>
+            <span className="text-foreground truncate font-medium max-w-[200px] sm:max-w-xs">{title}</span>
           </nav>
 
-          <div className="flex flex-col lg:flex-row gap-8">
+          <div className="flex flex-col lg:flex-row gap-10">
             {/* Left Column */}
             <div className="flex-1 min-w-0">
               {/* Cover Image */}
-              <div className="relative aspect-video rounded-2xl bg-gradient-to-br from-accent/30 via-primary/20 to-accent/10 mb-6 overflow-hidden">
-                {productDetail.isBestSeller && (
-                  <Badge className="absolute top-4 left-4 bg-warning text-warning-foreground border-0 gap-1">
-                    <Sparkles className="w-3 h-3" />
-                    Best Seller
+              <div className="relative aspect-video rounded-[2rem] bg-gradient-to-br from-pink-50 to-rose-100 dark:from-pink-900/20 dark:to-rose-900/20 mb-8 overflow-hidden flex items-center justify-center border border-border shadow-sm group">
+                {product.is_best_seller && (
+                  <Badge className="absolute top-6 left-6 bg-amber-400 text-amber-950 hover:bg-amber-500 border-0 gap-1 z-10 font-bold px-3 py-1 shadow-sm">
+                    <Sparkles className="w-3.5 h-3.5" /> Best Seller
                   </Badge>
                 )}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-24 h-24 rounded-2xl bg-accent/20 flex items-center justify-center">
-                    <BookOpen className="w-12 h-12 text-accent" />
+                {coverUrl ? (
+                   <img src={coverUrl} alt={title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                ) : (
+                  <div className="w-32 h-32 rounded-3xl bg-white/50 dark:bg-card/50 flex items-center justify-center backdrop-blur-sm shadow-inner group-hover:scale-110 transition-transform duration-500">
+                    <Package className="w-16 h-16 text-pink-400" />
                   </div>
-                </div>
+                )}
               </div>
 
-              {/* Type Badge */}
-              <Badge variant="outline" className="mb-4 bg-warning/10 text-warning border-warning/20">
-                Toolkit
-              </Badge>
+              {/* Badges */}
+              <div className="flex items-center gap-3 mb-6">
+                <Badge variant="outline" className="bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20 uppercase tracking-wider font-bold text-[10px] px-2.5 py-1">
+                  {type}
+                </Badge>
+              </div>
 
               {/* Title */}
-              <h1 className="text-2xl lg:text-3xl font-bold mb-2">
-                {productDetail.title}
+              <h1 className="text-3xl lg:text-5xl font-extrabold mb-4 text-slate-900 dark:text-foreground leading-tight tracking-tight text-balance">
+                {title}
               </h1>
-              <p className="text-lg text-muted-foreground mb-6">
-                {productDetail.subtitle}
+              <p className="text-xl text-slate-600 dark:text-muted-foreground mb-8 leading-relaxed font-medium">
+                {subtitle}
               </p>
 
-              {/* Stats */}
-              <div className="flex flex-wrap items-center gap-4 mb-8 text-sm">
-                <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 fill-warning text-warning" />
-                  <span className="font-semibold">{productDetail.rating}</span>
-                  <span className="text-muted-foreground">({productDetail.reviews.length} reviews)</span>
+              {/* Stats Bar */}
+              <div className="flex flex-wrap items-center gap-6 mb-10 text-sm bg-white dark:bg-card border border-border rounded-2xl p-4 shadow-sm">
+                <div className="flex items-center gap-1.5">
+                  <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
+                  <span className="font-bold text-slate-900 dark:text-foreground">{ratingAvg.toFixed(1)}</span>
+                  <span className="text-slate-500 font-medium">({reviewCount} reviews)</span>
                 </div>
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <Download className="w-4 h-4" />
-                  <span>{productDetail.purchaseCount.toLocaleString()} purchases</span>
+                <div className="w-px h-6 bg-slate-200 dark:bg-border hidden sm:block" />
+                <div className="flex items-center gap-2 text-slate-600 dark:text-muted-foreground font-medium">
+                  <Download className="w-5 h-5 text-indigo-500" />
+                  <span>{purchaseCount.toLocaleString()} purchases</span>
                 </div>
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <Users className="w-4 h-4" />
-                  <span>By {productDetail.creator.name}</span>
+                <div className="w-px h-6 bg-slate-200 dark:bg-border hidden sm:block" />
+                <div className="flex items-center gap-2 text-slate-600 dark:text-muted-foreground font-medium">
+                  <Users className="w-5 h-5 text-emerald-500" />
+                  <span>By <span className="text-slate-900 dark:text-foreground font-bold">{creatorName}</span></span>
                 </div>
               </div>
 
               {/* Description */}
-              <div className="prose prose-slate max-w-none mb-8">
-                <h2 className="text-xl font-semibold mb-4">About This Product</h2>
-                <div className="text-muted-foreground whitespace-pre-line">
-                  {productDetail.description}
+              <div className="prose prose-slate dark:prose-invert max-w-none mb-12 prose-headings:font-bold prose-headings:text-slate-900 dark:prose-headings:text-foreground prose-p:text-slate-600 dark:prose-p:text-muted-foreground prose-a:text-pink-600 hover:prose-a:text-pink-500">
+                <h2 className="text-2xl">About This Product</h2>
+                <div className="whitespace-pre-line leading-relaxed">
+                  {product.description || "No description provided."}
                 </div>
               </div>
 
-              {/* What's Included */}
-              <div className="mb-8">
-                <h2 className="text-xl font-semibold mb-4">{"What's Included"}</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {productDetail.whatYouGet.map((item, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
-                      <span className="text-sm">{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Table of Contents */}
-              <div className="mb-8">
-                <h2 className="text-xl font-semibold mb-4">Table of Contents</h2>
-                <Accordion type="single" collapsible className="w-full">
-                  {productDetail.tableOfContents.map((module, i) => (
-                    <AccordionItem key={i} value={`module-${i}`}>
-                      <AccordionTrigger className="text-left">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-sm font-semibold text-accent">
-                            {i + 1}
-                          </div>
-                          {module.title}
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <ul className="ml-11 space-y-2">
-                          {module.items.map((item, j) => (
-                            <li key={j} className="flex items-center gap-2 text-muted-foreground">
-                              <FileText className="w-4 h-4" />
-                              {item}
-                            </li>
-                          ))}
-                        </ul>
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              </div>
-
-              {/* Who Is This For */}
-              <div className="mb-8">
-                <h2 className="text-xl font-semibold mb-4">Who Is This For?</h2>
-                <div className="space-y-3">
-                  {productDetail.whoIsThisFor.map((item, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-accent flex-shrink-0" />
-                      <span>{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* FAQ */}
-              <div className="mb-8">
-                <h2 className="text-xl font-semibold mb-4">Frequently Asked Questions</h2>
-                <Accordion type="single" collapsible>
-                  {productDetail.faq.map((item, i) => (
-                    <AccordionItem key={i} value={`faq-${i}`}>
-                      <AccordionTrigger className="text-left">{item.question}</AccordionTrigger>
-                      <AccordionContent className="text-muted-foreground">{item.answer}</AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              </div>
-
-              {/* Reviews */}
-              <div>
-                <h2 className="text-xl font-semibold mb-4">Reviews</h2>
-
-                {/* Rating Breakdown */}
-                <div className="flex flex-col sm:flex-row gap-6 p-6 rounded-2xl bg-secondary/30 mb-6">
-                  <div className="text-center">
-                    <div className="text-4xl font-bold mb-1">{productDetail.rating}</div>
-                    <div className="flex items-center justify-center gap-1 mb-1">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star
-                          key={star}
-                          className={cn(
-                            "w-4 h-4",
-                            star <= Math.round(productDetail.rating)
-                              ? "fill-warning text-warning"
-                              : "text-muted-foreground"
-                          )}
-                        />
-                      ))}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {productDetail.reviews.length} reviews
-                    </div>
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    {[5, 4, 3, 2, 1].map((stars) => (
-                      <div key={stars} className="flex items-center gap-3">
-                        <span className="text-sm w-12">{stars} stars</span>
-                        <Progress
-                          value={productDetail.ratingBreakdown[stars as keyof typeof productDetail.ratingBreakdown]}
-                          className="flex-1 h-2"
-                        />
-                        <span className="text-sm text-muted-foreground w-10">
-                          {productDetail.ratingBreakdown[stars as keyof typeof productDetail.ratingBreakdown]}%
-                        </span>
+              {/* Highlights */}
+              {whatYouGet.length > 0 && (
+                <div className="mb-12 bg-white dark:bg-card border border-border rounded-[2rem] p-8 shadow-sm">
+                  <h2 className="text-2xl font-bold mb-6 text-slate-900 dark:text-foreground">Highlights</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {whatYouGet.map((item: string, i: number) => (
+                      <div key={i} className="flex items-center gap-3 bg-slate-50 dark:bg-secondary/20 p-3 rounded-xl">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{item}</span>
                       </div>
                     ))}
                   </div>
                 </div>
+              )}
 
-                {/* Review List */}
-                <div className="space-y-6">
-                  {productDetail.reviews.map((review) => (
-                    <div key={review.id} className="border-b border-border pb-6 last:border-0">
-                      <div className="flex items-start gap-3 mb-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent/30 to-primary/30 flex items-center justify-center flex-shrink-0">
-                          <span className="font-medium">{review.buyer.avatar}</span>
+              {/* Reviews Section */}
+              <div className="mb-12">
+                <h2 className="text-2xl font-bold mb-8 text-slate-900 dark:text-foreground">Customer Reviews</h2>
+
+                {reviews.length === 0 ? (
+                  <div className="text-center py-12 bg-white dark:bg-card border border-border rounded-3xl shadow-sm">
+                    <Star className="w-12 h-12 text-slate-200 dark:text-slate-700 mx-auto mb-3" />
+                    <p className="text-slate-500 font-medium">No reviews yet for this product.</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex flex-col sm:flex-row gap-8 p-8 rounded-3xl bg-white dark:bg-card border border-border shadow-sm mb-8">
+                      <div className="text-center sm:pr-8 sm:border-r border-slate-100 dark:border-border flex flex-col justify-center">
+                        <div className="text-5xl font-black mb-2 text-slate-900 dark:text-foreground">{ratingAvg.toFixed(1)}</div>
+                        <div className="flex items-center justify-center gap-1.5 mb-2">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star key={star} className={cn("w-5 h-5", star <= Math.round(ratingAvg) ? "fill-amber-400 text-amber-400" : "text-slate-200 dark:text-slate-700")} />
+                          ))}
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium">{review.buyer.name}</span>
-                            <span className="text-sm text-muted-foreground">{review.date}</span>
-                          </div>
-                          <div className="flex items-center gap-1 mt-1">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <Star
-                                key={star}
-                                className={cn(
-                                  "w-3.5 h-3.5",
-                                  star <= review.rating
-                                    ? "fill-warning text-warning"
-                                    : "text-muted-foreground"
-                                )}
-                              />
-                            ))}
-                          </div>
-                        </div>
+                        <div className="text-sm font-medium text-slate-500">{reviews.length} reviews</div>
                       </div>
-                      <p className="text-muted-foreground mb-3">{review.comment}</p>
-                      <button className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                        <ThumbsUp className="w-4 h-4" />
-                        Helpful ({review.helpful})
-                      </button>
+                      <div className="flex-1 space-y-3 justify-center flex flex-col">
+                        {[5, 4, 3, 2, 1].map((stars) => {
+                          const count = breakdown[stars as 1|2|3|4|5] || 0
+                          const pct = reviews.length > 0 ? (count / reviews.length) * 100 : 0
+                          return (
+                            <div key={stars} className="flex items-center gap-4">
+                              <span className="text-sm font-bold w-12 text-slate-700 dark:text-slate-300">{stars} stars</span>
+                              <div className="flex-1 h-2.5 bg-slate-100 dark:bg-secondary rounded-full overflow-hidden">
+                                <div className="h-full bg-amber-400 rounded-full" style={{ width: `${pct}%` }} />
+                              </div>
+                              <span className="text-sm font-medium text-slate-500 w-8">{count}</span>
+                            </div>
+                          )
+                        })}
+                      </div>
                     </div>
-                  ))}
-                </div>
+
+                    <div className="space-y-6">
+                      {reviews.map((review: any) => (
+                        <div key={review.id} className="bg-white dark:bg-card border border-border p-6 rounded-3xl shadow-sm">
+                          <div className="flex items-start gap-4 mb-4">
+                            <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                              {review.reviewer?.avatar_url ? <img src={review.reviewer.avatar_url} alt="" className="w-full h-full object-cover" /> : <span className="font-bold text-slate-500">{review.reviewer?.full_name?.charAt(0) || "U"}</span>}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-slate-900 dark:text-foreground">{review.reviewer?.full_name || "Unknown"}</span>
+                                <span className="text-xs font-semibold text-slate-400">{new Date(review.created_at).toLocaleDateString()}</span>
+                              </div>
+                              <div className="flex items-center gap-1 mt-1">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <Star key={star} className={cn("w-3.5 h-3.5", star <= review.rating_overall ? "fill-amber-400 text-amber-400" : "text-slate-200 dark:text-slate-700")} />
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-slate-600 dark:text-muted-foreground leading-relaxed mb-4">{review.comment}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
-            {/* Right Column - Purchase Card */}
-            <div className="lg:w-96">
-              <div className="sticky top-24">
-                <div className="border border-border rounded-2xl bg-card overflow-hidden">
-                  <div className="p-6">
+            {/* Right Column - Purchase Sticky Card */}
+            <div className="lg:w-[400px]">
+              <div className="sticky top-28">
+                <div className="border border-border rounded-[2rem] bg-white dark:bg-card shadow-xl shadow-slate-200/50 dark:shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden">
+                  <div className="p-8">
                     {/* Price */}
-                    <div className="flex items-baseline gap-2 mb-4">
-                      <span className="font-mono text-3xl font-bold">
-                        {productDetail.price.toLocaleString()}
-                        <span className="text-lg ml-1">DZD</span>
+                    <div className="flex items-baseline gap-2 mb-8">
+                      <span className="font-mono text-5xl font-black text-slate-900 dark:text-foreground tracking-tight">
+                        {price.toLocaleString()}
+                        <span className="text-xl ml-2 text-slate-500 font-bold tracking-normal">DZD</span>
                       </span>
                     </div>
 
                     {/* Buy Button */}
-                    <Button className="w-full h-12 rounded-xl bg-accent hover:bg-accent/90 text-accent-foreground text-base mb-3">
-                      Buy Now
+                    <Button 
+                      className="w-full h-14 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 text-lg font-bold shadow-[0_4px_20px_rgba(0,0,0,0.1)] hover:shadow-[0_4px_25px_rgba(0,0,0,0.2)] transition-all mb-4"
+                      disabled={addingToCart}
+                      onClick={handleAddToCart}
+                    >
+                      {addingToCart ? "Processing..." : "Buy Now"}
                     </Button>
 
-                    {/* Instant Download Notice */}
-                    {productDetail.isInstantDownload && (
-                      <div className="flex items-center justify-center gap-2 text-sm text-success mb-4">
-                        <Download className="w-4 h-4" />
-                        <span>Instant download after payment</span>
-                      </div>
-                    )}
+                    <div className="flex items-center justify-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 mb-6 font-bold bg-emerald-50 dark:bg-emerald-500/10 py-2.5 rounded-xl border border-emerald-100 dark:border-emerald-500/20">
+                      <Download className="w-4 h-4" />
+                      <span>Instant digital download</span>
+                    </div>
 
                     {/* File Details */}
-                    <div className="space-y-3 py-4 border-t border-b border-border">
+                    <div className="space-y-4 py-6 border-t border-b border-slate-100 dark:border-border">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground flex items-center gap-2">
-                          <File className="w-4 h-4" />
-                          Format
+                        <span className="text-slate-500 dark:text-muted-foreground flex items-center gap-2 font-medium">
+                          <File className="w-4 h-4" /> Format
                         </span>
-                        <span>{productDetail.fileDetails.format}</span>
+                        <span className="font-bold text-slate-700 dark:text-slate-300 uppercase">{fileDetails.format}</span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground flex items-center gap-2">
-                          <Download className="w-4 h-4" />
-                          Size
+                        <span className="text-slate-500 dark:text-muted-foreground flex items-center gap-2 font-medium">
+                          <Download className="w-4 h-4" /> Size
                         </span>
-                        <span>{productDetail.fileDetails.size}</span>
+                        <span className="font-bold text-slate-700 dark:text-slate-300">{fileDetails.size}</span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground flex items-center gap-2">
-                          <Shield className="w-4 h-4" />
-                          License
+                        <span className="text-slate-500 dark:text-muted-foreground flex items-center gap-2 font-medium">
+                          <Shield className="w-4 h-4" /> License
                         </span>
-                        <span>{productDetail.fileDetails.license}</span>
+                        <span className="font-bold text-slate-700 dark:text-slate-300 max-w-[150px] truncate" title={fileDetails.license}>{fileDetails.license}</span>
                       </div>
                     </div>
 
-                    {/* Money Back */}
-                    <p className="text-xs text-muted-foreground text-center mt-4">
-                      Contact us within 48 hours if there{"'"}s an issue
-                    </p>
-
-                    {/* Trust Indicators */}
-                    <div className="flex items-center justify-center gap-4 mt-4 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Shield className="w-3.5 h-3.5" />
-                        <span>Secure Payment</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <CreditCard className="w-3.5 h-3.5" />
-                        <span>Edahabia/CIB</span>
-                      </div>
+                    <div className="flex items-center justify-center gap-6 mt-6 pt-2 text-xs font-bold text-slate-400">
+                      <div className="flex items-center gap-1.5"><Shield className="w-4 h-4" /> Secure Payment</div>
+                      <div className="flex items-center gap-1.5"><CreditCard className="w-4 h-4" /> Edahabia/CIB</div>
                     </div>
                   </div>
 
                   {/* Creator Card */}
-                  <div className="border-t border-border p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-accent/30 to-primary/30 flex items-center justify-center">
-                        <span className="text-lg font-bold">{productDetail.creator.avatar}</span>
+                  <div className="border-t border-slate-100 dark:border-border p-8 bg-slate-50 dark:bg-secondary/10">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Published by</p>
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-14 h-14 rounded-full bg-white dark:bg-card flex items-center justify-center overflow-hidden shrink-0 border border-border shadow-sm">
+                        {creatorAvatar ? (
+                          <img src={creatorAvatar} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-xl font-bold text-slate-500">{creatorName?.charAt(0) || "U"}</span>
+                        )}
                       </div>
-                      <div>
-                        <p className="font-semibold">{productDetail.creator.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {productDetail.creator.totalProducts} products
-                        </p>
+                      <div className="min-w-0">
+                        <p className="font-bold text-lg text-slate-900 dark:text-foreground truncate">{creatorName || "Anonymous"}</p>
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      {productDetail.creator.bio}
-                    </p>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Star className="w-4 h-4 fill-warning text-warning" />
-                      <span className="font-medium">{productDetail.creator.rating} rating</span>
-                    </div>
+                    {creatorBio && (
+                      <p className="text-sm text-slate-600 dark:text-muted-foreground leading-relaxed">
+                        {creatorBio}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -472,14 +347,33 @@ export default function ProductDetailPage() {
           </div>
 
           {/* Related Products */}
-          <section className="mt-16">
-            <h2 className="text-2xl font-bold mb-6">You May Also Like</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredProducts.slice(0, 4).map((product) => (
-                <ProductCard key={product.id || ""} {...product} />
-              ))}
-            </div>
-          </section>
+          {relatedProducts.length > 0 && (
+            <section className="mt-24 pt-16 border-t border-border">
+              <h2 className="text-3xl font-extrabold mb-10 text-slate-900 dark:text-foreground">More from the Store</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {relatedProducts.map((p) => (
+                  <div key={p.id} className="group bg-white dark:bg-card rounded-[2rem] p-3 border border-slate-200 dark:border-border shadow-md hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 relative flex flex-col">
+                    <Link href={`/store/${p.slug || p.id}`} className="absolute inset-0 z-0" />
+                    <div className="h-48 rounded-[1.5rem] bg-gradient-to-br from-pink-50 to-rose-100 dark:from-pink-900/20 dark:to-rose-900/20 overflow-hidden mb-5 relative border border-slate-100 dark:border-border">
+                      {p.cover_url ? (
+                        <img src={p.cover_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-pink-300">
+                          <Package className="w-12 h-12 mb-2 drop-shadow-sm" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="px-3 pb-3 flex-1 flex flex-col z-10">
+                      <h3 className="text-lg font-bold mb-2 leading-tight text-slate-900 group-hover:text-pink-600 transition-colors line-clamp-2">{p.title}</h3>
+                      <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-100 dark:border-border">
+                        <span className="font-extrabold text-slate-900">{parseFloat(p.price_dzd).toLocaleString()} DZD</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       </main>
 

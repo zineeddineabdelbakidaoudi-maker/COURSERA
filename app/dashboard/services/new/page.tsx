@@ -23,7 +23,9 @@ import {
   FileText,
   Eye,
 } from "lucide-react"
-
+import { createClient } from "@/lib/supabase/client"
+import { createServiceAction, uploadFileAction } from "@/app/actions/item-actions"
+import { useRouter } from "next/navigation"
 const steps = [
   { id: 1, name: "Overview", description: "Basic information" },
   { id: 2, name: "Pricing", description: "Set your packages" },
@@ -63,6 +65,68 @@ export default function NewServicePage() {
   })
   const [newTag, setNewTag] = useState("")
   const [newRequirement, setNewRequirement] = useState("")
+  const [imageFiles, setImageFiles] = useState<File[]>([])
+  const [previewImages, setPreviewImages] = useState<string[]>([])
+  const [isPublishing, setIsPublishing] = useState(false)
+  const router = useRouter()
+  const supabase = createClient()
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (imageFiles.length + files.length > 5) {
+      alert("Maximum 5 images allowed")
+      return
+    }
+    setImageFiles(prev => [...prev, ...files])
+    files.forEach(file => {
+      const reader = new FileReader()
+      reader.onload = ev => {
+        if (ev.target?.result) setPreviewImages(prev => [...prev, ev.target!.result as string])
+      }
+      reader.readAsDataURL(file)
+    })
+  }
+
+  const handlePublish = async () => {
+    if (!formData.title || !formData.category) {
+      alert("Please fill in the overview step completely.")
+      return
+    }
+    setIsPublishing(true)
+
+    try {
+      let uploadedUrls: string[] = []
+
+      if (imageFiles.length > 0) {
+        for (let i = 0; i < imageFiles.length; i++) {
+          const fd = new FormData()
+          fd.append("file", imageFiles[i])
+          fd.append("bucket", "services")
+          fd.append("folder", "gallery")
+          const res = await uploadFileAction(fd)
+          if (res.url) uploadedUrls.push(res.url)
+        }
+      }
+
+      const result = await createServiceAction({
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        tags: formData.tags,
+        packages: formData.packages,
+        requirements: formData.requirements,
+        images: uploadedUrls
+      })
+
+      if (result.error) throw new Error(result.error)
+      
+      router.push("/dashboard/services")
+    } catch (err: any) {
+      alert("Error publishing service: " + err.message)
+    } finally {
+      setIsPublishing(false)
+    }
+  }
 
   const addTag = () => {
     if (newTag && formData.tags.length < 5) {
@@ -390,22 +454,34 @@ export default function NewServicePage() {
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-3">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div
-                  key={i}
-                  className="aspect-video rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors"
-                >
-                  {i === 1 ? (
+              {[0, 1, 2, 3, 4].map((i) => (
+                <div key={i} className="relative aspect-video rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors overflow-hidden block">
+                  {previewImages[i] ? (
                     <>
-                      <Upload className="h-8 w-8 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground mt-2">Upload Image</p>
-                      <p className="text-xs text-muted-foreground">PNG, JPG up to 5MB</p>
+                      <img src={previewImages[i]} alt="" className="w-full h-full object-cover" />
+                      <button type="button" onClick={(e) => {
+                        e.stopPropagation(); e.preventDefault();
+                        setPreviewImages(prev => prev.filter((_, idx) => idx !== i))
+                        setImageFiles(prev => prev.filter((_, idx) => idx !== i))
+                      }} className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 hover:bg-black">
+                        <X className="w-3 h-3" />
+                      </button>
                     </>
                   ) : (
-                    <>
-                      <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
-                      <p className="text-xs text-muted-foreground/50 mt-2">Optional</p>
-                    </>
+                    <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer">
+                      <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                      {i === 0 ? (
+                        <>
+                          <Upload className="h-8 w-8 text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground mt-2">Main Thumbnail</p>
+                        </>
+                      ) : (
+                        <>
+                          <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
+                          <p className="text-xs text-muted-foreground/50 mt-2">Optional Gallery</p>
+                        </>
+                      )}
+                    </label>
                   )}
                 </div>
               ))}
@@ -428,8 +504,12 @@ export default function NewServicePage() {
               <div className="p-4 rounded-xl bg-muted/50">
                 <h4 className="font-medium">Service Preview</h4>
                 <div className="mt-4 flex gap-4">
-                  <div className="w-48 h-32 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                    <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                  <div className="w-48 h-32 rounded-lg bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+                    {previewImages[0] ? (
+                      <img src={previewImages[0]} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                    )}
                   </div>
                   <div>
                     <h3 className="font-semibold">{formData.title || "Your service title"}</h3>
@@ -493,9 +573,8 @@ export default function NewServicePage() {
               <Eye className="h-4 w-4 mr-2" />
               Preview
             </Button>
-            <Button>
-              <Check className="h-4 w-4 mr-2" />
-              Publish Service
+            <Button disabled={isPublishing} onClick={handlePublish}>
+              {isPublishing ? "Publishing..." : <><Check className="h-4 w-4 mr-2" />Publish Service</>}
             </Button>
           </div>
         )}
