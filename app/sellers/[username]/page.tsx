@@ -6,7 +6,7 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import {
   Star, MapPin, Clock, Award, Briefcase, MessageSquare, Heart, Share2,
-  CheckCircle2, Shield, Globe, Twitter, Linkedin, ArrowLeft, Package
+  CheckCircle2, Shield, Globe, Twitter, Linkedin, ArrowLeft, Package, AlertTriangle
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -36,29 +36,41 @@ export default function SellerProfilePage() {
   const [saved, setSaved] = useState(false)
 
   const [services, setServices] = useState<any[]>([])
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadProfile() {
-      const isMe = username?.toLowerCase() === "me"
-      let targetId = username
+      if (!username) return
+      setLoading(true)
+      setError(null)
 
-      if (isMe) {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) targetId = user.id
-        else { setLoading(false); return }
-      }
+      try {
+        const isMe = username?.toLowerCase() === "me"
+        let targetId = username
 
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId)
-      const query = supabase.from("Profile").select("*")
-      
-      const { data } = await (isUuid ? query.eq("id", targetId) : query.eq("username", targetId)).single()
-      
-      if (data) {
+        if (isMe) {
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) targetId = user.id
+          else throw new Error("Please log in to view your profile.")
+        }
+
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId) || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId)
+        const query = supabase.from("Profile").select("*")
+        
+        const { data, error: profileError } = await (isUuid ? query.eq("id", targetId) : query.eq("username", targetId)).single()
+        
+        if (profileError) throw profileError
+        if (!data) throw new Error("Profile not found.")
+        
         setProfile(data)
         const { data: srvs } = await supabase.from("Service").select("id, title, slug, thumbnail_url, packages").eq("seller_id", data.id).eq("status", "live")
         setServices(srvs || [])
+      } catch (err: any) {
+        console.error("Error loading profile:", err)
+        setError(err.message)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
     loadProfile()
   }, [username])
@@ -67,6 +79,17 @@ export default function SellerProfilePage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (error || !profile) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+        <AlertTriangle className="w-12 h-12 text-muted-foreground/30 mb-4" />
+        <h2 className="text-xl font-semibold mb-2">{error ? "Error Loading Profile" : "Profile Not Found"}</h2>
+        <p className="text-muted-foreground text-center max-w-sm mb-6">{error || "The profile you are looking for does not exist."}</p>
+        <Button asChild><Link href="/services">Browse Marketplace</Link></Button>
       </div>
     )
   }

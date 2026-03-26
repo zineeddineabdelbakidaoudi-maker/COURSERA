@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 
-export default function ServiceDetailPage({ params }: { params: { slug: string } }) {
+export default function ServiceDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const [selectedPackage, setSelectedPackage] = React.useState(0)
   const [isSaved, setIsSaved] = React.useState(false)
   const [service, setService] = React.useState<any>(null)
@@ -24,30 +24,44 @@ export default function ServiceDetailPage({ params }: { params: { slug: string }
   const [loading, setLoading] = React.useState(true)
   const [addingToCart, setAddingToCart] = React.useState(false)
   const [messaging, setMessaging] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+  
+  // In Next.js 15/16, params is a Promise in page components
+  const { slug } = React.use(params)
   
   const supabase = createClient()
   const router = useRouter()
 
   React.useEffect(() => {
     async function loadData() {
-      if (!params?.slug) return
+      if (!slug) return
+      setLoading(true)
+      setError(null)
 
-      // Attempt to load by slug or id
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.slug)
-      const query = supabase.from('Service').select('*, seller:Profile!seller_id(*), category:Category!category_id(*), reviews:Review(*, reviewer:Profile!reviewer_id(full_name, avatar_url))')
-      
-      const { data } = await (isUuid ? query.eq('id', params.slug) : query.eq('slug', params.slug)).single()
-      
-      if (data) {
-        setService(data)
-        // Load some related ones
-        const { data: related } = await supabase.from('Service').select('*, seller:Profile!seller_id(full_name, avatar_url)').eq('status', 'live').neq('id', data.id).limit(4)
-        setRelatedServices(related || [])
+      try {
+        // Attempt to load by slug or id
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug)
+        const query = supabase.from('Service').select('*, seller:Profile!seller_id(*), category:Category!category_id(*), reviews:Review(*, reviewer:Profile!reviewer_id(full_name, avatar_url))')
+        
+        const { data, error: fetchError } = await (isUuid ? query.eq('id', slug) : query.eq('slug', slug)).single()
+        
+        if (fetchError) throw fetchError
+
+        if (data) {
+          setService(data)
+          // Load some related ones
+          const { data: related } = await supabase.from('Service').select('*, seller:Profile!seller_id(full_name, avatar_url)').eq('status', 'live').neq('id', data.id).limit(4)
+          setRelatedServices(related || [])
+        }
+      } catch (err: any) {
+        console.error("Error loading service:", err)
+        setError(err.message)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
     loadData()
-  }, [params?.slug])
+  }, [slug])
 
   const handleAddToCart = async () => {
     if (!service) return
@@ -106,8 +120,10 @@ export default function ServiceDetailPage({ params }: { params: { slug: string }
     return (
       <div className="min-h-screen pt-32 pb-16 flex flex-col items-center animate-slide-up">
         <AlertTriangle className="w-16 h-16 text-muted-foreground/30 mb-6" />
-        <h1 className="text-3xl font-bold mb-4 text-center">Service Not Found</h1>
-        <p className="text-muted-foreground text-center max-w-md mb-8">This service might have been deleted, paused by the seller, or never existed.</p>
+        <h1 className="text-3xl font-bold mb-4 text-center">{error ? "Error Loading Service" : "Service Not Found"}</h1>
+        <p className="text-muted-foreground text-center max-w-md mb-8">
+          {error || "This service might have been deleted, paused by the seller, or never existed."}
+        </p>
         <Button asChild size="lg" className="rounded-xl"><Link href="/services">Browse Services</Link></Button>
       </div>
     )

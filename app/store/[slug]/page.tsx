@@ -16,32 +16,47 @@ import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 
-export default function ProductDetailPage({ params }: { params: { slug: string } }) {
+export default function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const [product, setProduct] = React.useState<any>(null)
   const [relatedProducts, setRelatedProducts] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
   const [addingToCart, setAddingToCart] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+
+  // In Next.js 15/16, params is a Promise in page components
+  const { slug } = React.use(params)
+
   const supabase = createClient()
   const router = useRouter()
 
   React.useEffect(() => {
     async function loadData() {
-      if (!params?.slug) return
+      if (!slug) return
+      setLoading(true)
+      setError(null)
 
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.slug)
-      const query = supabase.from('DigitalProduct').select('*, publisher:Profile!publisher_id(*), category:Category!category_id(*), reviews:Review(*, reviewer:Profile!reviewer_id(full_name, avatar_url))')
-      
-      const { data } = await (isUuid ? query.eq('id', params.slug) : query.eq('slug', params.slug)).single()
-      
-      if (data) {
-        setProduct(data)
-        const { data: related } = await supabase.from('DigitalProduct').select('*, publisher:Profile!publisher_id(full_name, avatar_url)').eq('status', 'live').neq('id', data.id).limit(4)
-        setRelatedProducts(related || [])
+      try {
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug)
+        const query = supabase.from('DigitalProduct').select('*, publisher:Profile!publisher_id(*), category:Category!category_id(*), reviews:Review(*, reviewer:Profile!reviewer_id(full_name, avatar_url))')
+        
+        const { data, error: fetchError } = await (isUuid ? query.eq('id', slug) : query.eq('slug', slug)).single()
+        
+        if (fetchError) throw fetchError
+
+        if (data) {
+          setProduct(data)
+          const { data: related } = await supabase.from('DigitalProduct').select('*, publisher:Profile!publisher_id(full_name, avatar_url)').eq('status', 'live').neq('id', data.id).limit(4)
+          setRelatedProducts(related || [])
+        }
+      } catch (err: any) {
+        console.error("Error loading product:", err)
+        setError(err.message)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
     loadData()
-  }, [params?.slug])
+  }, [slug])
 
   const handleAddToCart = async () => {
     if (!product) return
@@ -71,8 +86,10 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
     return (
       <div className="min-h-screen pt-32 pb-16 flex flex-col items-center animate-slide-up">
         <AlertTriangle className="w-16 h-16 text-muted-foreground/30 mb-6" />
-        <h1 className="text-3xl font-bold mb-4 text-center">Product Not Found</h1>
-        <p className="text-muted-foreground text-center max-w-md mb-8">This digital product might have been removed, unpublished, or never existed.</p>
+        <h1 className="text-3xl font-bold mb-4 text-center">{error ? "Error Loading Product" : "Product Not Found"}</h1>
+        <p className="text-muted-foreground text-center max-w-md mb-8">
+          {error || "This digital product might have been removed, unpublished, or never existed."}
+        </p>
         <Button asChild size="lg" className="rounded-xl"><Link href="/store">Browse Store</Link></Button>
       </div>
     )
