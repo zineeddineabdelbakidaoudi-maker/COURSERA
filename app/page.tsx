@@ -79,7 +79,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-foreground font-sans selection:bg-blue-500/20 selection:text-blue-300 overflow-x-hidden">
+    <div className="min-h-screen bg-slate-900 text-foreground font-sans selection:bg-blue-500/20 selection:text-blue-300 overflow-x-hidden">
 
       {/* ── NAVBAR ── */}
       <header className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ${scrolled ? "bg-slate-950/90 backdrop-blur-2xl border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.4)] py-3" : "bg-transparent py-5"}`}>
@@ -150,16 +150,16 @@ export default function HomePage() {
         {/* NeuralBackground Canvas */}
         <div className="absolute inset-0">
           <NeuralBackground
-            color="#3b82f6"
-            trailOpacity={0.08}
-            particleCount={700}
-            speed={0.7}
+            color="#4f46e5"
+            trailOpacity={0.15}
+            particleCount={800}
+            speed={0.8}
             className="w-full h-full"
           />
         </div>
 
         {/* Gradient overlays over canvas */}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/30 via-transparent to-slate-950 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/40 via-slate-900/60 to-slate-900 pointer-events-none" />
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/50 via-transparent to-slate-950/50 pointer-events-none" />
 
         {/* Bloom accents */}

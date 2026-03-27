@@ -11,11 +11,8 @@ import { createClient } from "@/lib/supabase/client"
 import { Badge } from "@/components/ui/badge"
 
 const sidebarItems = [
-  { title: "Overview", href: "/publisher", icon: LayoutDashboard },
-  { title: "My Products", href: "/publisher/products", icon: Package },
-  { title: "Categories", href: "/publisher/categories", icon: Tags },
-  { title: "Sellers", href: "/publisher/sellers", icon: Users },
-  { title: "Settings", href: "/publisher/settings", icon: Settings },
+  { title: "Publish Product", href: "/publisher/products", icon: Package },
+  { title: "Commission Calculator", href: "/publisher/commission", icon: LayoutDashboard },
 ]
 
 export default function PublisherLayout({ children }: { children: React.ReactNode }) {

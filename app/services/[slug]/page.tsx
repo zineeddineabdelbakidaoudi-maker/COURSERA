@@ -15,6 +15,7 @@ import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
+import NeuralBackground from "@/components/ui/flow-field-background"
 
 export default function ServiceDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const [selectedPackage, setSelectedPackage] = React.useState(0)
@@ -197,8 +198,12 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ slug: 
     <div className="min-h-screen bg-slate-50 dark:bg-background">
       <Navbar />
 
-      <main className="pt-24 pb-16">
-        <div className="container mx-auto px-4 lg:px-8 max-w-7xl animate-fade-in">
+      <main className="pt-24 pb-16 relative">
+        <div className="absolute top-0 left-0 right-0 h-[60vh] z-0 overflow-hidden pointer-events-none">
+          <NeuralBackground color="#38bdf8" trailOpacity={0.15} particleCount={500} speed={0.8} />
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-50/0 via-slate-50/80 to-slate-50 dark:from-background/0 dark:via-background/80 dark:to-background" />
+        </div>
+        <div className="container mx-auto px-4 lg:px-8 max-w-7xl relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both">
           {/* Breadcrumb */}
           <nav className="flex items-center gap-2 text-sm text-slate-500 py-4 mb-4">
             <Link href="/" className="hover:text-foreground transition-colors">Home</Link>

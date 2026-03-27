@@ -60,19 +60,19 @@ export default function CartPage() {
   const fee = Math.round(subtotal * 0.05)
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
+    <div className="min-h-screen bg-slate-900 text-white">
       {/* Header with Neural */}
       <div className="relative overflow-hidden border-b border-white/5 h-48">
         <div className="absolute inset-0">
           <NeuralBackground
             color="#3b82f6"
-            trailOpacity={0.1}
-            particleCount={300}
-            speed={0.4}
+            trailOpacity={0.15}
+            particleCount={800}
+            speed={0.8}
             className="w-full h-full"
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-slate-950/50 to-slate-950" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/20 via-slate-900/50 to-slate-900" />
         <div className="relative z-10 max-w-5xl mx-auto px-4 h-full flex items-center">
           <div>
             <h1 className="text-4xl font-black flex items-center gap-3 mb-1">

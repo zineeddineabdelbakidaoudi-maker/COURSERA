@@ -6,6 +6,7 @@ import { UserPlus, Search, MessageSquare, ShieldCheck, CheckCircle2, ArrowRight,
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import NeuralBackground from "@/components/ui/flow-field-background"
 
 const steps = [
   { number: "01", icon: UserPlus, title: "Create Your Account", desc: "Sign up in seconds with Google, GitHub, or your email. No credit card required.", detail: "Your account is the key to the DigitHup ecosystem — post services, buy products, and manage projects all in one place.", color: "text-indigo-500 bg-indigo-500/10 border-indigo-200" },
@@ -33,22 +34,33 @@ export default function HowItWorksPage() {
   const [activeStep, setActiveStep] = useState<number | null>(null)
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-900 text-white selection:bg-blue-500/30">
       {/* Hero */}
-      <section className="border-b border-border bg-gradient-to-b from-muted/50 to-background">
-        <div className="max-w-5xl mx-auto px-4 py-20 text-center">
-          <Badge variant="outline" className="gap-1.5 mb-6 border-primary/20 bg-primary/5 text-primary">
+      <section className="relative overflow-hidden border-b border-white/5">
+        <div className="absolute inset-0 h-full">
+          <NeuralBackground
+            color="#3b82f6"
+            trailOpacity={0.15}
+            particleCount={800}
+            speed={0.8}
+            className="w-full h-full"
+          />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/40 via-slate-900/60 to-slate-900 z-0" />
+        
+        <div className="relative z-10 max-w-5xl mx-auto px-4 py-24 text-center">
+          <Badge variant="outline" className="gap-1.5 mb-6 border-blue-500/30 bg-blue-500/10 text-blue-400">
             <Award className="w-3 h-3" /> Simple. Safe. Built for Algeria.
           </Badge>
-          <h1 className="text-4xl md:text-6xl font-display font-bold tracking-tight mb-5">
-            How <span className="text-primary">DigitHup</span> Works
+          <h1 className="text-4xl md:text-6xl font-black tracking-tight mb-5">
+            How <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">DigitHup</span> Works
           </h1>
-          <p className="text-muted-foreground text-lg max-w-xl mx-auto mb-8 leading-relaxed">
+          <p className="text-slate-400 text-lg max-w-xl mx-auto mb-8 font-medium">
             From signing up to receiving world-class work — your journey in 4 simple steps.
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
             {["✅ No upfront payment", "📦 COD supported", "🔒 Verified sellers"].map(b => (
-              <span key={b} className="text-sm px-4 py-2 rounded-full border border-border bg-muted/50 text-foreground">{b}</span>
+              <span key={b} className="text-xs font-bold px-4 py-2 rounded-full border border-white/10 bg-white/5 text-slate-300">{b}</span>
             ))}
           </div>
         </div>

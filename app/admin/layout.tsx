@@ -24,6 +24,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { label: "Users & Roles", href: "/admin/users", icon: Users },
     { label: "Services", href: "/admin/services", icon: Briefcase },
     { label: "Digital Products", href: "/admin/products", icon: Package },
+    { label: "Categories", href: "/admin/categories", icon: Package },
+    { label: "Commissions", href: "/admin/commissions", icon: ShoppingCart },
     { label: "Orders & Disputes", href: "/admin/orders", icon: ShoppingCart },
     { label: "Settings", href: "/admin/settings", icon: Settings },
   ]

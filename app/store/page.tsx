@@ -59,7 +59,7 @@ export default function StorePage() {
   })
 
   if (loading) return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">
         <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 flex items-center justify-center">
           <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
@@ -70,19 +70,19 @@ export default function StorePage() {
   )
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
+    <div className="min-h-screen bg-slate-900 text-white">
       {/* Animated Header */}
       <div className="relative overflow-hidden border-b border-white/5">
         <div className="absolute inset-0 h-full">
           <NeuralBackground
             color="#818cf8"
-            trailOpacity={0.12}
-            particleCount={400}
-            speed={0.5}
+            trailOpacity={0.15}
+            particleCount={800}
+            speed={0.8}
             className="w-full h-full"
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/40 via-slate-950/60 to-slate-950" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/40 via-slate-900/60 to-slate-900" />
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 py-16">
           <div className="mb-8">
