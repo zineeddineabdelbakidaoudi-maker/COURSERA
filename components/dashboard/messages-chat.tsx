@@ -115,6 +115,7 @@ export function MessagesChat() {
     setNewMsg("")
 
     const { error } = await supabase.from("Message").insert({
+      id: crypto.randomUUID(),
       conversation_id: activeConv.id,
       sender_id: user.id,
       content: text

@@ -71,7 +71,10 @@ export default function BuyerSavedPage() {
       insertData.addons = { price: item.product?.price_dzd || 0 }
     }
 
-    const { error } = await supabase.from("CartItem").insert(insertData)
+    const { error } = await supabase.from("CartItem").insert({
+      id: crypto.randomUUID(),
+      ...insertData
+    })
     if (!error) router.push("/cart")
     else alert("Error adding to cart: " + error.message)
   }

@@ -36,6 +36,7 @@ export default function SellerProfilePage({ params }: { params: Promise<{ userna
   const [saved, setSaved] = useState(false)
 
   const [services, setServices] = useState<any[]>([])
+  const [products, setProducts] = useState<any[]>([])
   const [reviews, setReviews] = useState<any[]>([])
   const [error, setError] = useState<string | null>(null)
 
@@ -60,6 +61,10 @@ export default function SellerProfilePage({ params }: { params: Promise<{ userna
         // Services
         const { data: srvs } = await supabase.from("Service").select("id, title, slug, thumbnail_url, packages").eq("seller_id", data.id).eq("status", "live")
         setServices(srvs || [])
+
+        // Products
+        const { data: prods } = await supabase.from("DigitalProduct").select("id, title, slug, cover_url, price_dzd, type").eq("publisher_id", data.id).eq("status", "live")
+        setProducts(prods || [])
 
         // Reviews
         const { data: revs } = await supabase
@@ -235,6 +240,7 @@ export default function SellerProfilePage({ params }: { params: Promise<{ userna
         <Tabs defaultValue="services">
           <TabsList className="mb-6">
             <TabsTrigger value="services" className="gap-2"><Briefcase className="w-4 h-4" />Services</TabsTrigger>
+            <TabsTrigger value="products" className="gap-2"><Package className="w-4 h-4" />Products</TabsTrigger>
             <TabsTrigger value="reviews" className="gap-2"><Star className="w-4 h-4" />Reviews</TabsTrigger>
             <TabsTrigger value="about" className="gap-2"><Shield className="w-4 h-4" />About</TabsTrigger>
           </TabsList>
@@ -248,25 +254,57 @@ export default function SellerProfilePage({ params }: { params: Promise<{ userna
                       {s.thumbnail_url ? (
                         <img src={s.thumbnail_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent/10 group-hover:from-primary/20 transition-colors">
-                          <Package className="w-12 h-12 text-primary/30 group-hover:text-primary/50" />
+                        <div className="w-full h-full flex items-center justify-center bg-primary/5">
+                          <Briefcase className="w-8 h-8 text-primary/20" />
                         </div>
                       )}
                     </div>
                     <CardContent className="p-4">
-                      <h3 className="font-semibold text-sm mb-3 line-clamp-2 leading-tight group-hover:text-primary transition-colors h-10">{s.title}</h3>
-                      <div className="flex items-center justify-between border-t border-border pt-3">
-                        <span className="text-xs text-amber-500 font-semibold flex items-center gap-1">
-                          <Star className="w-3 h-3 fill-current" />5.0
-                        </span>
-                        <span className="font-bold text-sm text-primary">From {parseFloat(s.packages?.basic?.price || s.packages?.Basic?.price || "0").toLocaleString()} DZD</span>
+                      <h3 className="font-semibold text-sm leading-snug line-clamp-2 h-10 group-hover:text-primary transition-colors">{s.title}</h3>
+                      <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+                        <span className="text-xs text-muted-foreground">Starting at</span>
+                        <span className="font-bold text-primary">{(s.packages?.basic?.price || s.packages?.Basic?.price || 5000).toLocaleString()} DZD</span>
                       </div>
                     </CardContent>
                   </Card>
                 </Link>
               )) : (
-                <div className="col-span-full py-12 text-center text-muted-foreground border-2 border-dashed border-border rounded-xl">
-                  No active services found for this seller.
+                <div className="col-span-full py-12 text-center text-muted-foreground">
+                  <Briefcase className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p>No services published yet.</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="products">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {products.length > 0 ? products.map((p, i) => (
+                <Link href={`/store/${p.slug || p.id}`} key={i}>
+                  <Card className="border-border shadow-sm hover:shadow-md transition-all group overflow-hidden">
+                    <div className="h-36 bg-muted relative border-b border-border">
+                      {p.cover_url ? (
+                        <img src={p.cover_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-purple-500/5">
+                          <Package className="w-8 h-8 text-purple-500/20" />
+                        </div>
+                      )}
+                      <Badge className="absolute top-2 right-2 scale-75 uppercase">{p.type}</Badge>
+                    </div>
+                    <CardContent className="p-4">
+                      <h3 className="font-semibold text-sm leading-snug line-clamp-2 h-10 group-hover:text-primary transition-colors">{p.title}</h3>
+                      <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+                        <span className="text-xs text-muted-foreground">Instant Download</span>
+                        <span className="font-bold text-primary">{Number(p.price_dzd).toLocaleString()} DZD</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              )) : (
+                <div className="col-span-full py-12 text-center text-muted-foreground">
+                  <Package className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p>No products published yet.</p>
                 </div>
               )}
             </div>

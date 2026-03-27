@@ -52,6 +52,7 @@ export default function BuyerOrdersPage() {
     const { data: { user } } = await supabase.auth.getUser()
     
     const { error } = await supabase.from('Review').insert({
+      id: crypto.randomUUID(),
       reviewer_id: user?.id,
       reviewed_user_id: selected.seller_id,
       service_id: selected.service_id,
