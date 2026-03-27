@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
+import Link from "next/link"
 import { ShoppingBag, Clock, CheckCircle2, AlertTriangle, Eye, X, MessageSquare, Package, Star, Loader2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -40,7 +41,7 @@ export default function BuyerOrdersPage() {
     if (!user) return
     
     // Fetch real orders mapping their respective service and seller
-    const { data } = await supabase.from('Order').select('*, service:Service(title), seller:Profile!seller_id(full_name), reviews:Review(id)').eq('buyer_id', user.id).order('created_at', { ascending: false })
+    const { data } = await supabase.from('Order').select('*, service:Service(title), seller:Profile!seller_id(full_name, username), reviews:Review(id)').eq('buyer_id', user.id).order('created_at', { ascending: false })
     
     if (data) setOrders(data)
     setLoading(false)
@@ -67,7 +68,10 @@ export default function BuyerOrdersPage() {
 
     setSubmittingReview(false)
     if (!error) {
-      alert("Review submitted successfully!")
+      if (selected.status !== 'completed') {
+        await supabase.from('Order').update({ status: 'completed' }).eq('id', selected.id)
+      }
+      alert("Review submitted and order marked as completed!")
       setShowReview(false)
       setSelected(null)
       fetchOrders() // Refresh to show it has a review
@@ -126,7 +130,15 @@ export default function BuyerOrdersPage() {
                         <p className="text-xs text-muted-foreground line-clamp-1">{o.service?.title || o.package_name}</p>
                         <p className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleDateString()}</p>
                       </td>
-                      <td className="p-4 hidden sm:table-cell text-muted-foreground">{o.seller?.full_name || "Unknown"}</td>
+                      <td className="p-4 hidden sm:table-cell text-muted-foreground">
+                        {o.seller?.username ? (
+                          <Link href={`/sellers/${o.seller.username}`} className="hover:text-primary transition-colors font-medium">
+                            {o.seller.full_name || "Unknown"}
+                          </Link>
+                        ) : (
+                          <span>{o.seller?.full_name || "Unknown"}</span>
+                        )}
+                      </td>
                       <td className="p-4">
                         <Badge variant="outline" className={`gap-1.5 ${s.color}`}>
                           <SIcon className="w-3 h-3" />{s.label}
@@ -192,7 +204,13 @@ export default function BuyerOrdersPage() {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="bg-muted/30 p-3 rounded-xl">
                     <p className="text-xs text-muted-foreground mb-1">Seller</p>
-                    <p className="font-semibold">{selected.seller?.full_name}</p>
+                    {selected.seller?.username ? (
+                      <Link href={`/sellers/${selected.seller.username}`} className="hover:text-primary font-semibold hover:underline">
+                        {selected.seller.full_name}
+                      </Link>
+                    ) : (
+                      <p className="font-semibold">{selected.seller?.full_name}</p>
+                    )}
                   </div>
                   <div className="bg-muted/30 p-3 rounded-xl">
                     <p className="text-xs text-muted-foreground mb-1">Total Price</p>
@@ -219,10 +237,12 @@ export default function BuyerOrdersPage() {
                   {(selected.status === "in_progress" || selected.status === "pending_requirements") && (
                     <Button variant="outline" className="flex-1 gap-2"><MessageSquare className="w-4 h-4" />Message</Button>
                   )}
-                  {selected.status === "completed" && selected.reviews?.length === 0 && (
-                    <Button className="flex-1 gap-2 bg-warning text-warning-foreground hover:bg-warning/90" onClick={() => setShowReview(true)}><Star className="w-4 h-4 fill-warning-foreground" />Review Seller</Button>
+                  {(selected.status === "completed" || selected.status === "delivered") && selected.reviews?.length === 0 && (
+                    <Button className="flex-1 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => setShowReview(true)}>
+                      <Star className="w-4 h-4 fill-primary-foreground" />Evaluate Project
+                    </Button>
                   )}
-                  {selected.status === "completed" && selected.reviews?.length > 0 && (
+                  {(selected.status === "completed" || selected.status === "delivered") && selected.reviews?.length > 0 && (
                     <Button disabled variant="outline" className="flex-1"><Star className="w-4 h-4 mr-2" />Reviewed</Button>
                   )}
                   <Button variant="outline" className="flex-1" onClick={() => setSelected(null)}>Close</Button>

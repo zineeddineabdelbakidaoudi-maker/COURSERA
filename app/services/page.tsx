@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/client"
 import NeuralBackground from "@/components/ui/flow-field-background"
+import { Navbar } from "@/components/layout/navbar"
 
 const LEVEL_STYLE: Record<string, string> = {
   elite: "bg-amber-500/20 text-amber-300 border-amber-500/30",
@@ -69,6 +70,7 @@ export default function ServicesPage() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-white">
+      <Navbar />
       {/* Animated Header */}
       <div className="relative overflow-hidden border-b border-white/5 bg-slate-900/50 backdrop-blur-sm">
         <div className="fixed inset-0 pointer-events-none z-0">

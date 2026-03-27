@@ -9,6 +9,7 @@ import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import NeuralBackground from "@/components/ui/flow-field-background"
+import { Navbar } from "@/components/layout/navbar"
 
 export default function CartPage() {
   const [items, setItems] = useState<any[]>([])
@@ -61,6 +62,7 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-white">
+      <Navbar />
       {/* Header with Neural */}
       <div className="relative overflow-hidden border-b border-white/5 h-48 bg-slate-900/50 backdrop-blur-sm">
         <div className="fixed inset-0 pointer-events-none z-0">

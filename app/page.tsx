@@ -11,6 +11,7 @@ import {
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import NeuralBackground from "@/components/ui/flow-field-background"
+import { Navbar } from "@/components/layout/navbar"
 
 const NAV_LINKS = [
   { href: "/services", label: "Explore Services" },
@@ -82,68 +83,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-slate-900 text-foreground font-sans selection:bg-blue-500/20 selection:text-blue-300 overflow-x-hidden">
 
       {/* ── NAVBAR ── */}
-      <header className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ${scrolled ? "bg-slate-950/90 backdrop-blur-2xl border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.4)] py-3" : "bg-transparent py-5"}`}>
-        <div className="container mx-auto px-4 lg:px-8 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600 group-hover:scale-105 transition-transform duration-300 shadow-[0_0_20px_rgba(59,130,246,0.5)]">
-              <Zap className="w-5 h-5 text-white drop-shadow-md" />
-            </div>
-            <span className="text-2xl font-black tracking-tight text-white">
-              Digit<span className="text-blue-400">Hup</span>
-            </span>
-          </Link>
-
-          <nav className="hidden md:flex items-center gap-8">
-            {NAV_LINKS.map(l => (
-              <Link key={l.href} href={l.href} className="text-sm font-semibold text-slate-400 hover:text-blue-400 transition-colors duration-200">
-                {l.label}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-4">
-            {user ? (
-              <div className="hidden sm:flex items-center gap-3">
-                <Link href={getDashLink()}>
-                  <Button variant="outline" className="gap-2 border-blue-500/30 hover:bg-blue-500/10 text-blue-400 font-semibold bg-transparent">
-                    <LayoutDashboard className="w-4 h-4" /> Dashboard
-                  </Button>
-                </Link>
-                <Button variant="ghost" onClick={handleLogout} className="text-slate-500 hover:text-red-400 hover:bg-red-500/10">
-                  <LogOut className="w-4 h-4" />
-                </Button>
-              </div>
-            ) : (
-              <div className="hidden sm:flex items-center gap-3">
-                <Link href="/login"><Button variant="ghost" className="font-semibold text-slate-400 hover:text-white hover:bg-white/5">Log In</Button></Link>
-                <Link href="/register">
-                  <Button className="font-bold relative overflow-hidden group bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-[0_0_20px_rgba(59,130,246,0.4)] border-none rounded-xl transition-all duration-300 hover:shadow-[0_0_30px_rgba(59,130,246,0.6)] hover:scale-[1.02]">
-                    Get Started
-                  </Button>
-                </Link>
-              </div>
-            )}
-            <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden text-white p-2 bg-white/5 rounded-xl border border-white/10">
-              {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Menu */}
-        {menuOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 bg-slate-900/95 backdrop-blur-2xl border-b border-white/10 p-4 space-y-3">
-            {NAV_LINKS.map(l => (
-              <Link key={l.href} href={l.href} onClick={() => setMenuOpen(false)} className="block text-slate-300 hover:text-blue-400 font-semibold py-2 transition-colors">{l.label}</Link>
-            ))}
-            {!user && (
-              <div className="flex gap-3 pt-2">
-                <Link href="/login" className="flex-1"><Button variant="outline" className="w-full border-white/10 text-white bg-transparent">Log In</Button></Link>
-                <Link href="/register" className="flex-1"><Button className="w-full bg-blue-600 hover:bg-blue-700">Get Started</Button></Link>
-              </div>
-            )}
-          </div>
-        )}
-      </header>
+      <Navbar />
 
       {/* ── HERO ── */}
       <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">

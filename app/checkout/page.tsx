@@ -98,6 +98,7 @@ export default function CheckoutPage() {
         })
         if (error) {
           console.error("Order Insert Error:", error)
+          window.localStorage.setItem('lastCheckoutError', error.message || JSON.stringify(error))
           allSuccess = false
         }
       } else if (item.type === 'product') {
@@ -113,7 +114,11 @@ export default function CheckoutPage() {
           publisher_payout_dzd: payout,
           download_token: token
         })
-        if (error) allSuccess = false
+        if (error) {
+          console.error("Product Purchase Error:", error)
+          window.localStorage.setItem('lastCheckoutError', error.message || JSON.stringify(error))
+          allSuccess = false
+        }
       }
     }
 
@@ -122,7 +127,7 @@ export default function CheckoutPage() {
       await supabase.from('CartItem').delete().eq('user_id', user.id)
       router.push("/checkout/success")
     } else {
-      alert("There was an issue processing some items in your order. Please try again.")
+      alert("Checkout Error: " + window.localStorage.getItem('lastCheckoutError') || "There was an issue processing your order. Please check the console.")
       setLoading(false)
     }
   }

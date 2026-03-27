@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import NeuralBackground from "@/components/ui/flow-field-background"
+import { Navbar } from "@/components/layout/navbar"
 
 const steps = [
   { number: "01", icon: UserPlus, title: "Create Your Account", desc: "Sign up in seconds with Google, GitHub, or your email. No credit card required.", detail: "Your account is the key to the DigitHup ecosystem — post services, buy products, and manage projects all in one place.", color: "text-indigo-500 bg-indigo-500/10 border-indigo-200" },
@@ -35,6 +36,7 @@ export default function HowItWorksPage() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-white selection:bg-blue-500/30">
+      <Navbar />
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-white/5 bg-slate-900/50 backdrop-blur-sm">
         <div className="fixed inset-0 pointer-events-none z-0">

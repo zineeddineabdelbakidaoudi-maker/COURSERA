@@ -5,14 +5,7 @@ import { Search, X, Box, Briefcase, ChevronRight } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 
-// Mock search index
-const searchIndex = [
-  { id: "1", title: "Premium Logo Design & Brand Identity Guide", type: "service", url: "/services/logo-design" },
-  { id: "2", title: "React & Next.js Ecommerce Starter Template", type: "product", url: "/store/react-ecommerce" },
-  { id: "3", title: "Full Stack Web Development (MERN)", type: "service", url: "/services/web-dev" },
-  { id: "4", title: "Social Media Marketing Strategy Toolkit", type: "product", url: "/store/marketing-toolkit" },
-  { id: "5", title: "Video Editing for YouTube & TikTok", type: "service", url: "/services/video-editing" },
-]
+import { createClient } from "@/lib/supabase/client"
 
 export function GlobalSearch({
   isOpen,
@@ -22,16 +15,37 @@ export function GlobalSearch({
   onClose: () => void
 }) {
   const router = useRouter()
+  const supabase = createClient()
   const [query, setQuery] = useState("")
-  const [results, setResults] = useState(searchIndex)
+  const [results, setResults] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (!query.trim()) {
-      setResults(searchIndex)
+      setResults([])
       return
     }
-    const q = query.toLowerCase()
-    setResults(searchIndex.filter(item => item.title.toLowerCase().includes(q)))
+
+    const fetchSearchResults = async () => {
+      setLoading(true)
+      const q = `%${query}%`
+
+      const [servicesRes, productsRes] = await Promise.all([
+        supabase.from("Service").select("id, title, slug").ilike("title", q).eq("status", "live").limit(5),
+        supabase.from("DigitalProduct").select("id, title, slug, type").ilike("title", q).eq("status", "live").limit(5),
+      ])
+
+      const combined = [
+        ...(servicesRes.data || []).map(s => ({ id: "s_"+s.id, title: s.title, type: "service", url: `/services/${s.slug}` })),
+        ...(productsRes.data || []).map(p => ({ id: "p_"+p.id, title: p.title, type: p.type || "product", url: `/store/${p.slug}` }))
+      ]
+
+      setResults(combined)
+      setLoading(false)
+    }
+
+    const debounce = setTimeout(fetchSearchResults, 300)
+    return () => clearTimeout(debounce)
   }, [query])
 
   // Close on Escape key
@@ -70,9 +84,18 @@ export function GlobalSearch({
           </button>
         </div>
 
-        {/* Results */}
         <div className="max-h-[60vh] overflow-y-auto p-2">
-          {results.length === 0 ? (
+          {query.trim().length === 0 ? (
+            <div className="py-12 text-center text-muted-foreground">
+              <Search className="w-8 h-8 mx-auto mb-3 opacity-20" />
+              <p>Type to start searching...</p>
+            </div>
+          ) : loading ? (
+            <div className="py-12 text-center text-muted-foreground">
+              <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin mx-auto mb-3" />
+              <p>Searching...</p>
+            </div>
+          ) : results.length === 0 ? (
             <div className="py-12 text-center text-muted-foreground">
               <Search className="w-8 h-8 mx-auto mb-3 opacity-20" />
               <p>No results found for "{query}"</p>
