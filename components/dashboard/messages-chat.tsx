@@ -85,6 +85,15 @@ export function MessagesChat() {
   }
 
   const loadMessages = async (convId: string) => {
+    if (!user) return
+
+    // Verify participation first (strict client-side check)
+    const activeConversation = conversations.find(c => c.id === convId)
+    if (!activeConversation || !activeConversation.participant_ids.includes(user.id)) {
+      console.error("Unauthorized to view this conversation")
+      return
+    }
+
     const { data, error } = await supabase
       .from("Message")
       .select("*")

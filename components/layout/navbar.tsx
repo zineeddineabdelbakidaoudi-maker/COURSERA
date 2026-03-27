@@ -110,12 +110,12 @@ export function Navbar() {
     >
       <nav className="container mx-auto h-full flex items-center justify-between px-4 lg:px-8">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
+        <Link href="/" className="flex items-center gap-2 group relative z-50">
+          <div className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-primary/20 group-hover:bg-primary/30 transition-colors shadow-[0_0_15px_rgba(14,165,233,0.3)]">
             <Zap className="w-5 h-5 text-primary" />
-            <div className="absolute inset-0 rounded-xl bg-primary/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute inset-0 rounded-xl bg-primary/30 blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
-          <span className="text-xl font-bold tracking-tight">
+          <span className="text-xl font-bold tracking-tight text-foreground">
             Digit<span className="text-primary">Hup</span>
           </span>
         </Link>
@@ -126,7 +126,7 @@ export function Navbar() {
             <Link
               key={link.href}
               href={link.href}
-              className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary"
+              className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-all rounded-lg hover:bg-white/5 active:scale-95"
             >
               {link.label}
             </Link>
@@ -138,7 +138,7 @@ export function Navbar() {
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
             onClick={() => setSearchOpen(true)}
           >
             <Search className="w-5 h-5" />
@@ -225,12 +225,12 @@ export function Navbar() {
           ) : (
             <>
               <Link href="/login">
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" className="text-foreground hover:bg-white/5">
                   Sign In
                 </Button>
               </Link>
               <Link href="/register">
-                <Button size="sm" className="rounded-full gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground">
+                <Button size="sm" className="rounded-full gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_20px_rgba(14,165,233,0.2)] border-0">
                   Get Started
                   <ChevronRight className="w-4 h-4" />
                 </Button>

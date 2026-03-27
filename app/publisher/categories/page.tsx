@@ -1,17 +1,10 @@
 "use client"
 
-import { Tags, Plus, Pencil, Trash2 } from "lucide-react"
+import React, { useEffect, useState } from "react"
+import { Tags, Package, LayoutDashboard } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-
-const categories = [
-  { name: "UI/UX Templates", slug: "ui-ux", products: 8, sellers: 12, type: "products" },
-  { name: "Business Documents", slug: "documents", products: 14, sellers: 6, type: "products" },
-  { name: "Online Courses", slug: "courses", products: 3, sellers: 4, type: "products" },
-  { name: "Web Development", slug: "web-dev", products: 0, sellers: 18, type: "services" },
-  { name: "Graphic Design", slug: "design", products: 5, sellers: 22, type: "both" },
-]
+import { createClient } from "@/lib/supabase/client"
 
 const typeStyle: Record<string, string> = {
   products: "bg-purple-500/10 text-purple-600 border-purple-200",
@@ -20,14 +13,26 @@ const typeStyle: Record<string, string> = {
 }
 
 export default function PublisherCategoriesPage() {
+  const [categories, setCategories] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
+
+  useEffect(() => {
+    async function fetchCats() {
+      const { data } = await supabase.from('Category').select('*').order('name_en')
+      if (data) setCategories(data)
+      setLoading(false)
+    }
+    fetchCats()
+  }, [])
+
   return (
     <div className="space-y-8 animate-slide-up">
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">
         <div>
-          <h1 className="text-3xl font-display font-semibold mb-1">Curated Categories</h1>
-          <p className="text-muted-foreground">Manage and organize the categories you oversee.</p>
+          <h1 className="text-3xl font-display font-semibold mb-1">Live Categories</h1>
+          <p className="text-muted-foreground">View all available market categories to publish to.</p>
         </div>
-        <Button className="gap-2 bg-purple-600 hover:bg-purple-700"><Plus className="w-4 h-4" />Add Category</Button>
       </div>
 
       <Card className="border-border shadow-sm overflow-hidden">
@@ -35,30 +40,24 @@ export default function PublisherCategoriesPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/30">
-                <th className="text-left p-4 font-semibold text-muted-foreground">Category</th>
-                <th className="text-left p-4 font-semibold text-muted-foreground">Type</th>
-                <th className="text-center p-4 font-semibold text-muted-foreground">Products</th>
-                <th className="text-center p-4 font-semibold text-muted-foreground">Sellers</th>
-                <th className="text-right p-4 font-semibold text-muted-foreground">Actions</th>
+                <th className="text-left p-4 font-semibold text-muted-foreground w-12"><Tags className="w-4 h-4 ml-1" /></th>
+                <th className="text-left p-4 font-semibold text-muted-foreground">Category Name</th>
+                <th className="text-left p-4 font-semibold text-muted-foreground">Slug</th>
+                <th className="text-left p-4 font-semibold text-muted-foreground">Content Type</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {categories.map(c => (
-                <tr key={c.slug} className="hover:bg-muted/20 transition-colors">
+              {loading ? (
+                <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">Loading categories...</td></tr>
+              ) : categories.length === 0 ? (
+                <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">No categories found in system.</td></tr>
+              ) : categories.map(c => (
+                <tr key={c.id} className="hover:bg-muted/20 transition-colors">
+                  <td className="p-4"><div className="w-8 h-8 rounded bg-secondary flex items-center justify-center"><LayoutDashboard className="w-4 h-4 text-muted-foreground" /></div></td>
+                  <td className="p-4 font-semibold">{c.name_en}</td>
+                  <td className="p-4 text-muted-foreground font-mono text-xs">{c.slug || c.name_en.toLowerCase().replace(/\s+/g, '-')}</td>
                   <td className="p-4">
-                    <p className="font-semibold">{c.name}</p>
-                    <p className="text-xs text-muted-foreground">/{c.slug}</p>
-                  </td>
-                  <td className="p-4">
-                    <Badge variant="outline" className={`${typeStyle[c.type]}`}>{c.type}</Badge>
-                  </td>
-                  <td className="p-4 text-center font-semibold">{c.products}</td>
-                  <td className="p-4 text-center font-semibold">{c.sellers}</td>
-                  <td className="p-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button variant="ghost" size="icon" className="h-8 w-8"><Pencil className="w-3.5 h-3.5" /></Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="w-3.5 h-3.5" /></Button>
-                    </div>
+                    <Badge variant="outline" className={`${typeStyle[c.type] || typeStyle.both} uppercase text-[10px]`}>{c.type}</Badge>
                   </td>
                 </tr>
               ))}

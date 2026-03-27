@@ -105,19 +105,40 @@ export default function BuyerDashboardPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 py-6 px-4 lg:px-0 animate-fade-in">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold mb-1">Welcome back, {displayName.split(" ")[0]}! 👋</h1>
-          <p className="text-muted-foreground">Manage your orders, messages, and saved services.</p>
-        </div>
-        <div className="flex gap-3">
-          <Button variant="outline" asChild>
-            <Link href="/services"><Search className="w-4 h-4 mr-2" />Find Services</Link>
-          </Button>
-          <Button asChild>
-            <Link href="/store"><Store className="w-4 h-4 mr-2" />Browse Store</Link>
-          </Button>
+      {/* Hero Header */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600/20 via-primary/10 to-transparent border border-primary/20 p-8 lg:p-12 mb-8">
+        <div className="absolute top-0 right-0 -mt-20 -mr-20 w-64 h-64 bg-primary/20 rounded-full blur-3xl" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
+          <div className="max-w-xl">
+            <h1 className="text-4xl font-display font-bold tracking-tight mb-3">
+              Welcome back, <span className="text-primary">{displayName.split(" ")[0]}</span>!
+            </h1>
+            <p className="text-lg text-muted-foreground mb-6">
+              Ready to find your next professional service or digital asset? Explore our curated marketplace.
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <Button size="lg" asChild className="rounded-xl h-12 px-8 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
+                <Link href="/services"><Search className="w-5 h-5 mr-2" /> Discover Services</Link>
+              </Button>
+              <Button size="lg" variant="outline" asChild className="rounded-xl h-12 px-8 border-border hover:bg-white/5 transition-colors">
+                <Link href="/store"><Store className="w-5 h-5 mr-2" /> Shop Products</Link>
+              </Button>
+            </div>
+          </div>
+          <div className="hidden lg:block">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 rounded-2xl bg-card border border-border shadow-sm transform hover:-translate-y-1 transition-transform">
+                <Clock className="w-6 h-6 text-blue-500 mb-2" />
+                <p className="font-bold text-xl">{stats.orders}</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Active Orders</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-card border border-border shadow-sm transform hover:-translate-y-1 transition-transform translate-y-4">
+                <Star className="w-6 h-6 text-yellow-500 mb-2" />
+                <p className="font-bold text-xl">{stats.reviews}</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Reviews Given</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

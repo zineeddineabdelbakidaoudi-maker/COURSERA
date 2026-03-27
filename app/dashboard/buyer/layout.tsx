@@ -98,7 +98,12 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
           <nav className="flex-1 overflow-y-auto p-4">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-3">Buyer Menu</p>
             <ul className="space-y-1">
-              {sidebarItems.map((item) => {
+              {[
+                { title: "Overview", href: "/dashboard/buyer", icon: LayoutDashboard },
+                { title: "My Orders", href: "/dashboard/buyer/orders", icon: ShoppingBag },
+                { title: "Messages", href: "/dashboard/buyer/messages", icon: MessageSquare },
+                { title: "Settings", href: "/dashboard/buyer/settings", icon: Settings },
+              ].map((item) => {
                 const isActive = pathname === item.href
                 return (
                   <li key={item.href}>
@@ -113,30 +118,14 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
                   </li>
                 )
               })}
-              {profile?.publisher_status === "enabled" && (
-                <li className="pt-2 mt-2 border-t border-border">
-                  <Link
-                    href="/publisher"
-                    onClick={() => setSidebarOpen(false)}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors bg-purple-500/10 text-purple-600 hover:bg-purple-500/20"
-                  >
-                    <BookOpen className="h-5 w-5 shrink-0" />
-                    <span className="font-medium">Publisher Dash</span>
-                  </Link>
-                </li>
-              )}
             </ul>
 
-            <div className="mt-6">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-3">Quick Links</p>
-              <Link href="/services" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-                <Store className="h-5 w-5" />
-                <span>Browse Services</span>
-              </Link>
-              <Link href="/become-seller" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-                <User className="h-5 w-5" />
-                <span>Become a Seller</span>
-              </Link>
+            <div className="mt-8 px-3">
+              <Button asChild className="w-full gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md border-0">
+                <Link href="/services">
+                  <Store className="h-4 w-4" /> Discover Services
+                </Link>
+              </Button>
             </div>
           </nav>
 

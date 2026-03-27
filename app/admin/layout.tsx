@@ -22,6 +22,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
     { label: "Verification Queue", href: "/admin/verifications", icon: ShieldCheck },
     { label: "Users & Roles", href: "/admin/users", icon: Users },
+    { label: "Analytics & Reports", href: "/admin", icon: LayoutDashboard },
     { label: "Services", href: "/admin/services", icon: Briefcase },
     { label: "Digital Products", href: "/admin/products", icon: Package },
     { label: "Categories", href: "/admin/categories", icon: Package },

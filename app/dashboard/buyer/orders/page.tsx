@@ -5,6 +5,7 @@ import Link from "next/link"
 import { ShoppingBag, Clock, CheckCircle2, AlertTriangle, Eye, X, MessageSquare, Package, Star, Loader2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import { Label } from "@/components/ui/label"
@@ -40,10 +41,40 @@ export default function BuyerOrdersPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
     
-    // Fetch real orders mapping their respective service and seller
-    const { data } = await supabase.from('Order').select('*, service:Service(title), seller:Profile!seller_id(full_name, username), reviews:Review(id)').eq('buyer_id', user.id).order('created_at', { ascending: false })
+    // Fetch Service Orders
+    const { data: serviceOrders } = await supabase
+      .from('Order')
+      .select('*, service:Service(title, id), seller:Profile!seller_id(full_name, username), reviews:Review(id)')
+      .eq('buyer_id', user.id)
     
-    if (data) setOrders(data)
+    // Fetch Digital Product Purchases
+    const { data: productPurchases } = await supabase
+      .from('ProductPurchase')
+      .select('*, product:DigitalProduct(title, id, publisher_id, publisher:Profile(full_name, username)), reviews:Review(id)')
+      .eq('buyer_id', user.id)
+
+    // Unify them
+    const unified = [
+      ...(serviceOrders || []).map(o => ({ 
+        ...o, 
+        type: 'service', 
+        item_title: o.service?.title || o.package_name,
+        seller_profile: o.seller
+      })),
+      ...(productPurchases || []).map(p => ({ 
+        ...p, 
+        type: 'product',
+        item_title: p.product?.title,
+        seller_profile: p.product?.publisher,
+        status: 'completed', // Digital products are always instantly completed
+        order_number: `PP-${p.id.slice(0,8).toUpperCase()}`,
+        seller_id: p.product?.publisher_id,
+        service_id: null,
+        product_id: p.product?.id
+      }))
+    ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    
+    setOrders(unified)
     setLoading(false)
   }
 
@@ -56,8 +87,9 @@ export default function BuyerOrdersPage() {
       id: crypto.randomUUID(),
       reviewer_id: user?.id,
       reviewed_user_id: selected.seller_id,
-      service_id: selected.service_id,
-      order_id: selected.id,
+      service_id: selected.type === 'service' ? selected.service_id : null,
+      product_id: selected.type === 'product' ? (selected.product_id || selected.id) : null,
+      order_id: selected.type === 'service' ? selected.id : null,
       rating_overall: reviewForm.rating,
       rating_quality: reviewForm.rating,
       rating_communication: reviewForm.rating,
@@ -68,13 +100,13 @@ export default function BuyerOrdersPage() {
 
     setSubmittingReview(false)
     if (!error) {
-      if (selected.status !== 'completed') {
+      if (selected.type === 'service' && selected.status !== 'completed') {
         await supabase.from('Order').update({ status: 'completed' }).eq('id', selected.id)
       }
-      alert("Review submitted and order marked as completed!")
+      alert("Review submitted successfully!")
       setShowReview(false)
       setSelected(null)
-      fetchOrders() // Refresh to show it has a review
+      fetchOrders() 
     } else {
       alert("Error submitting review: " + error.message)
     }
@@ -127,16 +159,30 @@ export default function BuyerOrdersPage() {
                     <tr key={o.id} className="hover:bg-muted/20 transition-colors">
                       <td className="p-4">
                         <p className="font-semibold">{o.order_number}</p>
-                        <p className="text-xs text-muted-foreground line-clamp-1">{o.service?.title || o.package_name}</p>
-                        <p className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleDateString()}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-1">{o.item_title}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline" className="text-[10px] h-4 px-1 capitalize">
+                            {o.type}
+                          </Badge>
+                          <span className="text-[10px] text-muted-foreground">{new Date(o.created_at).toLocaleDateString()}</span>
+                        </div>
                       </td>
                       <td className="p-4 hidden sm:table-cell text-muted-foreground">
-                        {o.seller?.username ? (
-                          <Link href={`/sellers/${o.seller.username}`} className="hover:text-primary transition-colors font-medium">
-                            {o.seller.full_name || "Unknown"}
+                        {o.seller_profile?.username ? (
+                          <Link href={`/sellers/${o.seller_profile.username}`} className="hover:text-primary transition-colors font-medium flex items-center gap-1.5">
+                            <Avatar className="h-6 w-6">
+                              <AvatarImage src={o.seller_profile.avatar_url || ""} />
+                              <AvatarFallback>{o.seller_profile.full_name?.charAt(0) || "U"}</AvatarFallback>
+                            </Avatar>
+                            {o.seller_profile.full_name || "Unknown"}
                           </Link>
                         ) : (
-                          <span>{o.seller?.full_name || "Unknown"}</span>
+                          <span className="flex items-center gap-1.5">
+                            <Avatar className="h-6 w-6">
+                              <AvatarFallback>U</AvatarFallback>
+                            </Avatar>
+                            {o.seller_profile?.full_name || "Unknown"}
+                          </span>
                         )}
                       </td>
                       <td className="p-4">
@@ -144,7 +190,7 @@ export default function BuyerOrdersPage() {
                           <SIcon className="w-3 h-3" />{s.label}
                         </Badge>
                       </td>
-                      <td className="p-4 text-right font-semibold">{parseFloat(o.price_dzd).toLocaleString()} DZD</td>
+                      <td className="p-4 text-right font-semibold">{Number(o.price_dzd || 0).toLocaleString()} DZD</td>
                       <td className="p-4 text-right">
                         <Button variant="outline" size="sm" className="gap-1.5" onClick={() => { setSelected(o); setShowReview(false); }}>
                           <Eye className="w-3.5 h-3.5" />View
@@ -166,7 +212,7 @@ export default function BuyerOrdersPage() {
             <div className="flex items-center justify-between p-5 border-b border-border">
               <div>
                 <h2 className="font-bold text-lg">{showReview ? "Leave a Review" : selected.order_number}</h2>
-                <p className="text-sm text-muted-foreground">{selected.service?.title}</p>
+                <p className="text-sm text-muted-foreground">{selected.item_title}</p>
               </div>
               <button onClick={() => setSelected(null)} className="text-muted-foreground hover:text-foreground transition-colors"><X className="w-5 h-5" /></button>
             </div>
@@ -187,7 +233,7 @@ export default function BuyerOrdersPage() {
                   <Label>Your Comment</Label>
                   <Textarea 
                     rows={4} 
-                    placeholder="Describe your experience with this seller..."
+                    placeholder={`Describe your experience with this ${selected.type === 'service' ? 'seller' : 'product'}...`}
                     value={reviewForm.comment}
                     onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })}
                   />
@@ -203,26 +249,26 @@ export default function BuyerOrdersPage() {
               <div className="p-5 space-y-5">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="bg-muted/30 p-3 rounded-xl">
-                    <p className="text-xs text-muted-foreground mb-1">Seller</p>
-                    {selected.seller?.username ? (
-                      <Link href={`/sellers/${selected.seller.username}`} className="hover:text-primary font-semibold hover:underline">
-                        {selected.seller.full_name}
+                    <p className="text-xs text-muted-foreground mb-1">{selected.type === 'service' ? 'Seller' : 'Publisher'}</p>
+                    {selected.seller_profile?.username ? (
+                      <Link href={`/sellers/${selected.seller_profile.username}`} className="hover:text-primary font-semibold hover:underline">
+                        {selected.seller_profile.full_name}
                       </Link>
                     ) : (
-                      <p className="font-semibold">{selected.seller?.full_name}</p>
+                      <p className="font-semibold">{selected.seller_profile?.full_name}</p>
                     )}
                   </div>
                   <div className="bg-muted/30 p-3 rounded-xl">
                     <p className="text-xs text-muted-foreground mb-1">Total Price</p>
-                    <p className="font-bold text-primary">{parseFloat(selected.price_dzd).toLocaleString()} DZD</p>
+                    <p className="font-bold text-primary">{parseFloat(selected.price_dzd || 0).toLocaleString()} DZD</p>
                   </div>
                   <div className="bg-muted/30 p-3 rounded-xl">
-                    <p className="text-xs text-muted-foreground mb-1">Order Date</p>
+                    <p className="text-xs text-muted-foreground mb-1">Purchase Date</p>
                     <p className="font-semibold">{new Date(selected.created_at).toLocaleDateString()}</p>
                   </div>
                   <div className="bg-muted/30 p-3 rounded-xl">
-                    <p className="text-xs text-muted-foreground mb-1">Delivery Status</p>
-                    <p className="font-semibold">{STATUS_MAP[selected.status]?.label || selected.status}</p>
+                    <p className="text-xs text-muted-foreground mb-1">Status</p>
+                    <p className="font-semibold capitalize">{selected.status?.replace("_", " ")}</p>
                   </div>
                 </div>
 
@@ -234,15 +280,15 @@ export default function BuyerOrdersPage() {
                 )}
 
                 <div className="flex gap-3 pt-2">
-                  {(selected.status === "in_progress" || selected.status === "pending_requirements") && (
+                  {selected.type === 'service' && (selected.status === "in_progress" || selected.status === "pending_requirements") && (
                     <Button variant="outline" className="flex-1 gap-2"><MessageSquare className="w-4 h-4" />Message</Button>
                   )}
-                  {(selected.status === "completed" || selected.status === "delivered") && selected.reviews?.length === 0 && (
+                  {(selected.status === "completed" || selected.status === "delivered") && (selected.reviews?.length === 0) && (
                     <Button className="flex-1 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => setShowReview(true)}>
-                      <Star className="w-4 h-4 fill-primary-foreground" />Evaluate Project
+                      <Star className="w-4 h-4 fill-primary-foreground" />Evaluate
                     </Button>
                   )}
-                  {(selected.status === "completed" || selected.status === "delivered") && selected.reviews?.length > 0 && (
+                  {(selected.status === "completed" || selected.status === "delivered") && (selected.reviews?.length > 0) && (
                     <Button disabled variant="outline" className="flex-1"><Star className="w-4 h-4 mr-2" />Reviewed</Button>
                   )}
                   <Button variant="outline" className="flex-1" onClick={() => setSelected(null)}>Close</Button>

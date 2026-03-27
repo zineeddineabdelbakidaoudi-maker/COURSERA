@@ -98,9 +98,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} ${cairo.variable}`}
+      className={`dark ${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} ${cairo.variable}`}
+      style={{ colorScheme: 'dark' }}
     >
-      <body className="font-sans antialiased">
+      <body className="font-sans antialiased bg-background text-foreground selection:bg-primary/30 min-h-screen">
         <PremiumEffects />
         {children}
         <FaqChatbot />

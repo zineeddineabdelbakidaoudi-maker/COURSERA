@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/client"
 import { Badge } from "@/components/ui/badge"
 
 const sidebarItems = [
+  { title: "Dashboard Overview", href: "/publisher", icon: LayoutDashboard },
   { title: "Publish Product", href: "/publisher/products", icon: Package },
   { title: "Commission Calculator", href: "/publisher/commission", icon: LayoutDashboard },
 ]
