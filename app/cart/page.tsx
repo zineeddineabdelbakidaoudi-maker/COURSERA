@@ -62,8 +62,8 @@ export default function CartPage() {
   return (
     <div className="min-h-screen bg-slate-900 text-white">
       {/* Header with Neural */}
-      <div className="relative overflow-hidden border-b border-white/5 h-48">
-        <div className="absolute inset-0">
+      <div className="relative overflow-hidden border-b border-white/5 h-48 bg-slate-900/50 backdrop-blur-sm">
+        <div className="fixed inset-0 pointer-events-none z-0">
           <NeuralBackground
             color="#3b82f6"
             trailOpacity={0.15}
@@ -72,7 +72,7 @@ export default function CartPage() {
             className="w-full h-full"
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/20 via-slate-900/50 to-slate-900" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/20 via-slate-900/50 to-slate-900 z-[1]" />
         <div className="relative z-10 max-w-5xl mx-auto px-4 h-full flex items-center">
           <div>
             <h1 className="text-4xl font-black flex items-center gap-3 mb-1">

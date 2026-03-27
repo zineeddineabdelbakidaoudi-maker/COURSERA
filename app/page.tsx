@@ -147,8 +147,8 @@ export default function HomePage() {
 
       {/* ── HERO ── */}
       <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
-        {/* NeuralBackground Canvas */}
-        <div className="absolute inset-0">
+        {/* NeuralBackground Canvas - FIXED to follow scroll */}
+        <div className="fixed inset-0 pointer-events-none z-0">
           <NeuralBackground
             color="#4f46e5"
             trailOpacity={0.15}
@@ -158,8 +158,9 @@ export default function HomePage() {
           />
         </div>
 
-        {/* Gradient overlays over canvas */}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/40 via-slate-900/60 to-slate-900 pointer-events-none" />
+        {/* Gradient overlays - keep relative to section if they are for hero only, 
+            but user wants it "all over the website", so let's make the background light throughout */}
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/40 via-slate-900/60 to-slate-900 pointer-events-none z-10" />
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/50 via-transparent to-slate-950/50 pointer-events-none" />
 
         {/* Bloom accents */}

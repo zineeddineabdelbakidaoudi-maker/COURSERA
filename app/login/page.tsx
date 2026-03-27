@@ -63,13 +63,13 @@ export default function LoginPage() {
           return
         }
         if (profile.role === 'buyer') {
-          router.push("/dashboard/buyer")
+          router.push("/services")
           return
         }
       }
     }
 
-    router.push("/dashboard/buyer")
+    router.push("/services")
   }
 
   const handleOAuthLogin = async (provider: 'google' | 'github') => {

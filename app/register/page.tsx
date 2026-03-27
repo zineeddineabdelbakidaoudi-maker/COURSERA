@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Check, AlertCircle } from "lucide-react"
+import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Check, AlertCircle, Globe } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
 export default function RegisterPage() {
@@ -23,6 +23,7 @@ export default function RegisterPage() {
     name: "",
     email: "",
     password: "",
+    businessInfo: "",
     agreeTerms: false,
   })
 
@@ -38,6 +39,7 @@ export default function RegisterPage() {
         data: {
           full_name: formData.name,
           role: accountType,
+          business_info: formData.businessInfo.trim() || null,
         }
       }
     })
@@ -212,19 +214,19 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="businessInfo">Business Name / Website (Optional)</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                      id="email"
-                      type="email"
-                      placeholder="name@example.com"
+                      id="businessInfo"
+                      type="text"
+                      placeholder="e.g. MyBrand.com or Studio Name"
                       className="pl-10"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      required
+                      value={formData.businessInfo}
+                      onChange={(e) => setFormData({ ...formData, businessInfo: e.target.value })}
                     />
                   </div>
+                  <p className="text-[10px] text-muted-foreground">Helps freelancers understand your needs better.</p>
                 </div>
 
                 <div className="space-y-2">

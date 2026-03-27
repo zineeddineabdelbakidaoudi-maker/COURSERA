@@ -36,8 +36,8 @@ export default function HowItWorksPage() {
   return (
     <div className="min-h-screen bg-slate-900 text-white selection:bg-blue-500/30">
       {/* Hero */}
-      <section className="relative overflow-hidden border-b border-white/5">
-        <div className="absolute inset-0 h-full">
+      <section className="relative overflow-hidden border-b border-white/5 bg-slate-900/50 backdrop-blur-sm">
+        <div className="fixed inset-0 pointer-events-none z-0">
           <NeuralBackground
             color="#3b82f6"
             trailOpacity={0.15}
@@ -46,7 +46,7 @@ export default function HowItWorksPage() {
             className="w-full h-full"
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/40 via-slate-900/60 to-slate-900 z-0" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/40 via-slate-900/60 to-slate-900 z-[1]" />
         
         <div className="relative z-10 max-w-5xl mx-auto px-4 py-24 text-center">
           <Badge variant="outline" className="gap-1.5 mb-6 border-blue-500/30 bg-blue-500/10 text-blue-400">

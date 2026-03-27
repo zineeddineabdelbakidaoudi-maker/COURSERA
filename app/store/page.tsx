@@ -72,8 +72,8 @@ export default function StorePage() {
   return (
     <div className="min-h-screen bg-slate-900 text-white">
       {/* Animated Header */}
-      <div className="relative overflow-hidden border-b border-white/5">
-        <div className="absolute inset-0 h-full">
+      <div className="relative overflow-hidden border-b border-white/5 bg-slate-900/50 backdrop-blur-sm">
+        <div className="fixed inset-0 pointer-events-none z-0">
           <NeuralBackground
             color="#818cf8"
             trailOpacity={0.15}
@@ -82,7 +82,7 @@ export default function StorePage() {
             className="w-full h-full"
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/40 via-slate-900/60 to-slate-900" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/40 via-slate-900/60 to-slate-900 z-[1]" />
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 py-16">
           <div className="mb-8">

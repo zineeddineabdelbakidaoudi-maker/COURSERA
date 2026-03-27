@@ -93,11 +93,10 @@ export function Navbar() {
   }
 
   const getDashboardLink = () => {
-    if (!profile) return "/dashboard"
     if (profile.role === 'admin') return "/admin"
     if (profile.role === 'publisher') return "/publisher"
-    if (profile.role === 'buyer') return "/dashboard/buyer"
-    return "/dashboard"
+    if (profile.role === 'seller') return "/dashboard"
+    return "/services"
   }
 
   return (
@@ -186,33 +185,31 @@ export function Navbar() {
                   </div>
                 </div>
                 <hr className="my-1 border-border" />
-                <DropdownMenuItem asChild>
-                  <Link href={getDashboardLink()} className="cursor-pointer gap-2">
-                    <LayoutDashboard className="h-4 w-4" />
-                    Dashboard
-                    {profile?.role && <Badge variant="outline" className="ml-auto text-[10px] px-1.5 py-0 uppercase">{profile.role}</Badge>}
-                  </Link>
-                </DropdownMenuItem>
-                {profile?.role === 'buyer' && (
-                  <>
-                    <DropdownMenuItem asChild>
-                      <Link href="/dashboard/orders" className="cursor-pointer gap-2">
-                        <ShoppingBag className="h-4 w-4" />
-                        My Orders
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/dashboard/saved" className="cursor-pointer gap-2">
-                        <Heart className="h-4 w-4" />
-                        Saved Items
-                      </Link>
-                    </DropdownMenuItem>
-                  </>
+                {profile?.role !== 'buyer' && (
+                  <DropdownMenuItem asChild>
+                    <Link href={getDashboardLink()} className="cursor-pointer gap-2">
+                      <LayoutDashboard className="h-4 w-4" />
+                      {profile?.role === 'admin' ? 'Admin Panel' : profile?.role === 'publisher' ? 'Publisher Panel' : 'Seller Dashboard'}
+                      {profile?.role && <Badge variant="outline" className="ml-auto text-[10px] px-1.5 py-0 uppercase">{profile.role}</Badge>}
+                    </Link>
+                  </DropdownMenuItem>
                 )}
                 <DropdownMenuItem asChild>
-                  <Link href="/dashboard/settings" className="cursor-pointer gap-2">
+                  <Link href="/dashboard/buyer/orders" className="cursor-pointer gap-2">
+                    <ShoppingBag className="h-4 w-4" />
+                    My Orders
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/buyer/saved" className="cursor-pointer gap-2">
+                    <Heart className="h-4 w-4" />
+                    Saved Items
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/buyer/settings" className="cursor-pointer gap-2">
                     <Settings className="h-4 w-4" />
-                    Settings
+                    Profile Settings
                   </Link>
                 </DropdownMenuItem>
                 <hr className="my-1 border-border" />

@@ -17,6 +17,7 @@ export default function CheckoutPage() {
   const [pageLoading, setPageLoading] = useState(true)
   const [items, setItems] = useState<any[]>([])
   const [form, setForm] = useState({ name: "", phone: "", city: "", address: "", notes: "" })
+  const [requirementsAnswers, setRequirementsAnswers] = useState<Record<string, string[]>>({})
 
   useEffect(() => {
     async function fetchCart() {
@@ -39,9 +40,19 @@ export default function CheckoutPage() {
           qty: item.quantity || 1,
           type: item.item_type,
           seller_id: item.item_type === 'service' ? item.service?.seller_id : item.product?.publisher_id,
-          package_name: item.package_name || 'Basic'
+          package_name: item.package_name || 'Basic',
+          order_requirements: item.service?.order_requirements || []
         }))
         setItems(mapped)
+
+        // Initialize empty requirements answers for services
+        const initialAnswers: Record<string, string[]> = {}
+        mapped.forEach(item => {
+          if (item.type === 'service' && Array.isArray(item.order_requirements)) {
+            initialAnswers[item.id] = new Array(item.order_requirements.length).fill("")
+          }
+        })
+        setRequirementsAnswers(initialAnswers)
       } else {
         router.push("/cart")
       }
@@ -76,10 +87,19 @@ export default function CheckoutPage() {
           price_dzd: item.price,
           platform_fee_dzd: fee,
           seller_payout_dzd: payout,
-          requirements_data: { notes: form.notes, address: form.address, phone: form.phone },
-          status: 'pending_requirements' 
+          requirements_data: { 
+            notes: form.notes, 
+            address: form.address, 
+            phone: form.phone,
+            answers: requirementsAnswers[item.id] || []
+          },
+          status: 'pending_requirements',
+          delivery_files: []
         })
-        if (error) allSuccess = false
+        if (error) {
+          console.error("Order Insert Error:", error)
+          allSuccess = false
+        }
       } else if (item.type === 'product') {
         const fee = Math.round(item.price * 0.05)
         const payout = item.price - fee
@@ -173,6 +193,36 @@ export default function CheckoutPage() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Dynamic Service Requirements */}
+              {items.filter(i => i.type === 'service' && i.order_requirements?.length > 0).map((item) => (
+                <Card key={item.id} className="border-blue-200 bg-blue-50/30">
+                  <CardHeader>
+                    <CardTitle className="text-sm font-bold flex items-center gap-2">
+                       Questions for: {item.title}
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground">The seller needs these details to start working.</p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {item.order_requirements.map((q: string, idx: number) => (
+                      <div key={idx} className="space-y-1.5">
+                        <Label className="text-xs font-semibold">{q}</Label>
+                        <textarea
+                          required
+                          className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          value={requirementsAnswers[item.id]?.[idx] || ""}
+                          onChange={(e) => {
+                            const newAnswers = [...(requirementsAnswers[item.id] || [])]
+                            newAnswers[idx] = e.target.value
+                            setRequirementsAnswers({ ...requirementsAnswers, [item.id]: newAnswers })
+                          }}
+                          placeholder="Your answer here..."
+                        />
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              ))}
             </div>
 
             <div>
