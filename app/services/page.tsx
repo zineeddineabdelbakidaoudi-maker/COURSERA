@@ -78,7 +78,6 @@ export default function ServicesPage() {
             className="w-full h-full opacity-30"
             colors={["#ffffff", "#f5f5f5", "#eeeeee", "#e0e0e0"]}
             speed={0.4}
-            backgroundColor="#ffffff"
           />
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/40 to-white z-[1]" />

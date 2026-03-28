@@ -93,7 +93,6 @@ export default function HomePage() {
             className="w-full h-full opacity-40"
             colors={["#ffffff", "#f0f0f0", "#e0e0e0", "#d0d0d0"]}
             speed={0.5}
-            backgroundColor="#ffffff"
           />
         </div>
 
