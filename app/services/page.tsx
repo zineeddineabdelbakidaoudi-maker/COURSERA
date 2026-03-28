@@ -8,14 +8,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/client"
-import NeuralBackground from "@/components/ui/flow-field-background"
+import { MeshGradient } from "@paper-design/shaders-react"
 import { Navbar } from "@/components/layout/navbar"
 
 const LEVEL_STYLE: Record<string, string> = {
-  elite: "bg-amber-500/20 text-amber-300 border-amber-500/30",
-  pro: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  rising: "bg-green-500/20 text-green-300 border-green-500/30",
-  new: "bg-slate-500/20 text-slate-300 border-slate-500/30",
+  elite: "bg-black/10 text-black/80 border-black/20",
+  pro: "bg-gray-100 text-gray-700 border-gray-200",
+  rising: "bg-gray-50 text-gray-600 border-gray-200",
+  new: "bg-slate-50 text-slate-500 border-slate-200",
 }
 
 export default function ServicesPage() {
@@ -58,48 +58,47 @@ export default function ServicesPage() {
   })
 
   if (loading) return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+    <div className="min-h-screen bg-white flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 rounded-2xl bg-blue-600/20 flex items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin text-blue-400" />
+        <div className="w-12 h-12 rounded-2xl bg-black/5 flex items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-black/40" />
         </div>
-        <p className="text-slate-500 text-sm font-medium">Loading services...</p>
+        <p className="text-gray-400 text-sm font-medium">Loading services...</p>
       </div>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
+    <div className="min-h-screen bg-white text-black">
       <Navbar />
       {/* Animated Header */}
-      <div className="relative overflow-hidden border-b border-white/5 bg-slate-900/50 backdrop-blur-sm">
+      <div className="relative overflow-hidden border-b border-black/5 bg-white">
         <div className="fixed inset-0 pointer-events-none z-0">
-          <NeuralBackground
-            color="#3b82f6"
-            trailOpacity={0.15}
-            particleCount={800}
-            speed={0.8}
-            className="w-full h-full"
+          <MeshGradient
+            className="w-full h-full opacity-30"
+            colors={["#ffffff", "#f5f5f5", "#eeeeee", "#e0e0e0"]}
+            speed={0.4}
+            backgroundColor="#ffffff"
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/40 via-slate-900/60 to-slate-900 z-[1]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/40 to-white z-[1]" />
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 py-16">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-400 text-xs font-bold tracking-widest uppercase mb-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-black/10 bg-black/5 text-black/60 text-xs font-bold tracking-widest uppercase mb-4">
                 <Zap className="w-3 h-3" /> Live Marketplace
               </div>
               <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-2">
-                Browse <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Services</span>
+                Browse <span className="text-gray-400">Services</span>
               </h1>
-              <p className="text-slate-400 font-medium">
-                <span className="text-blue-400 font-bold">{filtered.length}</span> verified Algerian professionals ready to deliver.
+              <p className="text-gray-500 font-medium">
+                <span className="text-black font-bold">{filtered.length}</span> verified Algerian professionals ready to deliver.
               </p>
             </div>
             <Button
               variant="outline"
-              className={`gap-2 border-white/10 bg-white/5 text-white hover:bg-blue-500/10 hover:border-blue-500/30 ${showFilters ? "border-blue-500/40 bg-blue-500/10 text-blue-400" : ""}`}
+              className={`gap-2 border-black/10 bg-white text-black hover:bg-black/5 ${showFilters ? "border-black/40 bg-black/5" : ""}`}
               onClick={() => setShowFilters(!showFilters)}
             >
               <SlidersHorizontal className="w-4 h-4" /> Filters
@@ -108,21 +107,21 @@ export default function ServicesPage() {
 
           {/* Search */}
           <div className="relative max-w-xl mb-5">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
-              className="pl-11 h-12 rounded-xl bg-slate-900/80 border-white/10 text-white placeholder:text-slate-500 focus:border-blue-500/50 focus:ring-blue-500/20"
+              className="pl-11 h-12 rounded-xl bg-white border-black/10 text-black placeholder:text-gray-400 focus:border-black/40 focus:ring-black/5"
               placeholder="Search by service, skill, or seller..."
               value={q}
               onChange={e => setQ(e.target.value)}
             />
-            {q && <button onClick={() => setQ("")} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"><X className="w-4 h-4" /></button>}
+            {q && <button onClick={() => setQ("")} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black"><X className="w-4 h-4" /></button>}
           </div>
 
           {/* Filters Panel */}
           {showFilters && (
-            <div className="mb-5 p-4 rounded-xl border border-white/10 bg-slate-900/60 backdrop-blur-sm">
-              <p className="text-sm font-semibold mb-3 text-slate-400">Max Price: <span className="text-blue-400 font-black">{maxPrice.toLocaleString()} DZD</span></p>
-              <input type="range" min={1000} max={200000} step={1000} value={maxPrice} onChange={e => setMaxPrice(+e.target.value)} className="w-full max-w-xs accent-blue-500" />
+            <div className="mb-5 p-4 rounded-xl border border-black/10 bg-white shadow-sm">
+              <p className="text-sm font-semibold mb-3 text-gray-500">Max Price: <span className="text-black font-black">{maxPrice.toLocaleString()} DZD</span></p>
+              <input type="range" min={1000} max={200000} step={1000} value={maxPrice} onChange={e => setMaxPrice(+e.target.value)} className="w-full max-w-xs accent-black" />
             </div>
           )}
 
@@ -131,8 +130,8 @@ export default function ServicesPage() {
             {categories.map(c => (
               <button key={c} onClick={() => setCat(c)}
                 className={`px-4 py-2 rounded-full text-sm font-semibold border transition-all duration-200 ${cat === c
-                  ? "bg-blue-600 text-white border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
-                  : "border-white/10 text-slate-400 hover:border-blue-500/30 hover:text-white bg-white/5"}`}>
+                  ? "bg-black text-white border-black shadow-md"
+                  : "border-black/10 text-gray-500 hover:border-black/30 hover:text-black bg-white"}`}>
                 {c}
               </button>
             ))}
@@ -143,12 +142,12 @@ export default function ServicesPage() {
       {/* Grid */}
       <main className="max-w-7xl mx-auto px-4 py-10">
         {filtered.length === 0 ? (
-          <div className="text-center py-24 text-slate-500">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/5 flex items-center justify-center">
+          <div className="text-center py-24 text-gray-400">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-50 flex items-center justify-center">
               <Search className="w-8 h-8 opacity-30" />
             </div>
-            <p className="text-lg font-semibold text-slate-400 mb-2">No services match your filters</p>
-            <Button variant="ghost" className="mt-2 text-slate-500 hover:text-white" onClick={() => { setQ(""); setCat("All"); setMaxPrice(200000) }}>Clear filters</Button>
+            <p className="text-lg font-semibold text-gray-500 mb-2">No services match your filters</p>
+            <Button variant="ghost" className="mt-2 text-gray-400 hover:text-black" onClick={() => { setQ(""); setCat("All"); setMaxPrice(200000) }}>Clear filters</Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
@@ -159,8 +158,8 @@ export default function ServicesPage() {
 
               return (
                 <Link key={s.id || i} href={`/services/${s.slug || s.id}`} className="group block no-underline">
-                  <div className="bg-slate-900/60 border border-white/5 rounded-2xl overflow-hidden h-full hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] hover:-translate-y-1 hover:border-blue-500/20 transition-all duration-300">
-                    <div className="h-36 bg-slate-800 relative overflow-hidden">
+                  <div className="bg-white border border-black/5 rounded-2xl overflow-hidden h-full hover:shadow-xl hover:-translate-y-1 hover:border-black/10 transition-all duration-300">
+                    <div className="h-36 bg-gray-100 relative overflow-hidden">
                       {s.thumbnail_url ? (
                         <img
                           src={s.thumbnail_url}
@@ -169,8 +168,8 @@ export default function ServicesPage() {
                           onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-900/30 to-indigo-900/30">
-                          <Briefcase className="w-10 h-10 text-blue-400/20" />
+                        <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                          <Briefcase className="w-10 h-10 text-black/10" />
                         </div>
                       )}
                       <Badge variant="outline" className={`absolute top-2.5 right-2.5 text-[10px] shadow-sm uppercase border ${LEVEL_STYLE[sellerLevel] || LEVEL_STYLE.new}`}>
@@ -180,20 +179,20 @@ export default function ServicesPage() {
 
                     <div className="p-4">
                       <div className="flex items-center gap-2 mb-2.5">
-                        <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center text-xs font-bold text-blue-400 shrink-0">
+                        <div className="w-6 h-6 rounded-full bg-black/5 flex items-center justify-center text-xs font-bold text-black/60 shrink-0">
                           {sellerName.charAt(0).toUpperCase()}
                         </div>
-                        <span className="text-xs text-slate-400 font-medium truncate">{sellerName}</span>
+                        <span className="text-xs text-gray-500 font-medium truncate">{sellerName}</span>
                       </div>
 
-                      <h3 className="font-semibold text-sm leading-snug mb-3 line-clamp-2 group-hover:text-blue-400 transition-colors text-white h-10">{s.title}</h3>
+                      <h3 className="font-semibold text-sm leading-snug mb-3 line-clamp-2 group-hover:text-black/60 transition-colors text-black h-10">{s.title}</h3>
 
-                      <div className="flex items-center justify-between border-t border-white/5 pt-3 mt-auto">
-                        <div className="flex items-center gap-3 text-xs text-slate-500">
-                          <span className="flex items-center gap-1 text-amber-400 font-semibold"><Star className="w-3 h-3 fill-current" />5.0</span>
+                      <div className="flex items-center justify-between border-t border-black/5 pt-3 mt-auto">
+                        <div className="flex items-center gap-3 text-xs text-gray-400">
+                          <span className="flex items-center gap-1 text-black font-semibold"><Star className="w-3 h-3 fill-current" />5.0</span>
                           <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{(s.packages?.basic?.delivery || 3)}d</span>
                         </div>
-                        <span className="text-xs font-bold text-blue-400">{Number(basePrice).toLocaleString()} DZD</span>
+                        <span className="text-xs font-bold text-black">{Number(basePrice).toLocaleString()} DZD</span>
                       </div>
                     </div>
                   </div>
