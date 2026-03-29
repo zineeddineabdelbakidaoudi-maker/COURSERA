@@ -112,6 +112,20 @@ enum PayoutStatus {
   rejected
 }
 
+enum JobStatus {
+  open
+  in_progress
+  completed
+  cancelled
+}
+
+enum ProposalStatus {
+  pending
+  accepted
+  rejected
+  withdrawn
+}
+
 enum PaymentMethod {
   cib
   edahabia
@@ -165,6 +179,8 @@ model Profile {
   payouts                      Payout[]
   wishlists                    Wishlist[]
   admin_activity_logs          AdminActivityLog[]
+  jobs_posted                  Job[]             @relation("BuyerJobs")
+  proposals_submitted          Proposal[]        @relation("SellerProposals")
 }
 
 model Category {
@@ -180,6 +196,7 @@ model Category {
   
   services         Service[]
   digital_products DigitalProduct[]
+  jobs             Job[]
 }
 
 model Service {
@@ -435,4 +452,36 @@ model AdminActivityLog {
   target_id   String   // Can be uuid, so leaving as string to handle varying formats
   details     Json?
   created_at  DateTime @default(now())
+}
+
+model Job {
+  id               String       @id @default(uuid())
+  buyer_id         String
+  buyer            Profile      @relation("BuyerJobs", fields: [buyer_id], references: [id])
+  title            String
+  description      String
+  category_id      String
+  category         Category     @relation(fields: [category_id], references: [id])
+  skills           String[]
+  budget_dzd       Decimal?     @db.Decimal(10, 2)
+  delivery_time    String?
+  status           JobStatus    @default(open)
+  created_at       DateTime     @default(now())
+  updated_at       DateTime     @updatedAt
+
+  proposals        Proposal[]
+}
+
+model Proposal {
+  id               String         @id @default(uuid())
+  job_id           String
+  job              Job            @relation(fields: [job_id], references: [id], onDelete: Cascade)
+  seller_id        String
+  seller           Profile        @relation("SellerProposals", fields: [seller_id], references: [id])
+  cover_letter     String
+  bid_amount_dzd   Decimal        @db.Decimal(10, 2)
+  delivery_time    String
+  status           ProposalStatus @default(pending)
+  created_at       DateTime       @default(now())
+  updated_at       DateTime       @updatedAt
 }

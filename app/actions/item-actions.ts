@@ -7,7 +7,7 @@ import { createClient } from "@supabase/supabase-js"
 export async function uploadFileAction(formData: FormData) {
   const file = formData.get("file") as File
   const bucket = formData.get("bucket") as string
-  const folder = formData.get("folder") as string
+  const folder = formData.get("folder") as string || ""
 
   if (!file || !bucket) return { error: "Missing file or bucket" }
 
@@ -16,6 +16,13 @@ export async function uploadFileAction(formData: FormData) {
   if (!user) return { error: "Not authenticated" }
 
   const admin = getAdminClient()
+  
+  // Ensure bucket exists
+  const { data: buckets } = await admin.storage.listBuckets()
+  if (!buckets?.find(b => b.name === bucket)) {
+    await admin.storage.createBucket(bucket, { public: true })
+  }
+
   const ext = file.name.split('.').pop()
   const fileName = `${folder ? folder + "/" : ""}${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`
 
@@ -31,6 +38,41 @@ export async function uploadFileAction(formData: FormData) {
   if (error) return { error: error.message }
   const { data: publicUrl } = admin.storage.from(bucket).getPublicUrl(fileName)
   return { url: publicUrl.publicUrl }
+}
+
+export async function submitReviewAction(payload: any) {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "Not authenticated" }
+
+  try {
+    const admin = getAdminClient()
+    const { data, error } = await admin.from('Review').insert({
+      id: crypto.randomUUID(),
+      reviewer_id: user.id,
+      reviewed_user_id: payload.reviewed_user_id,
+      service_id: payload.service_id || null,
+      product_id: payload.product_id || null,
+      order_id: payload.order_id || null,
+      rating_overall: payload.rating,
+      rating_quality: payload.rating,
+      rating_communication: payload.rating,
+      comment: payload.comment,
+      is_verified_purchase: true,
+      is_visible: true
+    }).select('id').single()
+
+    if (error) throw new Error(error.message)
+    
+    // Also update order to completed if it's a service order
+    if (payload.order_id && payload.type === 'service') {
+      await admin.from('Order').update({ status: 'completed' }).eq('id', payload.order_id)
+    }
+    
+    return { success: true, id: data.id }
+  } catch (err: any) {
+    return { error: err.message }
+  }
 }
 
 

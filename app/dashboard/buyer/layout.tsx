@@ -29,12 +29,14 @@ import {
   User,
   Store,
   BookOpen,
+  Briefcase,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
 const sidebarItems = [
   { title: "Overview", href: "/dashboard/buyer", icon: LayoutDashboard },
   { title: "My Orders", href: "/dashboard/buyer/orders", icon: ShoppingBag },
+  { title: "My Jobs", href: "/dashboard/buyer/jobs", icon: Briefcase },
   { title: "Saved Items", href: "/dashboard/buyer/saved", icon: Heart },
   { title: "Messages", href: "/dashboard/buyer/messages", icon: MessageSquare },
   { title: "My Reviews", href: "/dashboard/buyer/reviews", icon: Star },
@@ -101,6 +103,7 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
               {[
                 { title: "Overview", href: "/dashboard/buyer", icon: LayoutDashboard },
                 { title: "My Orders", href: "/dashboard/buyer/orders", icon: ShoppingBag },
+                { title: "My Jobs", href: "/dashboard/buyer/jobs", icon: Briefcase },
                 { title: "Messages", href: "/dashboard/buyer/messages", icon: MessageSquare },
                 { title: "Settings", href: "/dashboard/buyer/settings", icon: Settings },
               ].map((item) => {

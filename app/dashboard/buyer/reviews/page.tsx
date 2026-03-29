@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { createClient } from "@/lib/supabase/client"
+import { submitReviewAction } from "@/app/actions/item-actions"
 
 function ReviewsContent() {
   const searchParams = useSearchParams()
@@ -59,7 +60,7 @@ function ReviewsContent() {
     // Fetch past reviews made by this user
     const { data: myReviews } = await supabase
       .from("Review")
-      .select("*, service:Service(title), seller:Profile!seller_id(full_name, avatar_url)")
+      .select("*, service:Service(title), reviewed_user:Profile!reviewed_user_id(full_name, avatar_url)")
       .eq("reviewer_id", user.id)
       .order("created_at", { ascending: false })
       
@@ -70,24 +71,22 @@ function ReviewsContent() {
   const handleSubmitReview = async () => {
     if (!comment.trim() || !orderToReview) return
     setSubmitting(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    const { error } = await supabase.from("Review").insert({
-      id: crypto.randomUUID(),
+
+    const res = await submitReviewAction({
+      reviewed_user_id: orderToReview.seller_id,
       service_id: orderToReview.service_id,
       order_id: orderToReview.id,
-      reviewer_id: user?.id,
-      seller_id: orderToReview.seller_id,
-      rating_overall: rating,
+      type: 'service',
+      rating: rating,
       comment: comment,
     })
 
     setSubmitting(false)
-    if (!error) {
+    if (res.success) {
       setSuccess(true)
       fetchData() // Refresh list
     } else {
-      alert("Error submitting review: " + error.message)
+      alert("Error submitting review: " + res.error)
     }
   }
 
@@ -156,13 +155,13 @@ function ReviewsContent() {
               <CardContent className="p-5">
                 <div className="flex items-start gap-4">
                   <Avatar className="h-10 w-10 shrink-0 border border-border">
-                    <AvatarImage src={r.seller?.avatar_url || ""} />
-                    <AvatarFallback>{r.seller?.full_name?.charAt(0) || "U"}</AvatarFallback>
+                    <AvatarImage src={r.reviewed_user?.avatar_url || ""} />
+                    <AvatarFallback>{r.reviewed_user?.full_name?.charAt(0) || "U"}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
                     <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
                       <div>
-                        <span className="font-semibold">{r.seller?.full_name || "Unknown Seller"}</span>
+                        <span className="font-semibold">{r.reviewed_user?.full_name || "Unknown Seller"}</span>
                         <span className="text-xs text-muted-foreground ml-2">{new Date(r.created_at).toLocaleDateString()}</span>
                       </div>
                       <div className="flex items-center gap-0.5 text-amber-400">

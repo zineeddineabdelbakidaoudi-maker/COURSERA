@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/client"
 import { Navbar } from "@/components/layout/navbar"
 import { AnimatedPageWrapper } from "@/components/ui/animated-page-wrapper"
-import { TiltCard } from "@/components/ui/tilt-card"
+import { ProductCard } from "@/components/ui/product-card"
 
 const TYPE_EMOJI: Record<string, string> = {
   template: "🎨",
@@ -170,52 +170,19 @@ export default function StorePage() {
                        
                        return (
                           <Link key={p.id} href={`/store/${p.slug || p.id}`} className="block">
-                             <TiltCard
-                               className="group flex flex-col h-full rounded-[2.5rem] border border-gray-100 bg-white p-6 shadow-sm transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)]"
-                             >
-                                <div className="mb-6 relative h-48 w-full flex-shrink-0 overflow-hidden rounded-2xl bg-gray-100 flex items-center justify-center">
-                                  {p.cover_url ? (
-                                     <img
-                                        alt={p.title}
-                                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                        src={p.cover_url}
-                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                                     />
-                                  ) : (
-                                     <div className="h-full w-full flex items-center justify-center bg-gray-50">
-                                        <span className="text-6xl">{TYPE_EMOJI[p.type] || "📦"}</span>
-                                     </div>
-                                  )}
-                                  <Badge variant="outline" className="absolute top-3 left-3 bg-white/80 backdrop-blur-md shadow-sm uppercase border border-gray-200 text-black px-2.5 py-1 rounded-lg text-xs font-bold">
-                                    {p.type || "Asset"}
-                                  </Badge>
-                                </div>
-                                <div className="flex-1">
-                                  <h3 className="text-lg font-medium text-black line-clamp-2 leading-snug group-hover:text-gray-600 transition-colors">
-                                    {p.title}
-                                  </h3>
-                                  <p className="text-sm font-medium text-gray-500 mt-2">by {publisherName}</p>
-                                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                                    {isTopRated && (
-                                       <Badge variant="secondary" className="bg-green-50 text-green-700 hover:bg-green-50 border-none font-semibold px-2">
-                                         <CheckCircle2 className="mr-1 h-3 w-3" />
-                                         Top Seller
-                                       </Badge>
-                                    )}
-                                    <span className="flex items-center gap-1 text-xs font-bold text-gray-600">
-                                      <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
-                                      5.0
-                                    </span>
-                                  </div>
-                                </div>
-
-                                <div className="mt-6 flex items-center justify-between gap-4 border-t border-gray-50 pt-6">
-                                  <p className="text-xl font-black text-black">{Number(p.price_dzd).toLocaleString()} <span className="text-xs font-semibold text-gray-400">DZD</span></p>
-                                  <Button className="rounded-2xl bg-black px-6 py-5 text-xs font-semibold tracking-wide text-white transition-all hover:bg-gray-800 shadow-none">
-                                    Buy Now
-                                  </Button>
-                                </div>
-                             </TiltCard>
+                             <ProductCard
+                               index={filtered.indexOf(p)}
+                               title={p.title}
+                               subtitle={`by ${publisherName}`}
+                               price={`${Number(p.price_dzd).toLocaleString()} DZD`}
+                               imageUrl={p.cover_url || ""}
+                               badgeText={p.type || "Asset"}
+                               actionButton={
+                                 <Button className="rounded-2xl bg-black px-6 py-2.5 text-xs font-semibold tracking-wide text-white transition-all hover:bg-gray-800 shadow-none">
+                                   Buy Now
+                                 </Button>
+                               }
+                             />
                           </Link>
                        )
                     })}

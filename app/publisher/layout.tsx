@@ -9,6 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { BookOpen, LayoutDashboard, Tags, Users, Package, Settings, Menu, X, Bell, ChevronDown, LogOut, ShieldCheck } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { Badge } from "@/components/ui/badge"
+import NeuralBackground from "@/components/ui/flow-field-background"
 
 const sidebarItems = [
   { title: "Dashboard Overview", href: "/publisher", icon: LayoutDashboard },
@@ -42,11 +43,16 @@ export default function PublisherLayout({ children }: { children: React.ReactNod
   const initials = displayName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
 
   return (
-    <div className="min-h-screen bg-background">
-      {sidebarOpen && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
+    <div className="min-h-screen relative bg-slate-50 dark:bg-background">
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <NeuralBackground color="#38bdf8" trailOpacity={0.15} particleCount={400} speed={0.8} />
+      </div>
+      <div className="fixed inset-0 bg-gradient-to-b from-slate-50/0 via-slate-50/80 to-slate-50 dark:from-background/0 dark:via-background/80 dark:to-background z-[1] pointer-events-none" />
 
-      <aside className={`fixed top-0 left-0 z-50 h-full w-64 bg-card border-r transform transition-transform duration-200 lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
-        <div className="flex flex-col h-full">
+      {sidebarOpen && <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
+
+      <aside className={`fixed top-0 left-0 z-50 h-full w-64 bg-white/80 dark:bg-card/80 backdrop-blur-3xl border-r border-border transform transition-transform duration-200 lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="flex flex-col h-full relative z-20">
           <div className="flex items-center justify-between h-16 px-4 border-b">
             <Link href="/publisher" className="flex items-center gap-2">
               <div className="h-8 w-8 rounded-lg bg-purple-600 flex items-center justify-center">
@@ -97,8 +103,8 @@ export default function PublisherLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      <div className="lg:pl-64">
-        <header className="sticky top-0 z-30 h-16 border-b bg-card/80 backdrop-blur-sm">
+      <div className="lg:pl-64 flex flex-col min-h-screen relative z-10 w-full overflow-hidden">
+        <header className="sticky top-0 z-30 h-16 border-b border-border bg-white/80 dark:bg-background/80 backdrop-blur-xl shadow-sm">
           <div className="flex items-center justify-between h-full px-4">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-muted-foreground hover:text-foreground">
               <Menu className="h-6 w-6" />

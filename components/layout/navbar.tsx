@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { Menu, ChevronRight, Zap, Globe, Search } from "lucide-react"
+import { Menu, ChevronRight, Search, ShoppingBag, Globe, LogOut, LayoutDashboard, Settings, Heart, User as UserIcon, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
@@ -17,19 +17,16 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { GlobalSearch } from "@/components/ui/global-search"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
-import { 
-  User as UserIcon, 
-  LogOut, 
-  LayoutDashboard, 
-  Settings, 
-  ShoppingBag, 
-  Heart 
-} from "lucide-react"
+import { motion, useScroll, useMotionValueEvent } from "motion/react"
 
 const navLinks = [
-  { href: "/services", label: "Explore Services" },
-  { href: "/store", label: "Browse Products" },
-  { href: "/how-it-works", label: "How It Works" },
+  { href: "/store?category=Course", label: "COURSES" },
+  { href: "/store?category=Automation", label: "AUTOMATION" },
+  { href: "/store?category=Template", label: "TEMPLATES" },
+  { href: "/store?category=Ebook", label: "EBOOKS" },
+  { href: "/store?category=Toolkit", label: "TOOLS" },
+  { href: "/services", label: "HIRE" },
+  { href: "/jobs", label: "JOBS" },
 ]
 
 const languages = [
@@ -48,6 +45,17 @@ export function Navbar() {
   const [user, setUser] = React.useState<any>(null)
   const [profile, setProfile] = React.useState<any>(null)
   const [loading, setLoading] = React.useState(true)
+  const { scrollY } = useScroll()
+  const [hidden, setHidden] = React.useState(false)
+
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    const previous = scrollY.getPrevious() ?? 0
+    if (latest > previous && latest > 150) {
+      setHidden(true)
+    } else {
+      setHidden(false)
+    }
+  })
 
   React.useEffect(() => {
     const handleScroll = () => {
@@ -100,33 +108,31 @@ export function Navbar() {
   }
 
   return (
-    <header
+    <motion.header
+      variants={{
+        visible: { y: 0 },
+        hidden: { y: "-100%" },
+      }}
+      animate={hidden ? "hidden" : "visible"}
+      transition={{ duration: 0.35, ease: "easeInOut" }}
       className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-        scrolled
-          ? "h-16 bg-background/95 backdrop-blur-md shadow-sm border-b border-border"
-          : "h-20 bg-transparent"
+        "fixed inset-x-0 top-0 z-50 transition-colors duration-300",
+        scrolled ? "border-b border-border bg-background/50 backdrop-blur-md shadow-sm" : "bg-transparent"
       )}
     >
-      <nav className="container mx-auto h-full flex items-center justify-between px-4 lg:px-8">
+      <nav className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 group relative z-50">
-          <div className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-primary/20 group-hover:bg-primary/30 transition-colors shadow-[0_0_15px_rgba(14,165,233,0.3)]">
-            <Zap className="w-5 h-5 text-primary" />
-            <div className="absolute inset-0 rounded-xl bg-primary/30 blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
-          </div>
-          <span className="text-xl font-bold tracking-tight text-foreground">
-            Digit<span className="text-primary">Hup</span>
-          </span>
+        <Link href="/" className="text-sm font-bold tracking-[0.2em] text-foreground z-50 relative group">
+          D I G I T H U B
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="hidden lg:flex items-center gap-1">
+        <div className="hidden lg:flex items-center space-x-8 text-xs font-medium tracking-wide text-muted-foreground">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-all rounded-lg hover:bg-white/5 active:scale-95"
+              className="transition-colors hover:text-foreground"
             >
               {link.label}
             </Link>
@@ -134,15 +140,12 @@ export function Navbar() {
         </div>
 
         {/* Desktop Right Side */}
-        <div className="hidden lg:flex items-center gap-3">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
-            onClick={() => setSearchOpen(true)}
-          >
-            <Search className="w-5 h-5" />
-          </Button>
+        <div className="hidden lg:flex items-center gap-6">
+          <Search className="h-5 w-5 cursor-pointer text-muted-foreground transition-colors hover:text-foreground" onClick={() => setSearchOpen(true)} />
+          
+          <Link href="/cart">
+            <ShoppingBag className="h-5 w-5 cursor-pointer text-muted-foreground transition-colors hover:text-foreground" />
+          </Link>
 
           {/* Language Switcher */}
           <DropdownMenu>
@@ -224,16 +227,11 @@ export function Navbar() {
             </DropdownMenu>
           ) : (
             <>
-              <Link href="/login">
-                <Button variant="ghost" size="sm" className="text-foreground hover:bg-white/5">
-                  Sign In
-                </Button>
+              <Link href="/login" className="text-xs font-semibold tracking-wide text-muted-foreground hover:text-foreground transition-colors">
+                SIGN IN
               </Link>
-              <Link href="/register">
-                <Button size="sm" className="rounded-full gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_20px_rgba(14,165,233,0.2)] border-0">
-                  Get Started
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
+              <Link href="/register" className="rounded-full bg-primary px-6 py-2.5 text-xs font-semibold tracking-wide text-primary-foreground transition-all hover:bg-primary/90">
+                SIGN UP
               </Link>
             </>
           )}
@@ -250,14 +248,9 @@ export function Navbar() {
           <SheetContent side="right" className="w-full sm:w-96 p-0">
             <div className="flex flex-col h-full">
               {/* Mobile Header */}
-              <div className="flex items-center p-4 border-b">
-                <Link href="/" className="flex items-center gap-2" onClick={() => setMobileMenuOpen(false)}>
-                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
-                    <Zap className="w-4 h-4 text-primary" />
-                  </div>
-                  <span className="text-lg font-bold">
-                    Digit<span className="text-primary">Hup</span>
-                  </span>
+              <div className="flex items-center p-4 border-b border-gray-100">
+                <Link href="/" className="text-sm font-bold tracking-[0.2em] text-black" onClick={() => setMobileMenuOpen(false)}>
+                  D I G I T H U B
                 </Link>
               </div>
 
@@ -269,10 +262,9 @@ export function Navbar() {
                       key={link.href}
                       href={link.href}
                       onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center justify-between px-4 py-3 text-base font-medium rounded-xl hover:bg-secondary transition-colors"
+                      className="block px-4 py-3 text-xs font-medium tracking-wide text-gray-600 hover:text-black transition-colors"
                     >
                       {link.label}
-                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
                     </Link>
                   ))}
                 </div>
@@ -302,15 +294,15 @@ export function Navbar() {
               </div>
 
               {/* Mobile Footer */}
-              <div className="p-4 border-t space-y-3">
+              <div className="p-4 border-t border-gray-100 space-y-3">
                 <Link href="/login" className="block" onClick={() => setMobileMenuOpen(false)}>
-                  <Button variant="outline" className="w-full">
-                    Sign In
+                  <Button variant="outline" className="w-full text-xs font-semibold tracking-wide border-gray-200">
+                    SIGN IN
                   </Button>
                 </Link>
                 <Link href="/register" className="block" onClick={() => setMobileMenuOpen(false)}>
-                  <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
-                    Get Started
+                  <Button className="w-full bg-black hover:bg-gray-800 text-white text-xs font-semibold tracking-wide">
+                    SIGN UP
                   </Button>
                 </Link>
               </div>
@@ -320,6 +312,6 @@ export function Navbar() {
       </nav>
 
       <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
-    </header>
+    </motion.header>
   )
 }

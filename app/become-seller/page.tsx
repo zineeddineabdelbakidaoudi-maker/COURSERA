@@ -12,6 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
+import { createClient } from "@/lib/supabase/client"
+import { toast } from "sonner"
+import { uploadFileAction } from "@/app/actions/item-actions"
 import {
   ArrowLeft,
   ArrowRight,
@@ -118,9 +121,42 @@ export default function BecomeSellerPage() {
 
   const handleSubmit = async () => {
     setIsLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    setIsLoading(false)
-    setCurrentStep(4)
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error("Not authenticated")
+
+      let avatarUrl = ""
+
+      if (formData.profileImage) {
+        const fd = new FormData()
+        fd.append("file", formData.profileImage)
+        fd.append("bucket", "avatars")
+        fd.append("folder", "profiles")
+        const res = await uploadFileAction(fd)
+        if (res.url) {
+          avatarUrl = res.url
+        } else if (res.error) {
+          throw new Error(res.error)
+        }
+      }
+
+      const { error } = await supabase.from('Profile').update({
+        role: "seller",
+        seller_level: "new",
+        username: formData.username || undefined,
+        full_name: formData.displayName,
+        avatar_url: avatarUrl || undefined,
+        // Optional profile extensions could be saved here in a specialized metadata field if needed
+      }).eq('id', user.id)
+
+      if (error) throw error
+      setCurrentStep(4)
+    } catch (error: any) {
+      toast.error(error.message || "Failed to create seller account")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (

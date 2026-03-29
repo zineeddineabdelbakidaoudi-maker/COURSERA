@@ -15,7 +15,6 @@ import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
-import NeuralBackground from "@/components/ui/flow-field-background"
 
 export default function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const [product, setProduct] = React.useState<any>(null)
@@ -194,10 +193,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
       <Navbar />
 
       <main className="pt-24 pb-16 relative">
-        <div className="fixed inset-0 pointer-events-none z-0">
-          <NeuralBackground color="#38bdf8" trailOpacity={0.15} particleCount={500} speed={0.8} />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-50/0 via-slate-50/80 to-slate-50 dark:from-background/0 dark:via-background/80 dark:to-background z-[1] pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-br from-white to-slate-50 z-[1] pointer-events-none" />
         <div className="container mx-auto px-4 lg:px-8 max-w-7xl relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both">
           {/* Breadcrumb */}
           <nav className="flex items-center gap-2 text-sm text-slate-500 py-4 mb-4">

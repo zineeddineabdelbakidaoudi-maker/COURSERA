@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { submitReviewAction } from "@/app/actions/item-actions"
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: any }> = {
   pending_requirements: { label: "Awaiting Req", color: "bg-blue-500/10 text-blue-600 border-blue-200", icon: Clock },
@@ -81,34 +82,25 @@ export default function BuyerOrdersPage() {
   const handleReviewSubmit = async () => {
     if (!selected || !reviewForm.comment.trim()) return
     setSubmittingReview(true)
-    const { data: { user } } = await supabase.auth.getUser()
     
-    const { error } = await supabase.from('Review').insert({
-      id: crypto.randomUUID(),
-      reviewer_id: user?.id,
+    const res = await submitReviewAction({
       reviewed_user_id: selected.seller_id,
       service_id: selected.type === 'service' ? selected.service_id : null,
       product_id: selected.type === 'product' ? (selected.product_id || selected.id) : null,
       order_id: selected.type === 'service' ? selected.id : null,
-      rating_overall: reviewForm.rating,
-      rating_quality: reviewForm.rating,
-      rating_communication: reviewForm.rating,
+      type: selected.type,
+      rating: reviewForm.rating,
       comment: reviewForm.comment,
-      is_verified_purchase: true,
-      is_visible: true
     })
 
     setSubmittingReview(false)
-    if (!error) {
-      if (selected.type === 'service' && selected.status !== 'completed') {
-        await supabase.from('Order').update({ status: 'completed' }).eq('id', selected.id)
-      }
+    if (res.success) {
       alert("Review submitted successfully!")
       setShowReview(false)
       setSelected(null)
       fetchOrders() 
     } else {
-      alert("Error submitting review: " + error.message)
+      alert("Error submitting review: " + res.error)
     }
   }
 
