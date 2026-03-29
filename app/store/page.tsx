@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Search, Package, Star, ShoppingCart, X, Zap, Loader2, BookOpen, SlidersHorizontal, Briefcase, Eye, Clock } from "lucide-react"
+import { Search, Package, Star, ShoppingCart, X, Loader2, SlidersHorizontal, ArrowRight, CheckCircle2, ShieldCheck, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/client"
-import { MeshGradient } from "@paper-design/shaders-react"
 import { Navbar } from "@/components/layout/navbar"
+import { AnimatedPageWrapper } from "@/components/ui/animated-page-wrapper"
+import { TiltCard } from "@/components/ui/tilt-card"
 
 const TYPE_EMOJI: Record<string, string> = {
   template: "🎨",
@@ -18,175 +19,251 @@ const TYPE_EMOJI: Record<string, string> = {
   bundle: "📦",
 }
 
-const TYPE_COLOR: Record<string, string> = {
-  template: "text-black bg-black/5 border-black/10",
-  ebook: "text-black bg-black/5 border-black/10",
-  course: "text-black bg-black/5 border-black/10",
-  toolkit: "text-black bg-black/5 border-black/10",
-  bundle: "text-black bg-black/5 border-black/10",
-}
-
 export default function StorePage() {
   const supabase = createClient()
   const [products, setProducts] = useState<any[]>([])
-  const [categories, setCategories] = useState<string[]>(["All"])
+  const [categories, setCategories] = useState<string[]>(["All Assets"])
   const [loading, setLoading] = useState(true)
-  const [cat, setCat] = useState("All")
+  const [cat, setCat] = useState("All Assets")
   const [q, setQ] = useState("")
-  const [showFilters, setShowFilters] = useState(false)
+
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
 
   useEffect(() => {
     async function fetchData() {
       const { data: prods } = await supabase
         .from("DigitalProduct")
-        .select("*, publisher:Profile!publisher_id(full_name, avatar_url), category:Category!category_id(name_en)")
+        .select("*, publisher:Profile!publisher_id(full_name, avatar_url, seller_level), category:Category!category_id(name_en)")
         .eq("status", "live")
 
       setProducts(prods || [])
 
       const { data: cats } = await supabase.from("Category").select("name_en").eq("type", "products")
       if (cats) {
-        setCategories(["All", ...cats.map(c => c.name_en)])
+        setCategories(["All Assets", ...cats.map(c => c.name_en)])
       }
       setLoading(false)
     }
     fetchData()
   }, [])
 
+  const handleHeroMouseMove = (e: React.MouseEvent) => {
+    const { clientX, clientY } = e;
+    setMousePos({
+      x: (clientX / window.innerWidth - 0.5) * 40,
+      y: (clientY / window.innerHeight - 0.5) * 40,
+    });
+  };
+
   const filtered = products.filter(p => {
     const pCat = p.category?.name_en || "Other"
     const pTitle = p.title?.toLowerCase() || ""
-    if (cat !== "All" && pCat !== cat) return false
+    if (cat !== "All Assets" && pCat !== cat) return false
     if (q && !pTitle.includes(q.toLowerCase())) return false
     return true
   })
 
-  if (loading) return (
-    <div className="min-h-screen bg-white flex items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 rounded-2xl bg-black/5 flex items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin text-black/40" />
-        </div>
-        <p className="text-gray-400 text-sm font-medium">Opening store...</p>
-      </div>
-    </div>
-  )
-
   return (
-    <div className="min-h-screen bg-white text-black">
+    <div className="min-h-screen overflow-hidden bg-[#FAFAFA] font-sans text-gray-900 selection:bg-black selection:text-white">
       <Navbar />
 
-      {/* Animated Header */}
-      <div className="relative overflow-hidden border-b border-black/5 bg-white">
-        <div className="fixed inset-0 pointer-events-none z-0">
-          <MeshGradient
-            className="w-full h-full opacity-30"
-            colors={["#ffffff", "#fafafa", "#f5f5f5", "#eeeeee"]}
-            speed={0.4}
-          />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/40 to-white z-[1]" />
+      <AnimatedPageWrapper>
+        <main className="pt-20">
+          {/* --- HERO SECTION --- */}
+          <section 
+            className="relative overflow-hidden bg-white px-6 py-24 border-b border-gray-100"
+            onMouseMove={handleHeroMouseMove}
+          >
+            <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center opacity-30">
+              {/* 3D-like background shapes with parallax */}
+              <div 
+                className="absolute h-64 w-64 translate-x-48 -translate-y-24 rotate-45 rounded-2xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white shadow-2xl transition-transform duration-500 ease-out" 
+                style={{ transform: `translate(${mousePos.x}px, ${mousePos.y}px) rotate(45deg)` }}
+              />
+              <div 
+                className="absolute h-48 w-48 -translate-x-64 translate-y-12 rotate-12 rounded-full border border-gray-200 bg-gradient-to-tr from-gray-50 to-white shadow-xl transition-transform duration-700 ease-out" 
+                style={{ transform: `translate(${-mousePos.x * 1.5}px, ${-mousePos.y * 1.5}px) rotate(12deg)` }}
+              />
+              <div 
+                className="absolute h-[600px] w-[600px] rounded-full border border-gray-200 opacity-20 transition-transform duration-1000 ease-out" 
+                style={{ transform: `translate(${mousePos.x * 0.5}px, ${mousePos.y * 0.5}px)` }}
+              />
+            </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 py-16">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-black/10 bg-black/5 text-black/60 text-xs font-bold tracking-widest uppercase mb-4">
-                <Package className="w-3 h-3" /> Digital Assets
-              </div>
-              <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-2">
-                Digital <span className="text-gray-400">Store</span>
+            <div className="relative z-10 mx-auto max-w-4xl text-center">
+              <h1 className="mb-6 text-5xl font-medium tracking-tight text-black md:text-7xl">
+                Premium Digital <br />
+                <span className="text-black">Store</span>
               </h1>
-              <p className="text-gray-500 font-medium">
-                Premium templates, scripts, and assets at your fingertips.
+              <p className="mx-auto mb-12 max-w-2xl text-lg font-light text-gray-500">
+                Instantly level up your workflow with premium templates, 3D assets, UI kits, and expert scripts in Algeria.
               </p>
-            </div>
-            <Button
-              variant="outline"
-              className={`gap-2 border-black/10 bg-white text-black hover:bg-black/5 ${showFilters ? "border-black/40 bg-black/5" : ""}`}
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <SlidersHorizontal className="w-4 h-4" /> Filters
-            </Button>
-          </div>
 
-          {/* Search */}
-          <div className="relative max-w-xl mb-5">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
-              className="pl-11 h-12 rounded-xl bg-white border-black/10 text-black placeholder:text-gray-400 focus:border-black/40 focus:ring-black/5"
-              placeholder="Search products..."
-              value={q}
-              onChange={e => setQ(e.target.value)}
-            />
-          </div>
-
-          {/* Category pills */}
-          <div className="flex flex-wrap gap-2">
-            {categories.map(c => (
-              <button key={c} onClick={() => setCat(c)}
-                className={`px-4 py-2 rounded-full text-sm font-semibold border transition-all duration-200 ${cat === c
-                  ? "bg-black text-white border-black shadow-md"
-                  : "border-black/10 text-gray-400 hover:border-black/30 hover:text-black bg-white"}`}>
-                {c}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Grid */}
-      <main className="max-w-7xl mx-auto px-4 py-10">
-        {filtered.length === 0 ? (
-          <div className="text-center py-24 text-gray-400">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-50 flex items-center justify-center">
-              <Package className="w-8 h-8 opacity-30" />
-            </div>
-            <p className="text-lg font-semibold text-gray-500 mb-2">No products found</p>
-            <Button variant="ghost" className="mt-2 text-gray-400 hover:text-black" onClick={() => { setQ(""); setCat("All") }}>Clear filters</Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map((p, i) => (
-              <Link key={p.id || i} href={`/store/${p.slug || p.id}`} className="group block">
-                <div className="bg-white border border-black/5 rounded-2xl overflow-hidden h-full hover:shadow-xl hover:-translate-y-1 hover:border-black/10 transition-all duration-300">
-                  <div className="h-48 bg-gray-100 relative overflow-hidden flex items-center justify-center">
-                    {p.cover_url ? (
-                      <img
-                        src={p.cover_url}
-                        alt={p.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-200 gap-2">
-                        <span className="text-5xl">{TYPE_EMOJI[p.type] || "📦"}</span>
-                      </div>
-                    )}
-                    <Badge variant="outline" className={`absolute bottom-3 left-3 text-[10px] uppercase tracking-widest font-bold border ${TYPE_COLOR[p.type] || "text-gray-500 bg-gray-100 border-gray-200"}`}>
-                      {p.type || "product"}
-                    </Badge>
-                    <div className="absolute top-3 right-3 flex items-center gap-1 text-xs font-bold text-black bg-white/60 backdrop-blur-sm px-2 py-1 rounded-lg border border-black/10">
-                      <Star className="w-3 h-3 fill-current" /> 5.0
-                    </div>
-                  </div>
-
-                  <div className="p-5">
-                    <h3 className="font-bold text-base leading-snug mb-1 group-hover:text-black/60 transition-colors line-clamp-2 text-black h-12">{p.title}</h3>
-                    <p className="text-xs text-gray-500 mb-4 font-medium">by {p.publisher?.full_name || "Anonymous"}</p>
-
-                    <div className="flex items-center justify-between border-t border-black/5 pt-4">
-                      <p className="text-xl font-black text-black">{Number(p.price_dzd).toLocaleString()} <span className="text-xs font-semibold text-gray-400">DZD</span></p>
-                      <Button size="sm" className="gap-2 bg-black hover:bg-black/90 text-white shadow-lg transition-all pointer-events-none">
-                        <ShoppingCart className="w-3.5 h-3.5" /> Buy
-                      </Button>
-                    </div>
-                  </div>
+              {/* SEARCH & FILTERS */}
+              <div className="mx-auto flex max-w-3xl flex-col gap-4">
+                <div className="relative flex items-center overflow-hidden rounded-2xl border border-gray-200 bg-white p-2 shadow-lg transition-shadow focus-within:shadow-xl">
+                  <Search className="ml-4 h-5 w-5 text-gray-400" />
+                  <Input
+                    className="border-none bg-transparent py-6 text-lg placeholder:text-gray-400 focus-visible:ring-0 px-4"
+                    placeholder="Search for templates, UI kits, ebooks..."
+                    value={q}
+                    onChange={e => setQ(e.target.value)}
+                  />
+                  {q && (
+                     <button onClick={() => setQ('')} className="mr-2 p-2 hover:bg-gray-100 rounded-full transition-colors">
+                        <X className="h-4 w-4 text-gray-500" />
+                     </button>
+                  )}
+                  <Button className="mr-1 h-12 rounded-xl bg-black px-8 text-white hover:bg-gray-800 transition-colors shadow-none font-medium">
+                    Search
+                  </Button>
                 </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </main>
+
+                <div className="flex flex-wrap items-center justify-center gap-2 mt-4">
+                  {categories.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setCat(c)}
+                      className={[
+                        'rounded-full px-5 py-2 text-sm font-medium transition-all duration-300',
+                        cat === c
+                          ? 'bg-black text-white shadow-md'
+                          : 'bg-white border border-gray-200 text-gray-500 hover:border-gray-300 hover:text-black shadow-sm',
+                      ].join(' ')}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                  <button className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-5 py-2 text-sm font-medium text-gray-500 hover:border-black hover:text-black transition-colors shadow-sm ml-2">
+                    <SlidersHorizontal className="h-4 w-4" />
+                    Filters
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* --- Grid SECTION --- */}
+          <section className="bg-[#FAFAFA] px-6 py-20">
+             <div className="mx-auto max-w-7xl">
+               <div className="mb-12 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                 <h2 className="text-2xl font-medium tracking-tight text-black">Top Selling Products</h2>
+                 <span className="text-sm font-medium text-gray-400 uppercase tracking-widest">{filtered.length} Items found</span>
+               </div>
+
+               {loading ? (
+                 <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                    {[1, 2, 3].map(i => <div key={i} className="h-96 rounded-[2.5rem] bg-gray-100 animate-pulse border border-gray-200" />)}
+                 </div>
+               ) : filtered.length === 0 ? (
+                 <div className="text-center py-24">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white border border-gray-200 flex items-center justify-center shadow-sm">
+                    <Package className="w-8 h-8 text-gray-300" />
+                  </div>
+                  <p className="text-lg font-medium text-gray-500">No products match your criteria.</p>
+                 </div>
+               ) : (
+                 <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                    {filtered.map((p) => {
+                       const publisherName = p.publisher?.full_name || "Anonymous"
+                       const isTopRated = p.publisher?.seller_level === "elite" || p.publisher?.seller_level === "pro"
+                       
+                       return (
+                          <Link key={p.id} href={`/store/${p.slug || p.id}`} className="block">
+                             <TiltCard
+                               className="group flex flex-col h-full rounded-[2.5rem] border border-gray-100 bg-white p-6 shadow-sm transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)]"
+                             >
+                                <div className="mb-6 relative h-48 w-full flex-shrink-0 overflow-hidden rounded-2xl bg-gray-100 flex items-center justify-center">
+                                  {p.cover_url ? (
+                                     <img
+                                        alt={p.title}
+                                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                        src={p.cover_url}
+                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                                     />
+                                  ) : (
+                                     <div className="h-full w-full flex items-center justify-center bg-gray-50">
+                                        <span className="text-6xl">{TYPE_EMOJI[p.type] || "📦"}</span>
+                                     </div>
+                                  )}
+                                  <Badge variant="outline" className="absolute top-3 left-3 bg-white/80 backdrop-blur-md shadow-sm uppercase border border-gray-200 text-black px-2.5 py-1 rounded-lg text-xs font-bold">
+                                    {p.type || "Asset"}
+                                  </Badge>
+                                </div>
+                                <div className="flex-1">
+                                  <h3 className="text-lg font-medium text-black line-clamp-2 leading-snug group-hover:text-gray-600 transition-colors">
+                                    {p.title}
+                                  </h3>
+                                  <p className="text-sm font-medium text-gray-500 mt-2">by {publisherName}</p>
+                                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                                    {isTopRated && (
+                                       <Badge variant="secondary" className="bg-green-50 text-green-700 hover:bg-green-50 border-none font-semibold px-2">
+                                         <CheckCircle2 className="mr-1 h-3 w-3" />
+                                         Top Seller
+                                       </Badge>
+                                    )}
+                                    <span className="flex items-center gap-1 text-xs font-bold text-gray-600">
+                                      <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                                      5.0
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="mt-6 flex items-center justify-between gap-4 border-t border-gray-50 pt-6">
+                                  <p className="text-xl font-black text-black">{Number(p.price_dzd).toLocaleString()} <span className="text-xs font-semibold text-gray-400">DZD</span></p>
+                                  <Button className="rounded-2xl bg-black px-6 py-5 text-xs font-semibold tracking-wide text-white transition-all hover:bg-gray-800 shadow-none">
+                                    Buy Now
+                                  </Button>
+                                </div>
+                             </TiltCard>
+                          </Link>
+                       )
+                    })}
+                 </div>
+               )}
+             </div>
+          </section>
+
+          {/* --- WHY CHOOSE DIGITHUB STORE --- */}
+          <section className="bg-white px-6 py-24 border-t border-gray-100">
+            <div className="mx-auto max-w-7xl">
+              <div className="mb-16 text-center">
+                <h2 className="mb-4 text-3xl font-medium tracking-tight text-black">Why Buy From Us</h2>
+                <p className="text-gray-500 max-w-2xl mx-auto">Instant access to premium content vetted by experts.</p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-12 md:grid-cols-3">
+                {[
+                  { 
+                    icon: ShieldCheck, 
+                    title: 'Tested & Verified', 
+                    desc: 'Every file is manually scanned and tested to ensure the highest code and design quality.' 
+                  },
+                  { 
+                    icon: Zap, 
+                    title: 'Instant Delivery', 
+                    desc: 'Get a secure download link instantly after your payment is confirmed.' 
+                  },
+                  { 
+                    icon: CheckCircle2, 
+                    title: 'Lifetime Updates', 
+                    desc: 'Receive free updates whenever the creator publishes a new version of the asset.' 
+                  },
+                ].map((prop) => (
+                  <div key={prop.title} className="group p-8 rounded-[2rem] border border-gray-100 bg-white shadow-sm transition-all hover:shadow-xl">
+                    <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-50 border border-gray-100 transition-transform group-hover:scale-110">
+                      <prop.icon className="h-7 w-7 text-black" />
+                    </div>
+                    <h3 className="mb-4 text-lg font-bold uppercase tracking-wider text-black">{prop.title}</h3>
+                    <p className="text-sm leading-relaxed text-gray-500">{prop.desc}</p>
+                  </div>
+                ))}
+              </div>
+
+            </div>
+          </section>
+        </main>
+      </AnimatedPageWrapper>
     </div>
   )
 }

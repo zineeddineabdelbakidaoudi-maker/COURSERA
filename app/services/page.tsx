@@ -1,206 +1,291 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, type CSSProperties, useRef } from "react"
 import Link from "next/link"
-import { Search, Star, Clock, ArrowRight, SlidersHorizontal, X, Loader2, Briefcase, Zap } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
+import { 
+  Search, 
+  Star, 
+  Clock, 
+  ArrowRight, 
+  Filter, 
+  X, 
+  Loader2, 
+  Briefcase, 
+  CheckCircle2,
+  ShieldCheck,
+  Zap
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/client"
-import { MeshGradient } from "@paper-design/shaders-react"
-import { Navbar } from "@/components/layout/navbar"
-
-const LEVEL_STYLE: Record<string, string> = {
-  elite: "bg-black/10 text-black/80 border-black/20",
-  pro: "bg-gray-100 text-gray-700 border-gray-200",
-  rising: "bg-gray-50 text-gray-600 border-gray-200",
-  new: "bg-slate-50 text-slate-500 border-slate-200",
-}
+import { Navbar } from "@/components/layout/navbar" 
+import { AnimatedPageWrapper } from "@/components/ui/animated-page-wrapper"
+import { TiltCard } from "@/components/ui/tilt-card"
 
 export default function ServicesPage() {
   const supabase = createClient()
   const [services, setServices] = useState<any[]>([])
-  const [categories, setCategories] = useState<string[]>(["All"])
+  const [categories, setCategories] = useState<string[]>(["All Talent"])
   const [loading, setLoading] = useState(true)
-  const [cat, setCat] = useState("All")
+  const [activeCategory, setActiveCategory] = useState("All Talent")
   const [q, setQ] = useState("")
-  const [maxPrice, setMaxPrice] = useState(200000)
-  const [showFilters, setShowFilters] = useState(false)
+
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
 
   useEffect(() => {
     async function fetchData() {
       const { data: srvs } = await supabase
         .from("Service")
-        .select("*, seller:Profile!seller_id(full_name, avatar_url, seller_level), category:Category!category_id(name_en)")
+        .select("*, seller:Profile!seller_id(full_name, avatar_url, seller_level, bio, role), category:Category!category_id(name_en)")
         .eq("status", "live")
 
       setServices(srvs || [])
 
       const { data: cats } = await supabase.from("Category").select("name_en").eq("type", "services")
       if (cats) {
-        setCategories(["All", ...cats.map(c => c.name_en)])
+        setCategories(["All Talent", ...cats.map(c => c.name_en)])
       }
       setLoading(false)
     }
     fetchData()
   }, [])
 
+  const handleHeroMouseMove = (e: React.MouseEvent) => {
+    const { clientX, clientY } = e;
+    setMousePos({
+      x: (clientX / window.innerWidth - 0.5) * 40,
+      y: (clientY / window.innerHeight - 0.5) * 40,
+    });
+  };
+
   const filtered = services.filter(s => {
     const sCat = s.category?.name_en || "Other"
     const sTitle = s.title?.toLowerCase() || ""
     const sSeller = s.seller?.full_name?.toLowerCase() || ""
-    const basePrice = s.packages?.basic?.price || s.packages?.Basic?.price || 0
-    if (cat !== "All" && sCat !== cat) return false
+    if (activeCategory !== "All Talent" && sCat !== activeCategory) return false
     if (q && !sTitle.includes(q.toLowerCase()) && !sSeller.includes(q.toLowerCase())) return false
-    if (basePrice > maxPrice) return false
     return true
   })
 
-  if (loading) return (
-    <div className="min-h-screen bg-white flex items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 rounded-2xl bg-black/5 flex items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin text-black/40" />
-        </div>
-        <p className="text-gray-400 text-sm font-medium">Loading services...</p>
-      </div>
-    </div>
-  )
-
   return (
-    <div className="min-h-screen bg-white text-black">
+    <div className="min-h-screen overflow-hidden bg-[#FAFAFA] font-sans text-gray-900 selection:bg-black selection:text-white">
       <Navbar />
-      {/* Animated Header */}
-      <div className="relative overflow-hidden border-b border-black/5 bg-white">
-        <div className="fixed inset-0 pointer-events-none z-0">
-          <MeshGradient
-            className="w-full h-full opacity-30"
-            colors={["#ffffff", "#f5f5f5", "#eeeeee", "#e0e0e0"]}
-            speed={0.4}
-          />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/40 to-white z-[1]" />
+      
+      <AnimatedPageWrapper>
+        <main className="pt-20">
+          {/* --- HERO SECTION --- */}
+          <section 
+            className="relative overflow-hidden bg-white px-6 py-24 border-b border-gray-100"
+            onMouseMove={handleHeroMouseMove}
+          >
+            <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center opacity-30">
+              {/* 3D-like background shapes with parallax */}
+              <div 
+                className="absolute h-64 w-64 translate-x-48 -translate-y-24 rotate-45 rounded-2xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white shadow-2xl transition-transform duration-500 ease-out" 
+                style={{ transform: `translate(${mousePos.x}px, ${mousePos.y}px) rotate(45deg)` }}
+              />
+              <div 
+                className="absolute h-48 w-48 -translate-x-64 translate-y-12 rotate-12 rounded-full border border-gray-200 bg-gradient-to-tr from-gray-50 to-white shadow-xl transition-transform duration-700 ease-out" 
+                style={{ transform: `translate(${-mousePos.x * 1.5}px, ${-mousePos.y * 1.5}px) rotate(12deg)` }}
+              />
+              <div 
+                className="absolute h-[600px] w-[600px] rounded-full border border-gray-200 opacity-20 transition-transform duration-1000 ease-out" 
+                style={{ transform: `translate(${mousePos.x * 0.5}px, ${mousePos.y * 0.5}px)` }}
+              />
+            </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 py-16">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-black/10 bg-black/5 text-black/60 text-xs font-bold tracking-widest uppercase mb-4">
-                <Zap className="w-3 h-3" /> Live Marketplace
-              </div>
-              <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-2">
-                Browse <span className="text-gray-400">Services</span>
+            <div className="relative z-10 mx-auto max-w-4xl text-center">
+              <h1 className="mb-6 text-5xl font-medium tracking-tight text-black md:text-7xl">
+                Hire Top-Tier <br />
+                <span className="text-black">Digital Talent</span>
               </h1>
-              <p className="text-gray-500 font-medium">
-                <span className="text-black font-bold">{filtered.length}</span> verified Algerian professionals ready to deliver.
+              <p className="mx-auto mb-12 max-w-2xl text-lg font-light text-gray-500">
+                The premier marketplace for elite Algerian freelancers. From expert developers to visionary 3D artists.
               </p>
+
+              {/* UPWORK-STYLE SEARCH & FILTERS */}
+              <div className="mx-auto flex max-w-3xl flex-col gap-4">
+                <div className="relative flex items-center overflow-hidden rounded-2xl border border-gray-200 bg-white p-2 shadow-lg transition-shadow focus-within:shadow-xl">
+                  <Search className="ml-4 h-5 w-5 text-gray-400" />
+                  <Input
+                    className="border-none bg-transparent py-6 text-lg placeholder:text-gray-400 focus-visible:ring-0 px-4"
+                    placeholder="Search for skills (e.g. React, 3D Modeling, Python)"
+                    value={q}
+                    onChange={e => setQ(e.target.value)}
+                  />
+                  {q && (
+                     <button onClick={() => setQ('')} className="mr-2 p-2 hover:bg-gray-100 rounded-full transition-colors">
+                        <X className="h-4 w-4 text-gray-500" />
+                     </button>
+                  )}
+                  <Button className="mr-1 h-12 rounded-xl bg-black px-8 text-white hover:bg-gray-800 transition-colors shadow-none font-medium">
+                    Search
+                  </Button>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-center gap-2 mt-4">
+                  {categories.map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => setActiveCategory(cat)}
+                      className={[
+                        'rounded-full px-5 py-2 text-sm font-medium transition-all duration-300',
+                        activeCategory === cat
+                          ? 'bg-black text-white shadow-md'
+                          : 'bg-white border border-gray-200 text-gray-500 hover:border-gray-300 hover:text-black shadow-sm',
+                      ].join(' ')}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                  <button className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-5 py-2 text-sm font-medium text-gray-500 hover:border-black hover:text-black transition-colors shadow-sm ml-2">
+                    <Filter className="h-4 w-4" />
+                    Advanced Filters
+                  </button>
+                </div>
+              </div>
             </div>
-            <Button
-              variant="outline"
-              className={`gap-2 border-black/10 bg-white text-black hover:bg-black/5 ${showFilters ? "border-black/40 bg-black/5" : ""}`}
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <SlidersHorizontal className="w-4 h-4" /> Filters
-            </Button>
-          </div>
+          </section>
 
-          {/* Search */}
-          <div className="relative max-w-xl mb-5">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
-              className="pl-11 h-12 rounded-xl bg-white border-black/10 text-black placeholder:text-gray-400 focus:border-black/40 focus:ring-black/5"
-              placeholder="Search by service, skill, or seller..."
-              value={q}
-              onChange={e => setQ(e.target.value)}
-            />
-            {q && <button onClick={() => setQ("")} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black"><X className="w-4 h-4" /></button>}
-          </div>
+          {/* --- FREELANCER GRID --- */}
+          <section className="bg-[#fafafa] px-6 py-20">
+            <div className="mx-auto max-w-7xl">
+              <div className="mb-12 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h2 className="text-2xl font-medium tracking-tight text-black">Recommended Services</h2>
+                <span className="text-sm font-medium text-gray-400 uppercase tracking-widest">{filtered.length} Services found</span>
+              </div>
 
-          {/* Filters Panel */}
-          {showFilters && (
-            <div className="mb-5 p-4 rounded-xl border border-black/10 bg-white shadow-sm">
-              <p className="text-sm font-semibold mb-3 text-gray-500">Max Price: <span className="text-black font-black">{maxPrice.toLocaleString()} DZD</span></p>
-              <input type="range" min={1000} max={200000} step={1000} value={maxPrice} onChange={e => setMaxPrice(+e.target.value)} className="w-full max-w-xs accent-black" />
-            </div>
-          )}
-
-          {/* Category pills */}
-          <div className="flex flex-wrap gap-2">
-            {categories.map(c => (
-              <button key={c} onClick={() => setCat(c)}
-                className={`px-4 py-2 rounded-full text-sm font-semibold border transition-all duration-200 ${cat === c
-                  ? "bg-black text-white border-black shadow-md"
-                  : "border-black/10 text-gray-500 hover:border-black/30 hover:text-black bg-white"}`}>
-                {c}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Grid */}
-      <main className="max-w-7xl mx-auto px-4 py-10">
-        {filtered.length === 0 ? (
-          <div className="text-center py-24 text-gray-400">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-50 flex items-center justify-center">
-              <Search className="w-8 h-8 opacity-30" />
-            </div>
-            <p className="text-lg font-semibold text-gray-500 mb-2">No services match your filters</p>
-            <Button variant="ghost" className="mt-2 text-gray-400 hover:text-black" onClick={() => { setQ(""); setCat("All"); setMaxPrice(200000) }}>Clear filters</Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {filtered.map((s, i) => {
-              const basePrice = s.packages?.basic?.price || s.packages?.Basic?.price || 0
-              const sellerName = s.seller?.full_name || "Anonymous"
-              const sellerLevel = s.seller?.seller_level || "new"
-
-              return (
-                <Link key={s.id || i} href={`/services/${s.slug || s.id}`} className="group block no-underline">
-                  <div className="bg-white border border-black/5 rounded-2xl overflow-hidden h-full hover:shadow-xl hover:-translate-y-1 hover:border-black/10 transition-all duration-300">
-                    <div className="h-36 bg-gray-100 relative overflow-hidden">
-                      {s.thumbnail_url ? (
-                        <img
-                          src={s.thumbnail_url}
-                          alt={s.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                          <Briefcase className="w-10 h-10 text-black/10" />
-                        </div>
-                      )}
-                      <Badge variant="outline" className={`absolute top-2.5 right-2.5 text-[10px] shadow-sm uppercase border ${LEVEL_STYLE[sellerLevel] || LEVEL_STYLE.new}`}>
-                        {sellerLevel}
-                      </Badge>
-                    </div>
-
-                    <div className="p-4">
-                      <div className="flex items-center gap-2 mb-2.5">
-                        <div className="w-6 h-6 rounded-full bg-black/5 flex items-center justify-center text-xs font-bold text-black/60 shrink-0">
-                          {sellerName.charAt(0).toUpperCase()}
-                        </div>
-                        <span className="text-xs text-gray-500 font-medium truncate">{sellerName}</span>
-                      </div>
-
-                      <h3 className="font-semibold text-sm leading-snug mb-3 line-clamp-2 group-hover:text-black/60 transition-colors text-black h-10">{s.title}</h3>
-
-                      <div className="flex items-center justify-between border-t border-black/5 pt-3 mt-auto">
-                        <div className="flex items-center gap-3 text-xs text-gray-400">
-                          <span className="flex items-center gap-1 text-black font-semibold"><Star className="w-3 h-3 fill-current" />5.0</span>
-                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{(s.packages?.basic?.delivery || 3)}d</span>
-                        </div>
-                        <span className="text-xs font-bold text-black">{Number(basePrice).toLocaleString()} DZD</span>
-                      </div>
-                    </div>
+              {loading ? (
+                 <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                    {[1, 2, 3].map(i => <div key={i} className="h-96 rounded-[2.5rem] bg-gray-100 animate-pulse border border-gray-200" />)}
+                 </div>
+              ) : filtered.length === 0 ? (
+                 <div className="text-center py-24">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white border border-gray-200 flex items-center justify-center shadow-sm">
+                    <Search className="w-8 h-8 text-gray-300" />
                   </div>
-                </Link>
-              )
-            })}
-          </div>
-        )}
-      </main>
+                  <p className="text-lg font-medium text-gray-500">No services match your criteria.</p>
+                 </div>
+              ) : (
+                 <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                    {filtered.map((s) => {
+                       const basePrice = s.packages?.basic?.price || s.packages?.Basic?.price || 0
+                       const delivery = s.packages?.basic?.delivery || s.packages?.Basic?.delivery || 3
+                       const sellerName = s.seller?.full_name || "Anonymous"
+                       const sellerLevel = s.seller?.seller_level || "new"
+                       const isTopRated = sellerLevel === "elite" || sellerLevel === "pro"
+                       
+                       return (
+                          <Link key={s.id} href={`/services/${s.slug || s.id}`} className="block">
+                             <TiltCard
+                               className="group flex flex-col h-full rounded-[2.5rem] border border-gray-100 bg-white p-6 shadow-sm transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)]"
+                             >
+                                <div className="mb-6 flex items-start gap-5">
+                                  <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-2xl bg-gray-100">
+                                    {s.thumbnail_url ? (
+                                       <img
+                                          alt={s.title}
+                                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                          src={s.thumbnail_url}
+                                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                                       />
+                                    ) : (
+                                       <div className="h-full w-full flex items-center justify-center">
+                                          <Briefcase className="h-8 w-8 text-gray-300" />
+                                       </div>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <h3 className="text-lg font-medium text-black line-clamp-2 leading-snug group-hover:text-gray-600 transition-colors">
+                                      {s.title}
+                                    </h3>
+                                    <p className="text-sm font-medium text-gray-500 mt-1">{sellerName}</p>
+                                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                                      {isTopRated && (
+                                         <Badge variant="secondary" className="bg-green-50 text-green-700 hover:bg-green-50 border-none font-semibold px-2">
+                                           <CheckCircle2 className="mr-1 h-3 w-3" />
+                                           Top Rated
+                                         </Badge>
+                                      )}
+                                      <span className="flex items-center gap-1 text-xs font-bold text-gray-600">
+                                        <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                                        5.0
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="mb-6 grid grid-cols-2 gap-4 border-y border-gray-50 py-4 mt-auto">
+                                  <div className="text-center">
+                                    <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">Starting At</p>
+                                    <p className="text-sm font-bold text-black">{Number(basePrice).toLocaleString()} DZD</p>
+                                  </div>
+                                  <div className="text-center border-l border-gray-50">
+                                    <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1">Delivery Time</p>
+                                    <p className="text-sm font-bold text-black flex items-center justify-center gap-1">
+                                       <Clock className="w-3.5 h-3.5 text-gray-400" /> {delivery} Days
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="mt-2 flex items-center gap-2">
+                                  <Button className="flex-1 rounded-2xl bg-black py-6 text-xs font-semibold tracking-wide text-white transition-all hover:bg-gray-800 shadow-none">
+                                    Hire Now
+                                  </Button>
+                                  <button onClick={(e) => e.preventDefault()} className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-gray-200 bg-white transition-colors hover:bg-gray-50">
+                                    <ArrowRight className="h-5 w-5 text-gray-400 transform -rotate-45" />
+                                  </button>
+                                </div>
+                             </TiltCard>
+                          </Link>
+                       )
+                    })}
+                 </div>
+              )}
+            </div>
+          </section>
+
+          {/* --- WHY CHOOSE DIGITHUB (PROFESSIONAL VALUE PROPS) --- */}
+          <section className="bg-white px-6 py-24 border-t border-gray-100">
+            <div className="mx-auto max-w-7xl">
+              <div className="mb-16 text-center">
+                <h2 className="mb-4 text-3xl font-medium tracking-tight text-black">Why Businesses Choose DIGITHUB</h2>
+                <p className="text-gray-500 max-w-2xl mx-auto">Access the top 3% of digital talent in Algeria through our secure and professional platform.</p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-12 md:grid-cols-3">
+                {[
+                  { 
+                    icon: CheckCircle2, 
+                    title: 'Rigorous Vetting', 
+                    desc: 'Every freelancer undergoes a strict review of their portfolio, technical skills, and professional reliability.' 
+                  },
+                  { 
+                    icon: ShieldCheck, 
+                    title: 'Secure Payments', 
+                    desc: 'Payments are held in escrow and only released when you are 100% satisfied with the delivered work.' 
+                  },
+                  { 
+                    icon: Zap, 
+                    title: 'Quality Assurance', 
+                    desc: 'Our dedicated support team ensures every project meets international standards of digital excellence.' 
+                  },
+                ].map((prop) => (
+                  <div key={prop.title} className="group p-8 rounded-[2rem] border border-gray-100 bg-white shadow-sm transition-all hover:shadow-xl">
+                    <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-50 border border-gray-100 transition-transform group-hover:scale-110">
+                      <prop.icon className="h-7 w-7 text-black" />
+                    </div>
+                    <h3 className="mb-4 text-lg font-bold uppercase tracking-wider text-black">{prop.title}</h3>
+                    <p className="text-sm leading-relaxed text-gray-500">{prop.desc}</p>
+                  </div>
+                ))}
+              </div>
+
+            </div>
+          </section>
+        </main>
+      </AnimatedPageWrapper>
     </div>
   )
 }
