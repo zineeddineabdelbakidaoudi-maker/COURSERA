@@ -66,7 +66,10 @@ export async function submitReviewAction(payload: any) {
     
     // Also update order to completed if it's a service order
     if (payload.order_id && payload.type === 'service') {
-      await admin.from('Order').update({ status: 'completed' }).eq('id', payload.order_id)
+      await admin.from('Order').update({ 
+        status: 'completed',
+        updated_at: new Date().toISOString()
+      }).eq('id', payload.order_id)
     }
     
     return { success: true, id: data.id }

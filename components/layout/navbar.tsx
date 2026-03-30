@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { Menu, ChevronRight, Search, ShoppingBag, Globe, LogOut, LayoutDashboard, Settings, Heart, User as UserIcon, Zap } from "lucide-react"
+import { Menu, ChevronRight, Search, ShoppingBag, Globe, LogOut, LayoutDashboard, Settings, Heart, User as UserIcon, Zap, Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
@@ -46,6 +46,7 @@ export function Navbar() {
   const [user, setUser] = React.useState<any>(null)
   const [profile, setProfile] = React.useState<any>(null)
   const [loading, setLoading] = React.useState(true)
+  const [unreadCount, setUnreadCount] = React.useState(0)
   const { scrollY } = useScroll()
   const [hidden, setHidden] = React.useState(false)
 
@@ -76,6 +77,14 @@ export function Navbar() {
         setProfile(profile)
       }
       setLoading(false)
+      if (user) {
+        const { count } = await supabase
+          .from('Notification')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('is_read', false)
+        setUnreadCount(count || 0)
+      }
     }
 
     fetchUser()
@@ -117,23 +126,24 @@ export function Navbar() {
       animate={hidden ? "hidden" : "visible"}
       transition={{ duration: 0.35, ease: "easeInOut" }}
       className={cn(
-        "fixed inset-x-0 top-0 z-50 transition-colors duration-300",
-        scrolled ? "border-b border-border bg-background/50 backdrop-blur-md shadow-sm" : "bg-transparent"
+        "fixed inset-x-0 top-0 z-50 transition-all duration-500",
+        scrolled ? "border-b border-slate-200/50 bg-white/70 backdrop-blur-xl shadow-sm" : "bg-transparent h-24"
       )}
     >
-      <nav className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
+      <nav className="mx-auto flex h-full max-w-7xl items-center justify-between px-6">
         {/* Logo */}
-        <Link href="/" className="text-sm font-bold tracking-[0.2em] text-foreground z-50 relative group">
-          D I G I T H U B
+        <Link href="/" className="text-base font-black tracking-[0.3em] text-slate-900 z-50 relative group">
+          DIGITHUB
+          <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-slate-900 transition-all group-hover:w-full" />
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="hidden lg:flex items-center space-x-8 text-xs font-medium tracking-wide text-muted-foreground">
+        <div className="hidden lg:flex items-center space-x-10 text-[11px] font-black uppercase tracking-[0.15em] text-slate-500">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="transition-colors hover:text-foreground"
+              className="transition-all hover:text-slate-900 hover:tracking-[0.2em] duration-300"
             >
               {link.label}
             </Link>
@@ -141,11 +151,20 @@ export function Navbar() {
         </div>
 
         {/* Desktop Right Side */}
-        <div className="hidden lg:flex items-center gap-6">
-          <Search className="h-5 w-5 cursor-pointer text-muted-foreground transition-colors hover:text-foreground" onClick={() => setSearchOpen(true)} />
+        <div className="hidden lg:flex items-center gap-8">
+          <Search className="h-5 w-5 cursor-pointer text-slate-400 transition-colors hover:text-slate-900" onClick={() => setSearchOpen(true)} />
           
-          <Link href="/cart">
-            <ShoppingBag className="h-5 w-5 cursor-pointer text-muted-foreground transition-colors hover:text-foreground" />
+          <Link href="/cart" className="relative">
+            <ShoppingBag className="h-5 w-5 cursor-pointer text-slate-400 transition-colors hover:text-slate-900" />
+          </Link>
+
+          <Link href="/dashboard/notifications" className="relative">
+            <Bell className="h-5 w-5 cursor-pointer text-slate-400 transition-colors hover:text-slate-900" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-1 ring-white">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
           </Link>
 
           {/* Language Switcher */}
@@ -228,10 +247,10 @@ export function Navbar() {
             </DropdownMenu>
           ) : (
             <>
-              <Link href="/login" className="text-xs font-semibold tracking-wide text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="/login" className="text-[11px] font-black tracking-widest text-slate-900 hover:opacity-70 transition-all">
                 SIGN IN
               </Link>
-              <Link href="/register" className="rounded-full bg-primary px-6 py-2.5 text-xs font-semibold tracking-wide text-primary-foreground transition-all hover:bg-primary/90">
+              <Link href="/register" className="rounded-full bg-slate-900 px-8 py-3 text-[11px] font-black tracking-widest text-white transition-all hover:bg-slate-800 shadow-lg hover:shadow-xl hover:-translate-y-0.5">
                 SIGN UP
               </Link>
             </>

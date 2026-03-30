@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
-import { FileText, Clock, Search } from "lucide-react"
+import { FileText, Clock, Search, DollarSign } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { formatDistanceToNow } from "date-fns"
 import { Button } from "@/components/ui/button"
@@ -33,58 +33,77 @@ export default function SellerProposalsPage() {
   }, [])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Active Proposals</h1>
-          <p className="text-muted-foreground mt-1">Track the status of jobs you've applied for.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Active Proposals</h1>
+          <p className="text-slate-500 mt-1 font-medium">Track the status of jobs you've applied for and manage your bids.</p>
         </div>
       </div>
 
       {loading ? (
         <div className="space-y-4 shadow-sm">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-24 bg-card rounded-xl animate-pulse border border-border" />
+            <div key={i} className="h-32 bg-white rounded-3xl animate-pulse border border-slate-100" />
           ))}
         </div>
       ) : proposals.length === 0 ? (
-        <div className="text-center py-20 bg-card rounded-2xl border border-border mt-6">
-          <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-            <FileText className="h-8 w-8 text-muted-foreground" />
+        <div className="text-center py-20 bg-white rounded-[2.5rem] border border-slate-200 mt-6 shadow-sm">
+          <div className="mx-auto w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mb-6 border border-slate-100">
+            <FileText className="h-10 w-10 text-slate-300" />
           </div>
-          <h3 className="text-xl font-medium mb-2">No proposals yet</h3>
-          <p className="text-muted-foreground mb-6">Start browsing jobs and submit proposals to get hired.</p>
-          <Button asChild className="bg-black hover:bg-gray-800 text-white rounded-xl">
+          <h3 className="text-2xl font-bold text-slate-900 mb-2">No proposals yet</h3>
+          <p className="text-slate-500 mb-8 font-medium max-w-sm mx-auto">Start browsing high-end jobs and submit tailored proposals to win your next project.</p>
+          <Button asChild className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl h-12 px-8 font-bold shadow-lg transition-all hover:scale-105">
             <Link href="/jobs"><Search className="h-4 w-4 mr-2" /> Find Jobs</Link>
           </Button>
         </div>
       ) : (
-        <div className="grid gap-4 mt-6">
+        <div className="grid gap-6 mt-6">
           {proposals.map((prop) => (
-            <div key={prop.id} className="bg-card border border-border rounded-xl p-6 transition-all hover:shadow-md">
-              <div className="flex flex-col md:flex-row justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <Link href={`/jobs`} className="text-lg font-bold hover:underline">{prop.job?.title || "Unknown Job"}</Link>
+            <div key={prop.id} className="bg-white border border-slate-100 rounded-[2rem] p-8 transition-all hover:shadow-xl hover:border-slate-200 group">
+              <div className="flex flex-col md:flex-row justify-between gap-6">
+                <div className="flex-1">
+                  <div className="flex items-center gap-4 mb-4">
+                    <Link href={`/jobs`} className="text-xl font-bold text-slate-900 hover:text-indigo-600 transition-colors">{prop.job?.title || "Unknown Job"}</Link>
                     <Badge variant="secondary" className={
-                      prop.status === 'pending' ? "bg-yellow-50 text-yellow-700 border-yellow-200" :
-                      prop.status === 'accepted' ? "bg-green-50 text-green-700 border-green-200" :
-                      prop.status === 'rejected' ? "bg-red-50 text-red-700 border-red-200" :
-                      "bg-gray-100 text-gray-700 border-gray-200"
+                      `px-3 py-1 rounded-lg font-bold text-[10px] uppercase tracking-wider ${
+                        prop.status === 'pending' ? "bg-amber-50 text-amber-700 border-amber-200" :
+                        prop.status === 'accepted' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                        prop.status === 'rejected' ? "bg-rose-50 text-rose-700 border-rose-200" :
+                        "bg-slate-100 text-slate-700 border-slate-200"
+                      }`
                     }>
-                      {prop.status.toUpperCase()}
+                      {prop.status}
                     </Badge>
                   </div>
-                  <p className="text-muted-foreground text-sm line-clamp-2 max-w-2xl mb-4 italic px-4 py-2 bg-muted/50 rounded-lg border border-border/50">
-                    "{prop.cover_letter}"
-                  </p>
-                  <div className="flex flex-wrap items-center gap-4 text-sm font-medium">
-                    <span className="flex items-center gap-1 text-muted-foreground">
-                      <Clock className="h-4 w-4" /> Submitted {prop.created_at ? formatDistanceToNow(new Date(prop.created_at), { addSuffix: true }) : ""}
-                    </span>
-                    <span className="text-black bg-gray-100 px-2 py-0.5 rounded-md">Bid: {Number(prop.bid_amount_dzd).toLocaleString()} DZD</span>
-                    <span className="text-black bg-gray-100 px-2 py-0.5 rounded-md">Time: {prop.delivery_time}</span>
+                  
+                  <div className="bg-slate-50/50 border border-slate-100 rounded-2xl p-5 mb-6 relative">
+                    <p className="text-slate-600 text-sm leading-relaxed italic line-clamp-3">
+                      "{prop.cover_letter}"
+                    </p>
                   </div>
+
+                  <div className="flex flex-wrap items-center gap-8 text-sm font-bold">
+                    <span className="flex items-center gap-2 text-slate-400">
+                      <Clock className="h-4.5 w-4.5 text-slate-300" /> 
+                      Submitted {prop.created_at ? formatDistanceToNow(new Date(prop.created_at), { addSuffix: true }) : ""}
+                    </span>
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 rounded-xl border border-emerald-100">
+                       <DollarSign className="h-4 w-4 text-emerald-600" />
+                       <span className="text-emerald-700">{Number(prop.bid_amount_dzd).toLocaleString()} DZD</span>
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-xl border border-slate-200 text-slate-700">
+                       <Clock className="h-4 w-4" />
+                       <span>{prop.delivery_time}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center md:items-start justify-end">
+                   <Button variant="ghost" className="rounded-xl text-slate-400 hover:text-slate-900 font-bold" asChild>
+                     <Link href="/dashboard/messages">Contact Client</Link>
+                   </Button>
                 </div>
               </div>
             </div>

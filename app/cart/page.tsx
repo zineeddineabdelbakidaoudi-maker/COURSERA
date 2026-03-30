@@ -1,6 +1,6 @@
 "use client"
 
-import { ShoppingCart, Trash2, ArrowRight, Package, Sparkles, Zap } from "lucide-react"
+import { ShoppingCart, Trash2, ArrowRight, Package, Sparkles, Zap, ShieldCheck, Clock } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -8,8 +8,8 @@ import Link from "next/link"
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
-import NeuralBackground from "@/components/ui/flow-field-background"
 import { Navbar } from "@/components/layout/navbar"
+import { toast } from "sonner"
 
 export default function CartPage() {
   const [items, setItems] = useState<any[]>([])
@@ -38,7 +38,7 @@ export default function CartPage() {
           price: item.addons?.price || (item.item_type === 'service' ? 15000 : 4500),
           qty: item.quantity || 1,
           type: item.item_type,
-          seller: item.item_type === 'service' ? 'Service Provider' : 'Product Publisher'
+          seller: item.item_type === 'service' ? 'Freelancer' : 'Publisher'
         }))
         setItems(mapped)
       }
@@ -52,8 +52,10 @@ export default function CartPage() {
     setItems(items.filter(i => i.cart_id !== cart_id))
     const { error } = await supabase.from('CartItem').delete().eq('id', cart_id)
     if (error) {
-      alert("Failed to remove item")
+      toast.error("Failed to remove item")
       setItems(prev)
+    } else {
+      toast.success("Item removed from cart")
     }
   }
 
@@ -61,122 +63,138 @@ export default function CartPage() {
   const fee = Math.round(subtotal * 0.05)
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
+    <div className="min-h-screen bg-[#f4f4f5] font-sans selection:bg-slate-900 selection:text-white">
       <Navbar />
-      {/* Header with Neural */}
-      <div className="relative overflow-hidden border-b border-white/5 h-48 bg-slate-900/50 backdrop-blur-sm">
-        <div className="fixed inset-0 pointer-events-none z-0">
-          <NeuralBackground
-            color="#3b82f6"
-            trailOpacity={0.15}
-            particleCount={800}
-            speed={0.8}
-            className="w-full h-full"
-          />
+      
+      <main className="pt-32 pb-20 max-w-6xl mx-auto px-4">
+        <div className="mb-10 text-center">
+          <h1 className="text-4xl font-black tracking-tight text-slate-900 mb-2 flex items-center justify-center gap-3">
+             <ShoppingCart className="w-8 h-8" /> My Shopping Cart
+          </h1>
+          <p className="text-slate-500 font-medium">Review your selected services and products before checkout.</p>
         </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/20 via-slate-900/50 to-slate-900 z-[1]" />
-        <div className="relative z-10 max-w-5xl mx-auto px-4 h-full flex items-center">
-          <div>
-            <h1 className="text-4xl font-black flex items-center gap-3 mb-1">
-              <div className="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center">
-                <ShoppingCart className="w-5 h-5 text-blue-400" />
-              </div>
-              My Cart
-              <Badge className="bg-blue-600/20 text-blue-400 border border-blue-500/30 font-bold">{items.length} items</Badge>
-            </h1>
-            <p className="text-slate-500 text-sm pl-14">Review your items before checkout</p>
-          </div>
-        </div>
-      </div>
 
-      <div className="max-w-5xl mx-auto px-4 py-10">
         {loading ? (
-          <div className="text-center py-24">
-            <div className="w-16 h-16 mx-auto bg-white/5 rounded-2xl mb-4 animate-pulse" />
-            <div className="h-4 w-48 bg-white/5 mx-auto rounded animate-pulse" />
+          <div className="space-y-6">
+            {[1, 2].map(i => (
+              <div key={i} className="h-32 bg-white rounded-[2rem] border border-slate-200 animate-pulse" />
+            ))}
           </div>
         ) : items.length === 0 ? (
-          <div className="text-center py-24">
-            <div className="w-20 h-20 mx-auto rounded-3xl bg-white/5 flex items-center justify-center mb-6">
-              <ShoppingCart className="w-10 h-10 text-slate-600" />
+          <Card className="rounded-[2.5rem] border-slate-200 bg-white p-16 text-center shadow-sm">
+            <div className="w-24 h-24 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-slate-100">
+               <ShoppingCart className="w-12 h-12 text-slate-300" />
             </div>
-            <p className="text-xl font-semibold text-slate-400 mb-2">Your cart is empty</p>
-            <p className="text-slate-600 text-sm mb-8">Discover amazing services and digital products</p>
-            <div className="flex gap-3 justify-center">
-              <Button asChild className="bg-blue-600 hover:bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+            <h2 className="text-3xl font-bold text-slate-900 mb-2">Your cart is empty</h2>
+            <p className="text-slate-500 max-w-md mx-auto mb-10 font-medium">Looks like you haven't added anything yet. Explore our marketplace to find premium services and digital assets.</p>
+            <div className="flex flex-wrap justify-center gap-4">
+              <Button asChild className="rounded-2xl h-12 px-8 bg-slate-900 text-white font-bold hover:bg-slate-800 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
                 <Link href="/services">Browse Services</Link>
               </Button>
-              <Button asChild variant="outline" className="border-white/10 bg-white/5 text-white hover:bg-white/10">
+              <Button asChild variant="outline" className="rounded-2xl h-12 px-8 border-slate-200 font-bold hover:bg-slate-50 transition-all">
                 <Link href="/store">Explore Store</Link>
               </Button>
             </div>
-          </div>
+          </Card>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
+            {/* Items List */}
+            <div className="lg:col-span-2 space-y-6">
               {items.map(item => (
-                <div key={item.cart_id} className="bg-slate-900/60 border border-white/5 rounded-2xl p-5 flex items-center gap-4 hover:border-blue-500/20 transition-colors group">
-                  <div className="w-16 h-16 rounded-xl bg-slate-800 border border-white/5 flex items-center justify-center shrink-0 overflow-hidden">
+                <div key={item.cart_id} className="group bg-white rounded-[2rem] border border-slate-200 p-6 flex flex-col sm:flex-row items-center gap-6 transition-all hover:shadow-md hover:border-slate-300 relative overflow-hidden">
+                  {/* Item Image */}
+                  <div className="w-24 h-24 rounded-2xl bg-slate-50 flex items-center justify-center shrink-0 border border-slate-100 overflow-hidden relative">
                     {item.cover ? (
-                      <img src={item.cover} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                      <img src={item.cover} alt="" className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-500" />
                     ) : (
                       item.type === 'service'
-                        ? <Sparkles className="w-7 h-7 text-blue-400/50" />
-                        : <Package className="w-7 h-7 text-indigo-400/50" />
+                        ? <Sparkles className="w-10 h-10 text-slate-300" />
+                        : <Package className="w-10 h-10 text-slate-300" />
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-white truncate mb-1">{item.title || "Unknown Item"}</p>
-                    <p className="text-sm text-slate-500">{item.seller}</p>
-                    <Badge variant="outline" className={`mt-1.5 text-xs capitalize border ${item.type === 'service' ? 'text-blue-400 border-blue-500/30 bg-blue-500/10' : 'text-indigo-400 border-indigo-500/30 bg-indigo-500/10'}`}>
-                      {item.type}
-                    </Badge>
+
+                  <div className="flex-1 min-w-0 text-center sm:text-left">
+                    <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
+                      <Badge variant="outline" className={`uppercase text-[10px] font-black tracking-widest px-2 py-0.5 rounded-lg border-0 bg-slate-100 text-slate-500`}>
+                        {item.type}
+                      </Badge>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> Ready to delivery
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-900 truncate mb-1 pr-10">{item.title}</h3>
+                    <p className="text-sm font-medium text-slate-500">By {item.seller}</p>
                   </div>
-                  <div className="flex items-center gap-4 shrink-0">
-                    <span className="font-bold text-lg text-white">{item.price.toLocaleString()} <span className="text-xs text-slate-500">DZD</span></span>
-                    <button
+
+                  <div className="flex items-center gap-6 shrink-0">
+                    <div className="text-right">
+                      <p className="text-2xl font-black text-slate-900 leading-none">{item.price.toLocaleString()} <span className="text-xs font-bold text-slate-400">DZD</span></p>
+                      <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mt-1">Best Price</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => remove(item.cart_id)}
-                      className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:border-red-500/40 transition-all flex items-center justify-center"
+                      className="w-11 h-11 rounded-2xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all border border-red-100"
                     >
                       <Trash2 className="w-4 h-4" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ))}
             </div>
 
-            <div>
-              <div className="bg-slate-900/60 border border-white/5 rounded-2xl p-6 sticky top-4">
-                <h2 className="font-bold text-lg mb-5 flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-blue-400" /> Order Summary
+            {/* Summary */}
+            <div className="lg:sticky lg:top-32">
+              <Card className="rounded-[2.5rem] border-slate-200 bg-white shadow-xl shadow-slate-200/50 p-8 overflow-hidden relative">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                
+                <h2 className="text-2xl font-bold text-slate-900 mb-8 flex items-center gap-2 relative z-10">
+                  <Zap className="w-5 h-5 text-slate-900 fill-slate-900" /> Summary
                 </h2>
-                <div className="space-y-3 text-sm mb-6">
-                  <div className="flex justify-between text-slate-400">
-                    <span>Subtotal ({items.length} items)</span>
-                    <span className="text-white font-semibold">{subtotal.toLocaleString()} DZD</span>
+                
+                <div className="space-y-4 mb-8 relative z-10">
+                  <div className="flex justify-between items-center text-sm font-medium">
+                    <span className="text-slate-400">Subtotal ({items.length})</span>
+                    <span className="text-slate-900">{subtotal.toLocaleString()} DZD</span>
                   </div>
-                  <div className="flex justify-between text-slate-400">
-                    <span>Platform Fee (5%)</span>
-                    <span className="text-white font-semibold">{fee.toLocaleString()} DZD</span>
+                  <div className="flex justify-between items-center text-sm font-medium">
+                    <span className="text-slate-400">Secure Fee (5%)</span>
+                    <span className="text-slate-900">+{fee.toLocaleString()} DZD</span>
                   </div>
-                  <div className="border-t border-white/5 pt-3 flex justify-between font-bold text-base">
-                    <span className="text-white">Total</span>
-                    <span className="text-blue-400 text-lg">{(subtotal + fee).toLocaleString()} DZD</span>
+                  <div className="h-px bg-slate-100 my-4" />
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Total Amount</p>
+                      <p className="text-3xl font-black text-slate-900">{(subtotal + fee).toLocaleString()} <span className="text-sm">DZD</span></p>
+                    </div>
                   </div>
                 </div>
-                <Button asChild className="w-full gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-[0_0_20px_rgba(59,130,246,0.3)] border-none hover:shadow-[0_0_30px_rgba(59,130,246,0.5)] transition-all">
-                  <Link href="/checkout">
-                    Proceed to Checkout <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </Button>
-                <p className="text-xs text-slate-600 text-center mt-4 flex items-center justify-center gap-1">
-                  🔒 Cash on Delivery available · Secure payments
+
+                <div className="space-y-4 relative z-10">
+                  <Button asChild className="w-full h-14 rounded-2xl bg-slate-900 text-white font-black uppercase tracking-[0.2em] text-xs hover:bg-slate-800 shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 group">
+                    <Link href="/checkout" className="flex items-center justify-center gap-2">
+                      Checkout Now <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </Link>
+                  </Button>
+                  
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-start gap-3">
+                    <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-bold text-emerald-800">Secure Checkout</p>
+                      <p className="text-[10px] text-emerald-600/80 leading-relaxed font-bold uppercase tracking-tight">Your payment is only released to the seller after your confirmation.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-[10px] font-bold text-slate-400 text-center mt-6 grayscale opacity-50 flex items-center justify-center gap-2 uppercase tracking-wide">
+                   Cash on delivery available in Algiers
                 </p>
-              </div>
+              </Card>
             </div>
           </div>
         )}
-      </div>
+      </main>
     </div>
   )
 }

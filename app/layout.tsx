@@ -3,7 +3,6 @@ import { Inter, Space_Grotesk, JetBrains_Mono, Cairo } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { FaqChatbot } from "@/components/ui/chatbot"
 import { Toaster } from "@/components/ui/toaster"
-import { GlobalReportBug } from "@/components/global-report-bug"
 import { PremiumEffects } from "@/components/ui/premium-effects"
 import './globals.css'
 
@@ -105,7 +104,6 @@ export default function RootLayout({
         {children}
         <FaqChatbot />
         <Toaster />
-        <GlobalReportBug />
         <Analytics />
       </body>
     </html>

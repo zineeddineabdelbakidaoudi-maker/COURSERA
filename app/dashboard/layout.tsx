@@ -48,6 +48,7 @@ const sidebarItems = [
   { title: "Earnings", href: "/dashboard/earnings", icon: CreditCard },
   { title: "Favorites", href: "/dashboard/favorites", icon: Heart },
   { title: "Reviews", href: "/dashboard/reviews", icon: FileText },
+  { title: "Notifications", href: "/dashboard/notifications", icon: Bell },
   { title: "Settings", href: "/dashboard/settings", icon: Settings },
 ]
 

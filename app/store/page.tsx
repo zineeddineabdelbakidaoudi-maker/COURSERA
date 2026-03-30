@@ -38,7 +38,7 @@ export default function StorePage() {
 
       setProducts(prods || [])
 
-      const { data: cats } = await supabase.from("Category").select("name_en").eq("type", "products")
+      const { data: cats } = await supabase.from("Category").select("name_en").or("type.eq.products,type.eq.both")
       if (cats) {
         setCategories(["All Assets", ...cats.map(c => c.name_en)])
       }

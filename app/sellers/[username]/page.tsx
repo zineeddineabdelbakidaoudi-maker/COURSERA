@@ -2,12 +2,13 @@
 
 import * as React from "react"
 import { useState, useEffect } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
+import { toast } from "sonner"
 import {
   Star, MapPin, Clock, Award, Briefcase, MessageSquare, Heart, Share2,
-  CheckCircle2, Shield, Globe, Twitter, Linkedin, ArrowLeft, Package, AlertTriangle
+  CheckCircle2, Shield, Globe, Twitter, Linkedin, ArrowLeft, Package, AlertTriangle, Zap
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -26,7 +27,9 @@ const DEMO_SERVICES = [
 export default function SellerProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = React.use(params)
   const supabase = createClient()
+  const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
+  const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [saved, setSaved] = useState(false)
 
@@ -71,6 +74,7 @@ export default function SellerProfilePage({ params }: { params: Promise<{ userna
 
         // Is Saved?
         const { data: { user: currentUser } } = await supabase.auth.getUser()
+        setUser(currentUser)
         if (currentUser) {
           const { data: ws } = await supabase.from("Wishlist").select("id").eq("user_id", currentUser.id).eq("item_type", "service").eq("service_id", data.id).single()
           if (ws) setSaved(true)
@@ -86,19 +90,33 @@ export default function SellerProfilePage({ params }: { params: Promise<{ userna
     loadProfile()
   }, [username])
 
-  const handleMessage = async () => {
-    const { data: { user: me } } = await supabase.auth.getUser()
-    if (!me) { alert("Login to message"); return }
-    if (me.id === profile.id) return
-    const { data: conv } = await supabase.from("Conversation").select("id").contains("participant_ids", [me.id, profile.id]).limit(1).single()
-    if (conv) {
-      window.location.href = `/dashboard/messages?id=${conv.id}`
-    } else {
-      const { data: newConv } = await supabase.from("Conversation").insert({
+  const handleMessage = () => {
+    if (!user) router.push("/login")
+    else router.push(`/dashboard/messages?id=${profile?.id}`)
+  }
+
+  const handleDirectHire = async () => {
+    if (!user) {
+      router.push("/login")
+      return
+    }
+    
+    try {
+      const { error } = await supabase.from("Notification").insert({
         id: crypto.randomUUID(),
-        participant_ids: [me.id, profile.id]
-      }).select("id").single()
-      if (newConv) window.location.href = `/dashboard/messages?id=${newConv.id}`
+        user_id: profile.id,
+        type: 'info',
+        title: 'New Hire Request!',
+        body: `A client is interested in hiring you directly. Check your messages!`,
+        link: `/dashboard/messages`,
+        is_read: false
+      })
+
+      if (error) throw error
+      toast.success("Hire request sent! The freelancer will notice your interest.")
+      router.push(`/dashboard/messages?id=${profile.id}`)
+    } catch (err: any) {
+      toast.error("Failed to send hire request")
     }
   }
 
@@ -217,8 +235,11 @@ export default function SellerProfilePage({ params }: { params: Promise<{ userna
                     <Heart className={`w-4 h-4 ${saved ? "fill-red-500 text-red-500" : ""}`} />
                     {saved ? "Saved" : "Save"}
                   </Button>
-                  <Button size="sm" className="h-10 rounded-xl px-6 gap-2 bg-slate-900 dark:bg-primary text-white dark:text-primary-foreground font-bold hover:bg-slate-800 dark:hover:bg-primary/90 shadow-md" onClick={handleMessage}>
+                  <Button size="sm" className="h-10 rounded-xl px-6 gap-2 bg-slate-100 text-slate-900 border border-slate-200 font-bold hover:bg-slate-200 shadow-sm" onClick={handleMessage}>
                     <MessageSquare className="w-4 h-4" /> Message
+                  </Button>
+                  <Button size="sm" className="h-10 rounded-xl px-8 gap-2 bg-slate-900 text-white font-black uppercase tracking-widest text-[10px] hover:bg-slate-800 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all" onClick={handleDirectHire}>
+                    <Zap className="w-4 h-4" /> Hire Me
                   </Button>
                 </div>
               </div>

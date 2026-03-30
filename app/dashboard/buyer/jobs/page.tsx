@@ -87,7 +87,9 @@ export default function BuyerJobsPage() {
                   </div>
                 </div>
                 <div className="flex md:flex-col justify-end gap-2 md:w-32">
-                  <Button variant="outline" className="w-full">View Details</Button>
+                  <Button asChild variant="outline" className="w-full">
+                    <Link href={`/dashboard/buyer/jobs/${job.id}`}>View Details</Link>
+                  </Button>
                   <Button variant="default" className="w-full bg-black hover:bg-gray-800 text-white shadow-none">Review</Button>
                 </div>
               </div>

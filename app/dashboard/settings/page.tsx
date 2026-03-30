@@ -58,6 +58,7 @@ export default function SettingsPage() {
       bio: form.bio,
       city: form.city,
       phone_whatsapp: form.phone_whatsapp,
+      updated_at: new Date().toISOString()
     }).eq("id", user.id)
     setSaving(false)
     if (!error) {

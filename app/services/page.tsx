@@ -14,11 +14,18 @@ export default function ServicesPage() {
   const supabase = createClient()
   const [services, setServices] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [cat, setCat] = useState("All Categories")
+  const [cat, setCat] = useState("All Gigs")
   const [q, setQ] = useState("")
+  const [categories, setCategories] = useState<string[]>(["All Gigs"])
 
   useEffect(() => {
     async function fetchData() {
+      // Fetch Categories
+      const { data: cats } = await supabase.from("Category").select("name_en").or("type.eq.services,type.eq.both")
+      if (cats) {
+        setCategories(["All Gigs", ...cats.map(c => c.name_en)])
+      }
+
       // Fetch Live Services with their Seller Profiles
       const { data: svcs } = await supabase
         .from("Service")
@@ -35,7 +42,7 @@ export default function ServicesPage() {
     fetchData()
   }, [])
 
-  const categories = ["All Categories", "Development", "Design", "Marketing", "Writing", "Video & Animation"]
+
 
   const filtered = services.filter(s => {
     const sName = s.title?.toLowerCase() || ""

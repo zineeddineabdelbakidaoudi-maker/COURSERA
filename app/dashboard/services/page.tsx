@@ -44,7 +44,10 @@ export default function MyServicesPage() {
 
   const handlePause = async (id: string, current: string) => {
     const newStatus = current === "paused" ? "live" : "paused"
-    await supabase.from("Service").update({ status: newStatus }).eq("id", id)
+    await supabase.from("Service").update({ 
+      status: newStatus, 
+      updated_at: new Date().toISOString() 
+    }).eq("id", id)
     setServices(services.map(s => s.id === id ? { ...s, status: newStatus } : s))
   }
 
