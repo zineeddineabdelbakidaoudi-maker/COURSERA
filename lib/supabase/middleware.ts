@@ -32,10 +32,15 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('next', pathname)
-    return NextResponse.redirect(url)
+    // IMPORTANT: We must merge the cookies from our supabaseResponse into the redirect response!
+    const redirectResponse = NextResponse.redirect(url)
+    supabaseResponse.cookies.getAll().forEach(cookie => {
+      redirectResponse.cookies.set(cookie.name, cookie.value)
+    })
+    return redirectResponse
   }
 
-  // Role-based guarsd only if user is signed in
+  // Role-based guards only if user is signed in
   if (user) {
     const { data: profile } = await supabase
       .from('Profile')
@@ -46,25 +51,34 @@ export async function updateSession(request: NextRequest) {
     const role = profile?.role
     const isPublisher = profile?.publisher_status === 'enabled'
 
+    // Function to create a redirect with cookies
+    const createRedirect = (path: string) => {
+      const redirectResponse = NextResponse.redirect(new URL(path, request.url))
+      supabaseResponse.cookies.getAll().forEach(cookie => {
+        redirectResponse.cookies.set(cookie.name, cookie.value)
+      })
+      return redirectResponse
+    }
+
     // Admin routes: only admins
     if (pathname.startsWith('/admin') && role !== 'admin') {
-      return NextResponse.redirect(new URL('/dashboard/buyer', request.url))
+      return createRedirect('/dashboard/buyer')
     }
 
     // Publisher routes: only publishers and admins
     if (pathname.startsWith('/publisher') && role !== 'admin' && !isPublisher) {
-      return NextResponse.redirect(new URL('/dashboard/buyer', request.url))
+      return createRedirect('/dashboard/buyer')
     }
 
     // Seller dashboard: only sellers and admins
     if (pathname === '/dashboard' && role !== 'seller' && role !== 'admin') {
-      if (role === 'buyer') return NextResponse.redirect(new URL('/dashboard/buyer', request.url))
-      if (isPublisher) return NextResponse.redirect(new URL('/publisher', request.url))
+      if (role === 'buyer') return createRedirect('/dashboard/buyer')
+      if (isPublisher) return createRedirect('/publisher')
     }
 
     // Buyer dashboard: only buyers and admins
     if (pathname.startsWith('/dashboard/buyer') && role !== 'buyer' && role !== 'admin') {
-      if (role === 'seller') return NextResponse.redirect(new URL('/dashboard', request.url))
+      if (role === 'seller') return createRedirect('/dashboard')
     }
   }
 
