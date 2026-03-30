@@ -77,13 +77,13 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
   const initials = displayName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#f4f4f5]">
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed top-0 left-0 z-50 h-full w-64 bg-card border-r transform transition-transform duration-200 lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside className={`fixed top-0 left-0 z-50 h-full w-64 bg-white border-r transform transition-transform duration-200 lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between h-16 px-4 border-b">
             <Link href="/" className="flex items-center gap-3">
@@ -155,13 +155,14 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Main Content */}
-      <div className="lg:pl-64">
-        <header className="sticky top-0 z-30 h-16 border-b bg-card/80 backdrop-blur-sm">
-          <div className="flex items-center justify-between h-full px-4">
-            <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-muted-foreground">
+      <div className="lg:pl-64 flex flex-col min-h-screen w-full">
+        {/* Top Header */}
+        <header className="sticky top-0 z-30 h-16 border-b bg-white shadow-sm">
+          <div className="flex items-center justify-between h-full px-4 lg:justify-end">
+            <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-muted-foreground mr-auto">
               <Menu className="h-6 w-6" />
             </button>
-            <div className="hidden sm:block text-sm text-muted-foreground">
+            <div className="hidden sm:block text-sm text-muted-foreground mr-auto lg:mr-4">
               Welcome back, <span className="font-semibold text-foreground">{displayName.split(" ")[0]}</span> 👋
             </div>
             <div className="flex items-center gap-3">
@@ -200,7 +201,7 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
             </div>
           </div>
         </header>
-        <main className="p-4 md:p-6 lg:p-8">{children}</main>
+        <main className="p-4 md:p-6 lg:p-8 flex-1">{children}</main>
       </div>
     </div>
   )

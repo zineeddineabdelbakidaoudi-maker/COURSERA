@@ -25,7 +25,8 @@ const navLinks = [
   { href: "/store?category=Template", label: "TEMPLATES" },
   { href: "/store?category=Ebook", label: "EBOOKS" },
   { href: "/store?category=Toolkit", label: "TOOLS" },
-  { href: "/services", label: "HIRE" },
+  { href: "/hire", label: "HIRE" },
+  { href: "/services", label: "SERVICES" },
   { href: "/jobs", label: "JOBS" },
 ]
 

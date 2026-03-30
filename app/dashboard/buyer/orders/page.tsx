@@ -272,12 +272,13 @@ export default function BuyerOrdersPage() {
                 )}
 
                 <div className="flex gap-3 pt-2">
+                  {/* Review / Message buttons */}
                   {selected.type === 'service' && (selected.status === "in_progress" || selected.status === "pending_requirements") && (
                     <Button variant="outline" className="flex-1 gap-2"><MessageSquare className="w-4 h-4" />Message</Button>
                   )}
-                  {(selected.status === "completed" || selected.status === "delivered") && (selected.reviews?.length === 0) && (
+                  {((selected.type === 'service' && (selected.status === 'completed' || selected.status === 'delivered')) || selected.type === 'product') && (!selected.reviews || selected.reviews.length === 0) && (
                     <Button className="flex-1 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => setShowReview(true)}>
-                      <Star className="w-4 h-4 fill-primary-foreground" />Evaluate
+                      <Star className="w-4 h-4 fill-primary-foreground" />Evaluate / Give Review
                     </Button>
                   )}
                   {(selected.status === "completed" || selected.status === "delivered") && (selected.reviews?.length > 0) && (

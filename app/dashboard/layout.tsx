@@ -37,7 +37,6 @@ import {
   BookOpen,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
-import NeuralBackground from "@/components/ui/flow-field-background"
 
 const sidebarItems = [
   { title: "Overview", href: "/dashboard", icon: LayoutDashboard },
@@ -87,18 +86,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const levelLabel = profile?.seller_level ? profile.seller_level.charAt(0).toUpperCase() + profile.seller_level.slice(1) + " Seller" : "Seller"
 
   return (
-    <div className="min-h-screen relative bg-slate-50 dark:bg-background">
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <NeuralBackground color="#38bdf8" trailOpacity={0.15} particleCount={400} speed={0.8} />
-      </div>
-      <div className="fixed inset-0 bg-gradient-to-b from-slate-50/0 via-slate-50/80 to-slate-50 dark:from-background/0 dark:via-background/80 dark:to-background z-[1] pointer-events-none" />
+    <div className="min-h-screen relative bg-[#f4f4f5]">
 
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed top-0 left-0 z-50 h-full w-64 bg-white/80 dark:bg-card/80 backdrop-blur-3xl border-r border-border transform transition-transform duration-200 lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside className={`fixed top-0 left-0 z-50 h-full w-64 bg-white border-r border-border transform transition-transform duration-200 lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center justify-between h-16 px-4 border-b">
@@ -164,7 +159,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main Content */}
       <div className="lg:pl-64 flex flex-col min-h-screen relative z-10 w-full overflow-hidden">
         {/* Top Header */}
-        <header className="sticky top-0 z-30 h-16 border-b border-border bg-white/80 dark:bg-background/80 backdrop-blur-xl shadow-sm">
+        <header className="sticky top-0 z-30 h-16 border-b border-border bg-white shadow-sm">
           <div className="flex items-center justify-between h-full px-4">
             <div className="flex items-center gap-4">
               <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-muted-foreground hover:text-foreground">

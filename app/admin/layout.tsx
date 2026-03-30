@@ -11,8 +11,6 @@ import {
   LogOut,
   Bell
 } from "lucide-react"
-import NeuralBackground from "@/components/ui/flow-field-background"
-
 export const metadata = {
   title: "Admin Dashboard | Digit Hup",
   description: "Administrative dashboard for Digit Hup operations.",
@@ -33,14 +31,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   ]
 
   return (
-    <div className="min-h-screen relative flex bg-slate-50 dark:bg-background">
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <NeuralBackground color="#38bdf8" trailOpacity={0.15} particleCount={400} speed={0.8} />
-      </div>
-      <div className="fixed inset-0 bg-gradient-to-b from-slate-50/0 via-slate-50/80 to-slate-50 dark:from-background/0 dark:via-background/80 dark:to-background z-[1] pointer-events-none" />
+    <div className="min-h-screen relative flex bg-[#f4f4f5]">
 
       {/* Admin Sidebar */}
-      <aside className="w-64 bg-white/80 dark:bg-card/80 backdrop-blur-3xl border-r border-border flex flex-col hidden lg:flex relative z-20">
+      <aside className="w-64 bg-white border-r border-border flex flex-col hidden lg:flex relative z-20">
         {/* Brand */}
         <div className="h-16 flex items-center px-6 border-b border-border">
           <Link href="/admin" className="flex items-center gap-2">
@@ -79,7 +73,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-screen relative z-10 overflow-hidden">
         {/* Top Header */}
-        <header className="h-16 bg-white/80 dark:bg-background/80 backdrop-blur-xl border-b border-border flex items-center justify-between px-6 sticky top-0 z-30 shadow-sm">
+        <header className="h-16 bg-white border-b border-border flex items-center justify-between px-6 sticky top-0 z-30 shadow-sm">
           <h2 className="font-semibold text-foreground tracking-tight">System Status: <span className="text-success ml-1">Operational</span></h2>
           <div className="flex items-center gap-4">
             <button className="relative p-2 text-muted-foreground hover:text-foreground transition-colors">
