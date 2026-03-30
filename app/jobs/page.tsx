@@ -27,6 +27,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Navbar } from '@/components/layout/navbar';
+import { Footer } from '@/components/layout/footer';
 import { AnimatedPageWrapper } from '@/components/ui/animated-page-wrapper';
 import { createClient } from '@/lib/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
@@ -390,6 +391,7 @@ export default function JobsPage() {
           </section>
         </main>
       </AnimatedPageWrapper>
+      <Footer />
     </div>
-  );
+  )
 }

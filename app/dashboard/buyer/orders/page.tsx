@@ -184,9 +184,20 @@ export default function BuyerOrdersPage() {
                       </td>
                       <td className="p-4 text-right font-semibold">{Number(o.price_dzd || 0).toLocaleString()} DZD</td>
                       <td className="p-4 text-right">
-                        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => { setSelected(o); setShowReview(false); }}>
-                          <Eye className="w-3.5 h-3.5" />View
-                        </Button>
+                        <div className="flex items-center justify-end gap-2">
+                          {((o.type === 'service' && (o.status === 'completed' || o.status === 'delivered')) || o.type === 'product') && (!o.reviews || o.reviews.length === 0) && (
+                            <Button 
+                              size="sm" 
+                              className="gap-1.5 bg-amber-400 hover:bg-amber-500 text-slate-900 border-none shadow-sm"
+                              onClick={() => { setSelected(o); setShowReview(true); }}
+                            >
+                              <Star className="w-3.5 h-3.5 fill-slate-900" />Review
+                            </Button>
+                          )}
+                          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => { setSelected(o); setShowReview(false); }}>
+                            <Eye className="w-3.5 h-3.5" />View
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   )

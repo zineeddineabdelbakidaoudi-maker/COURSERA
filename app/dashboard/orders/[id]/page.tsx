@@ -84,6 +84,23 @@ export default function OrderDetailPage() {
     }
   }
 
+  const handleUpdateStatus = async (newStatus: string) => {
+    setLoading(true)
+    const { error } = await supabase
+      .from("Order")
+      .update({ 
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", id)
+    
+    if (error) {
+      alert("Error updating status: " + error.message)
+    } else {
+      fetchOrder()
+    }
+  }
+
   const statusInfo = getStatusDisplay(order.status)
   const isBuyer = userRole === "buyer"
   const counterpartName = isBuyer ? order.seller?.full_name : order.buyer?.full_name
@@ -97,114 +114,125 @@ export default function OrderDetailPage() {
   ]
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto py-8 px-4 lg:px-0 animate-fade-in">
+    <div className="space-y-8 max-w-4xl mx-auto py-12 px-4 lg:px-0 animate-fade-in pb-32">
       <div className="flex items-center gap-4">
-        <Button variant="outline" size="sm" asChild>
+        <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
           <Link href={backLink}><ArrowLeft className="w-4 h-4 mr-2" />Back to Orders</Link>
         </Button>
       </div>
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 border-b border-slate-100 pb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-display font-semibold mb-2">{order.service?.title || order.package_name || "Order"}</h1>
-          <p className="text-muted-foreground flex items-center gap-2">
-            <span>Order #{order.order_number || order.id.slice(0, 8)}</span>
-            <span>•</span>
-            <span>{isBuyer ? "Seller" : "Buyer"}: <span className="font-medium text-foreground">{counterpartName}</span></span>
+          <div className="flex items-center gap-3 mb-3">
+             <Badge variant="outline" className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 ${statusInfo.color}`}>{statusInfo.label}</Badge>
+             <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase">Order #{order.order_number || order.id.slice(0, 8)}</span>
+          </div>
+          <h1 className="text-3xl md:text-4xl font-black tracking-tighter text-slate-900 leading-none">{order.service?.title || order.package_name || "Order"}</h1>
+          <p className="text-slate-500 mt-4 text-sm font-medium">
+            {isBuyer ? "Reviewing project with" : "Delivering excellence for"}: <span className="text-slate-900 font-bold">{counterpartName}</span>
           </p>
         </div>
-        <Badge variant="outline" className={`text-sm px-3 py-1 ${statusInfo.color}`}>{statusInfo.label}</Badge>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          {/* Timeline */}
-          <Card className="border-border shadow-sm">
-            <CardHeader><CardTitle>Order Timeline</CardTitle></CardHeader>
-            <CardContent>
-              <div className="space-y-0">
-                {timelineSteps.map((step, i) => (
-                  <div key={i} className="flex gap-4">
-                    <div className="flex flex-col items-center">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${step.done ? "bg-primary text-primary-foreground" : "bg-muted border-2 border-border"}`}>
-                        {step.done ? <CheckCircle2 className="w-4 h-4" /> : <Clock className="w-4 h-4 text-muted-foreground" />}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+        <div className="lg:col-span-2 space-y-10">
+          
+          {/* Order Content */}
+          <div className="space-y-8">
+             {/* Requirements Section */}
+             {(order.requirements_data?.notes || (order.requirements_data?.answers?.length > 0)) && (
+               <div className="space-y-6">
+                <h3 className="text-[11px] font-black tracking-[0.2em] text-slate-400 uppercase">Project Requirements</h3>
+                <div className="bg-slate-50 rounded-[2rem] p-8 border border-slate-100 space-y-6">
+                  {order.requirements_data?.notes && (
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Notes from Buyer</p>
+                      <p className="text-slate-700 leading-relaxed font-medium">{order.requirements_data.notes}</p>
+                    </div>
+                  )}
+                  {order.requirements_data?.answers?.map((ans: any, idx: number) => (
+                    <div key={idx} className="space-y-2 border-t border-slate-200/50 pt-4 first:border-0 first:pt-0">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Requirement #{idx + 1}</p>
+                      <p className="text-slate-900 font-bold">{ans.question || "Requirement Answer"}</p>
+                      <p className="text-slate-600 font-medium bg-white p-4 rounded-xl border border-slate-100">{ans.answer || ans}</p>
+                    </div>
+                  ))}
+                </div>
+               </div>
+             )}
+
+             {/* Timeline */}
+             <div className="space-y-6">
+                <h3 className="text-[11px] font-black tracking-[0.2em] text-slate-400 uppercase">Milestones</h3>
+                <div className="relative pl-8 space-y-8 border-l border-slate-100 ml-4">
+                  {timelineSteps.map((step, i) => (
+                    <div key={i} className="relative">
+                      <div className={`absolute -left-[41px] top-0 w-5 h-5 rounded-full border-4 border-white shadow-sm ${step.done ? "bg-slate-900" : "bg-slate-200"}`} />
+                      <div className="flex flex-col">
+                        <span className={`text-[11px] font-black tracking-widest uppercase ${step.done ? "text-slate-900" : "text-slate-400"}`}>{step.label}</span>
+                        <span className="text-xs text-slate-400 mt-1">{step.date}</span>
                       </div>
-                      {i < timelineSteps.length - 1 && <div className={`w-0.5 flex-1 my-1 ${step.done ? "bg-primary" : "bg-border"}`} style={{minHeight: "2rem"}} />}
                     </div>
-                    <div className="pb-4 pt-1">
-                      <p className={`font-medium ${step.done ? "text-foreground" : "text-muted-foreground"}`}>{step.label}</p>
-                      <p className="text-xs text-muted-foreground">{step.date}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Details */}
-          <Card className="border-border shadow-sm">
-            <CardHeader><CardTitle>Order Details</CardTitle></CardHeader>
-            <CardContent className="space-y-4 text-sm">
-              <div className="flex justify-between border-b border-border pb-3">
-                <span className="text-muted-foreground">Service</span>
-                <span className="font-medium text-right max-w-[60%]">{order.service?.title || "Custom Order"}</span>
-              </div>
-              <div className="flex justify-between border-b border-border pb-3">
-                <span className="text-muted-foreground">Selected Package</span>
-                <span className="font-medium">{order.package_name || "Standard"}</span>
-              </div>
-              <div className="flex justify-between border-b border-border pb-3">
-                <span className="text-muted-foreground">Order Date</span>
-                <span>{new Date(order.created_at).toLocaleDateString()}</span>
-              </div>
-              <div className="flex justify-between pt-1">
-                <span className="text-muted-foreground">Total Amount</span>
-                <span className="font-bold text-lg text-primary">{parseFloat(order.price_dzd).toLocaleString()} DZD</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {order.requirements_data?.notes && (
-            <Card className="bg-amber-500/5 border-amber-200 shadow-sm">
-              <CardHeader className="pb-3"><CardTitle className="text-base text-amber-700 flex items-center gap-2"><AlertCircle className="w-4 h-4" />Order Notes & Requirements</CardTitle></CardHeader>
-              <CardContent>
-                <p className="text-sm text-amber-900/80 leading-relaxed whitespace-pre-wrap">{order.requirements_data.notes}</p>
-              </CardContent>
-            </Card>
-          )}
+                  ))}
+                </div>
+             </div>
+          </div>
         </div>
 
-        {/* Actions Sidebar */}
-        <div className="space-y-6">
-          <Card className="border-border shadow-sm">
-            <CardHeader><CardTitle>Actions</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              <Button className="w-full gap-2" variant="default" asChild>
-                <Link href={isBuyer ? "/dashboard/buyer/messages" : "/dashboard/messages"}>
-                  <MessageSquare className="w-4 h-4" /> Message {isBuyer ? "Seller" : "Buyer"}
-                </Link>
-              </Button>
+        {/* Sidebar */}
+        <div className="space-y-8">
+           <div className="bg-slate-900 rounded-[2rem] p-8 text-white shadow-2xl">
+              <p className="text-[10px] font-black tracking-[0.2em] uppercase text-white/50 mb-2">Total Value</p>
+              <h2 className="text-3xl font-black tracking-tighter mb-8">{parseFloat(order.price_dzd).toLocaleString()} DZD</h2>
               
-              {isBuyer && order.status === "delivered" && (
-                <Button className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white">
-                  <CheckCircle2 className="w-4 h-4" /> Accept Delivery
+              <div className="space-y-4">
+                <Button className="w-full bg-white text-slate-900 hover:bg-slate-100 rounded-xl py-6 font-black tracking-widest text-[11px] uppercase group shadow-lg" asChild>
+                  <Link href={isBuyer ? "/dashboard/messages" : "/dashboard/messages"}>
+                    <MessageSquare className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" /> Chat with {isBuyer ? "Seller" : "Buyer"}
+                  </Link>
                 </Button>
-              )}
-              
-              {!isBuyer && order.status === "in_progress" && (
-                <Button className="w-full gap-2 bg-purple-600 hover:bg-purple-700 text-white">
-                  <Package className="w-4 h-4" /> Deliver Order
-                </Button>
-              )}
 
-              {isBuyer && order.status === "completed" && (
-                <Button variant="outline" className="w-full gap-2" asChild>
-                  <Link href={`/dashboard/buyer/reviews?order=${order.id}`}><Star className="w-4 h-4" /> Leave a Review</Link>
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+                {isBuyer && order.status === "delivered" && (
+                  <Button 
+                    className="w-full bg-green-500 hover:bg-green-600 text-white rounded-xl py-6 font-black tracking-widest text-[11px] uppercase shadow-lg"
+                    onClick={() => handleUpdateStatus("completed")}
+                  >
+                    <CheckCircle2 className="w-4 h-4 mr-2" /> Accept & Complete
+                  </Button>
+                )}
+                
+                {!isBuyer && (order.status === "in_progress" || order.status === "pending_requirements") && (
+                  <Button 
+                    className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-xl py-6 font-black tracking-widest text-[11px] uppercase shadow-lg"
+                    onClick={() => handleUpdateStatus(order.status === "pending_requirements" ? "in_progress" : "delivered")}
+                  >
+                    <Package className="w-4 h-4 mr-2" /> 
+                    {order.status === "pending_requirements" ? "Start Working" : "Deliver Final Order"}
+                  </Button>
+                )}
+
+                {isBuyer && order.status === "completed" && (
+                  <Button className="w-full bg-amber-400 hover:bg-amber-500 text-slate-900 rounded-xl py-6 font-black tracking-widest text-[11px] uppercase shadow-lg" asChild>
+                    <Link href="/dashboard/buyer/orders">
+                      <Star className="w-4 h-4 mr-2 fill-slate-900" /> Leave Feedback
+                    </Link>
+                  </Button>
+                )}
+              </div>
+           </div>
+
+           <div className="p-8 border border-slate-200 rounded-[2rem] space-y-4">
+              <p className="text-[10px] font-black tracking-widest uppercase text-slate-400">Order Specs</p>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Package</span>
+                <span className="font-bold text-slate-900 uppercase">{order.package_name || "Standard"}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Placed On</span>
+                <span className="font-bold text-slate-900">{new Date(order.created_at).toLocaleDateString()}</span>
+              </div>
+           </div>
         </div>
       </div>
     </div>

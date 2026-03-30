@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/client"
 import { Navbar } from "@/components/layout/navbar"
+import { Footer } from "@/components/layout/footer"
 import { toast } from "sonner"
 
 export default function CheckoutPage() {
@@ -347,6 +348,7 @@ export default function CheckoutPage() {
           </div>
         </form>
       </div>
+      <Footer />
     </div>
   )
 }

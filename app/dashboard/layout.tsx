@@ -37,6 +37,7 @@ import {
   BookOpen,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
+import { Footer } from "@/components/layout/footer"
 
 const sidebarItems = [
   { title: "Overview", href: "/dashboard", icon: LayoutDashboard },

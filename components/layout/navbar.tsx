@@ -17,15 +17,13 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { GlobalSearch } from "@/components/ui/global-search"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
-import { motion, useScroll, useMotionValueEvent } from "motion/react"
+import { motion, useScroll, useMotionValueEvent, useMotionValue, useSpring, useTransform } from "motion/react"
 
 const navLinks = [
   { href: "/store?category=Course", label: "COURSES" },
-  { href: "/store?category=Automation", label: "AUTOMATION" },
+  { href: "/store?category=Toolkit", label: "TOOLS" },
   { href: "/store?category=Template", label: "TEMPLATES" },
   { href: "/store?category=Ebook", label: "EBOOKS" },
-  { href: "/store?category=Toolkit", label: "TOOLS" },
-  { href: "/hire", label: "HIRE" },
   { href: "/services", label: "SERVICES" },
   { href: "/jobs", label: "JOBS" },
 ]
@@ -49,6 +47,25 @@ export function Navbar() {
   const [unreadCount, setUnreadCount] = React.useState(0)
   const { scrollY } = useScroll()
   const [hidden, setHidden] = React.useState(false)
+
+  // Mouse tilt logic
+  const mouseX = useMotionValue(0)
+  const mouseY = useMotionValue(0)
+  const rotateX = useSpring(useTransform(mouseY, [-20, 20], [2, -2]), { stiffness: 100, damping: 30 })
+  const rotateY = useSpring(useTransform(mouseX, [-20, 20], [-2, 2]), { stiffness: 100, damping: 30 })
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX - rect.left - rect.width / 2
+    const y = e.clientY - rect.top - rect.height / 2
+    mouseX.set(x / 50)
+    mouseY.set(y / 50)
+  }
+
+  const handleMouseLeave = () => {
+    mouseX.set(0)
+    mouseY.set(0)
+  }
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     const previous = scrollY.getPrevious() ?? 0
@@ -125,9 +142,14 @@ export function Navbar() {
       }}
       animate={hidden ? "hidden" : "visible"}
       transition={{ duration: 0.35, ease: "easeInOut" }}
+      style={{ rotateX, rotateY, perspective: 1000 }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
       className={cn(
-        "fixed inset-x-0 top-0 z-50 transition-all duration-500",
-        scrolled ? "border-b border-slate-200/50 bg-white/70 backdrop-blur-xl shadow-sm" : "bg-transparent h-24"
+        "fixed inset-x-0 top-0 z-50 transition-all duration-500 transform-gpu",
+        scrolled 
+          ? "top-4 mx-auto max-w-7xl rounded-2xl border border-white/20 bg-white/40 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] py-1" 
+          : "bg-transparent h-24"
       )}
     >
       <nav className="mx-auto flex h-full max-w-7xl items-center justify-between px-6">
@@ -151,8 +173,16 @@ export function Navbar() {
         </div>
 
         {/* Desktop Right Side */}
-        <div className="hidden lg:flex items-center gap-8">
-          <Search className="h-5 w-5 cursor-pointer text-slate-400 transition-colors hover:text-slate-900" onClick={() => setSearchOpen(true)} />
+        <div className="hidden lg:flex items-center gap-6">
+          <Link href="/hire">
+            <Button variant="outline" className="h-9 rounded-xl border-slate-200 text-[10px] font-black tracking-widest px-6 hover:bg-slate-900 hover:text-white transition-all shadow-sm">
+              HIRE ME
+            </Button>
+          </Link>
+
+          <div className="h-4 w-px bg-slate-200 mx-2" />
+
+          <Search className="h-4 w-4 cursor-pointer text-slate-400 transition-colors hover:text-slate-900" onClick={() => setSearchOpen(true)} />
           
           <Link href="/cart" className="relative">
             <ShoppingBag className="h-5 w-5 cursor-pointer text-slate-400 transition-colors hover:text-slate-900" />

@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next'
 import { FaqChatbot } from "@/components/ui/chatbot"
 import { Toaster } from "@/components/ui/toaster"
 import { PremiumEffects } from "@/components/ui/premium-effects"
+import { Footer } from "@/components/layout/footer"
 import './globals.css'
 
 const inter = Inter({
@@ -99,9 +100,12 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} ${cairo.variable}`}
     >
-      <body className="font-sans antialiased bg-background text-foreground selection:bg-primary/30 min-h-screen">
+      <body className="font-sans antialiased bg-background text-foreground selection:bg-primary/30 min-h-screen flex flex-col">
         <PremiumEffects />
-        {children}
+        <div className="flex-1">
+          {children}
+        </div>
+        <Footer />
         <FaqChatbot />
         <Toaster />
         <Analytics />
