@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion } from 'motion/react'
@@ -40,9 +40,11 @@ export default function LoginPage() {
       return
     }
 
-    // Fetch user profile to determine role-based redirect
+    // Support 'next' redirect parameter with role-based validation
     const { data: { user } } = await supabase.auth.getUser()
-    
+    const searchParams = new URLSearchParams(window.location.search)
+    let next = searchParams.get('next')
+
     if (user) {
       const { data: profile } = await supabase
         .from('Profile')
@@ -51,6 +53,20 @@ export default function LoginPage() {
         .single()
 
       if (profile) {
+        // Resolve role-based specific paths if next is generic
+        if (next === '/dashboard' || next?.startsWith('/dashboard?')) {
+          if (profile.role === 'buyer') next = '/dashboard/buyer'
+          if (profile.role === 'admin') next = '/admin'
+          if (profile.role === 'publisher') next = '/publisher'
+        }
+
+        // Final routing
+        if (next) {
+          router.push(next)
+          return
+        }
+
+        // Default role-based landing pages if no 'next' is provided
         if (profile.role === 'admin') {
           router.push("/admin")
           return
@@ -70,7 +86,7 @@ export default function LoginPage() {
       }
     }
 
-    router.push("/services")
+    router.push(next || "/services")
   }
 
   const handleOAuthLogin = async (provider: 'google' | 'github') => {

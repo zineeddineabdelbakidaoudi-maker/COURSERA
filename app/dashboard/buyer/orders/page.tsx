@@ -42,36 +42,56 @@ export default function BuyerOrdersPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
     
-    // Fetch Service Orders
-    const { data: serviceOrders } = await supabase
-      .from('Order')
-      .select('*, service:Service(title, id), seller:Profile!seller_id(full_name, username), reviews:Review(id)')
-      .eq('buyer_id', user.id)
-    
-    // Fetch Digital Product Purchases
-    const { data: productPurchases } = await supabase
-      .from('ProductPurchase')
-      .select('*, product:DigitalProduct(title, id, publisher_id, publisher:Profile(full_name, username)), reviews:Review(id)')
-      .eq('buyer_id', user.id)
+    setLoading(true)
+
+    // Parallel fetch orders, purchases and reviews
+    const [ordersRes, productRes, reviewsRes] = await Promise.all([
+      supabase
+        .from('Order')
+        .select('*, service:Service(title, id), seller:Profile!seller_id(full_name, username)')
+        .eq('buyer_id', user.id),
+      supabase
+        .from('ProductPurchase')
+        .select('*, product:DigitalProduct(title, id, publisher_id, publisher:Profile(full_name, username))')
+        .eq('buyer_id', user.id),
+      supabase
+        .from('Review')
+        .select('id, service_id, product_id, order_id')
+        .eq('reviewer_id', user.id)
+    ])
+
+    const serviceOrders = ordersRes.data || []
+    const productPurchases = productRes.data || []
+    const userReviews = reviewsRes.data || []
+
+    // Helper to check if reviewed
+    const isReviewed = (type: string, id: string, orderId?: string) => {
+      if (type === 'service') {
+        return userReviews.some(r => r.order_id === orderId || r.service_id === id)
+      }
+      return userReviews.some(r => r.product_id === id)
+    }
 
     // Unify them
     const unified = [
-      ...(serviceOrders || []).map(o => ({ 
+      ...serviceOrders.map(o => ({ 
         ...o, 
         type: 'service', 
         item_title: o.service?.title || o.package_name,
-        seller_profile: o.seller
+        seller_profile: o.seller,
+        has_review: isReviewed('service', o.service_id, o.id)
       })),
-      ...(productPurchases || []).map(p => ({ 
+      ...productPurchases.map(p => ({ 
         ...p, 
         type: 'product',
         item_title: p.product?.title,
         seller_profile: p.product?.publisher,
-        status: 'completed', // Digital products are always instantly completed
+        status: 'completed',
         order_number: `PP-${p.id.slice(0,8).toUpperCase()}`,
         seller_id: p.product?.publisher_id,
         service_id: null,
-        product_id: p.product?.id
+        product_id: p.product?.id,
+        has_review: isReviewed('product', p.product_id)
       }))
     ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     
@@ -185,7 +205,7 @@ export default function BuyerOrdersPage() {
                       <td className="p-4 text-right font-semibold">{Number(o.price_dzd || 0).toLocaleString()} DZD</td>
                       <td className="p-4 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          {((o.type === 'service' && (o.status === 'completed' || o.status === 'delivered')) || o.type === 'product') && (!o.reviews || o.reviews.length === 0) && (
+                          {((o.type === 'service' && (o.status === 'completed' || o.status === 'delivered')) || o.type === 'product') && !o.has_review && (
                             <Button 
                               size="sm" 
                               className="gap-1.5 bg-amber-400 hover:bg-amber-500 text-slate-900 border-none shadow-sm"
@@ -287,12 +307,12 @@ export default function BuyerOrdersPage() {
                   {selected.type === 'service' && (selected.status === "in_progress" || selected.status === "pending_requirements") && (
                     <Button variant="outline" className="flex-1 gap-2"><MessageSquare className="w-4 h-4" />Message</Button>
                   )}
-                  {((selected.type === 'service' && (selected.status === 'completed' || selected.status === 'delivered')) || selected.type === 'product') && (!selected.reviews || selected.reviews.length === 0) && (
+                  {((selected.type === 'service' && (selected.status === 'completed' || selected.status === 'delivered')) || selected.type === 'product') && !selected.has_review && (
                     <Button className="flex-1 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => setShowReview(true)}>
                       <Star className="w-4 h-4 fill-primary-foreground" />Evaluate / Give Review
                     </Button>
                   )}
-                  {(selected.status === "completed" || selected.status === "delivered") && (selected.reviews?.length > 0) && (
+                  {(selected.status === "completed" || selected.status === "delivered") && selected.has_review && (
                     <Button disabled variant="outline" className="flex-1"><Star className="w-4 h-4 mr-2" />Reviewed</Button>
                   )}
                   <Button variant="outline" className="flex-1" onClick={() => setSelected(null)}>Close</Button>
