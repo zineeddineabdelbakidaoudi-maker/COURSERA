@@ -138,29 +138,40 @@ export default function OrderDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
         <div className="lg:col-span-2 space-y-10">
           
-          {/* Order Content */}
+           {/* Order Content */}
           <div className="space-y-8">
              {/* Requirements Section */}
-             {(order.requirements_data?.notes || (order.requirements_data?.answers?.length > 0)) && (
-               <div className="space-y-6">
-                <h3 className="text-[11px] font-black tracking-[0.2em] text-slate-400 uppercase">Project Requirements</h3>
-                <div className="bg-slate-50 rounded-[2rem] p-8 border border-slate-100 space-y-6">
-                  {order.requirements_data?.notes && (
-                    <div className="space-y-2">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Notes from Buyer</p>
-                      <p className="text-slate-700 leading-relaxed font-medium">{order.requirements_data.notes}</p>
-                    </div>
-                  )}
-                  {order.requirements_data?.answers?.map((ans: any, idx: number) => (
-                    <div key={idx} className="space-y-2 border-t border-slate-200/50 pt-4 first:border-0 first:pt-0">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Requirement #{idx + 1}</p>
-                      <p className="text-slate-900 font-bold">{ans.question || "Requirement Answer"}</p>
-                      <p className="text-slate-600 font-medium bg-white p-4 rounded-xl border border-slate-100">{ans.answer || ans}</p>
-                    </div>
-                  ))}
-                </div>
-               </div>
-             )}
+             {(() => {
+               let reqData = order.requirements_data;
+               if (typeof reqData === 'string') {
+                 try { reqData = JSON.parse(reqData) } catch (e) {}
+               }
+               const hasNotes = !!reqData?.notes;
+               const hasAnswers = reqData?.answers?.length > 0;
+               
+               if (!hasNotes && !hasAnswers) return null;
+
+               return (
+                 <div className="space-y-6">
+                  <h3 className="text-[11px] font-black tracking-[0.2em] text-slate-400 uppercase">Project Requirements</h3>
+                  <div className="bg-slate-50 rounded-[2rem] p-8 border border-slate-100 space-y-6">
+                    {hasNotes && (
+                      <div className="space-y-2">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Notes from Buyer</p>
+                        <p className="text-slate-700 leading-relaxed font-medium">{reqData.notes}</p>
+                      </div>
+                    )}
+                    {hasAnswers && reqData.answers.map((ans: any, idx: number) => (
+                      <div key={idx} className="space-y-2 border-t border-slate-200/50 pt-4 first:border-0 first:pt-0">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Requirement #{idx + 1}</p>
+                        <p className="text-slate-900 font-bold">{ans.question || "Requirement Answer"}</p>
+                        <p className="text-slate-600 font-medium bg-white p-4 rounded-xl border border-slate-100">{ans.answer || ans}</p>
+                      </div>
+                    ))}
+                  </div>
+                 </div>
+               );
+             })()}
 
              {/* Timeline */}
              <div className="space-y-6">

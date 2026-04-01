@@ -67,7 +67,7 @@ export default function BuyerOrdersPage() {
     // Helper to check if reviewed
     const isReviewed = (type: string, id: string, orderId?: string) => {
       if (type === 'service') {
-        return userReviews.some(r => r.order_id === orderId || r.service_id === id)
+        return userReviews.some(r => r.order_id === orderId)
       }
       return userReviews.some(r => r.product_id === id)
     }

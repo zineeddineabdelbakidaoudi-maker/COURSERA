@@ -87,6 +87,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const initials = displayName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
   const levelLabel = profile?.seller_level ? profile.seller_level.charAt(0).toUpperCase() + profile.seller_level.slice(1) + " Seller" : "Seller"
 
+  // Prevent rendering Seller layout for Buyer routes (since they are nested under /dashboard)
+  if (pathname.startsWith("/dashboard/buyer")) {
+    return <>{children}</>
+  }
+
   return (
     <div className="min-h-screen relative bg-[#f4f4f5]">
 
