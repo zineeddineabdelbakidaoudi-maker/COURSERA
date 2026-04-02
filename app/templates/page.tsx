@@ -23,7 +23,6 @@ import {
   Presentation
 } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/image-with-fallback';
-import { Navbar } from '@/components/layout/navbar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -301,9 +300,7 @@ export default function TemplatesPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] font-sans text-gray-900 selection:bg-black selection:text-white">
-      <Navbar />
-      
+    <div className="min-h-screen bg-[#FAFAFA] font-sans text-gray-900 selection:bg-black selection:text-white">      
       <div className="relative z-10">
         <main className="mx-auto max-w-7xl px-6 pt-32 pb-24">
           <header className="relative z-20 mb-12">
@@ -454,49 +451,7 @@ export default function TemplatesPage() {
           </motion.div>
         </main>
 
-        <footer className="border-t border-gray-200 bg-[#fafafa] px-6 pb-10 pt-20">
-          <div className="mx-auto max-w-7xl">
-            <div className="mb-16 grid grid-cols-1 gap-12 md:grid-cols-4">
-              <div className="md:col-span-1">
-                <div className="mb-6 text-lg font-bold tracking-[0.2em] text-black">D I G I T H U B</div>
-                <p className="text-sm leading-relaxed text-gray-500">
-                  The premier marketplace for digital creators, learners, and businesses in Algeria to connect and scale.
-                </p>
-              </div>
-
-              {footerColumns.map((column) => (
-                <div key={column.title}>
-                  <h4 className="mb-6 text-sm font-semibold uppercase tracking-wider text-black">{column.title}</h4>
-                  <ul className="space-y-4 text-sm text-gray-500">
-                    {column.links.map((link) => (
-                      <li key={link}>
-                        <Link className="transition-colors hover:text-black" href="#">
-                          {link}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex flex-col items-center justify-between gap-4 border-t border-gray-200 pt-8 text-center text-xs font-medium tracking-wide text-gray-400 md:flex-row md:text-left">
-              <p>Copyright {new Date().getFullYear()} DIGITHUB. All rights reserved.</p>
-              <div className="flex flex-wrap items-center justify-center gap-6 md:justify-end">
-                <span>Proudly built in Algeria</span>
-                <Link className="transition-colors hover:text-black" href="#">
-                  TWITTER
-                </Link>
-                <Link className="transition-colors hover:text-black" href="#">
-                  INSTAGRAM
-                </Link>
-                <Link className="transition-colors hover:text-black" href="#">
-                  LINKEDIN
-                </Link>
-              </div>
-            </div>
-          </div>
-        </footer>
+        
       </div>
     </div>
   );

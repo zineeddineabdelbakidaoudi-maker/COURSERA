@@ -5,6 +5,7 @@ import { FaqChatbot } from "@/components/ui/chatbot"
 import { Toaster } from "@/components/ui/toaster"
 import { PremiumEffects } from "@/components/ui/premium-effects"
 import { Footer } from "@/components/layout/footer"
+import { Navbar } from "@/components/layout/navbar"
 import './globals.css'
 
 const inter = Inter({
@@ -102,7 +103,8 @@ export default function RootLayout({
     >
       <body className="font-sans antialiased bg-background text-foreground selection:bg-primary/30 min-h-screen flex flex-col">
         <PremiumEffects />
-        <div className="flex-1">
+        <Navbar />
+        <div className="flex-1 mt-24">
           {children}
         </div>
         <Footer />

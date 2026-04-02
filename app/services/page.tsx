@@ -68,9 +68,7 @@ export default function ServicesPage() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-[#fafafa] font-sans text-slate-900 selection:bg-black selection:text-white">
-      <Navbar />
-      
+    <div className="min-h-screen relative overflow-hidden bg-[#fafafa] font-sans text-slate-900 selection:bg-black selection:text-white">      
       <AnimatedPageWrapper>
         <main className="pt-20 relative">
           

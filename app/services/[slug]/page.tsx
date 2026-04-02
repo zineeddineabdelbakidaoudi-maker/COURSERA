@@ -5,7 +5,6 @@ import Link from "next/link"
 import { 
   ChevronRight, Star, Clock, RefreshCw, CheckCircle2, MessageCircle, Heart, Share2, Shield, CreditCard, ThumbsUp, Package, Zap, AlertTriangle
 } from "lucide-react"
-import { Navbar } from "@/components/layout/navbar"
 import { Footer } from "@/components/layout/footer"
 import { ServiceCard } from "@/components/marketplace/service-card"
 import { Button } from "@/components/ui/button"
@@ -195,8 +194,6 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ slug: 
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-background">
-      <Navbar />
-
       <main className="pt-24 pb-16 relative">
         <div className="absolute inset-0 bg-gradient-to-br from-white to-slate-50 z-[1] pointer-events-none" />
         <div className="container mx-auto px-4 lg:px-8 max-w-7xl relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both">

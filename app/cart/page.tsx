@@ -8,7 +8,6 @@ import Link from "next/link"
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
-import { Navbar } from "@/components/layout/navbar"
 import { Footer } from "@/components/layout/footer"
 import { toast } from "sonner"
 import { AnimatedPageWrapper } from "@/components/ui/animated-page-wrapper"
@@ -65,9 +64,7 @@ export default function CartPage() {
   const fee = Math.round(subtotal * 0.05)
 
   return (
-    <div className="min-h-screen bg-[#f4f4f5] font-sans selection:bg-slate-900 selection:text-white">
-      <Navbar />
-      
+    <div className="min-h-screen bg-[#f4f4f5] font-sans selection:bg-slate-900 selection:text-white">      
       <main className="pt-32 pb-20 max-w-6xl mx-auto px-4">
         <AnimatedPageWrapper>
           <div className="mb-10 text-center">

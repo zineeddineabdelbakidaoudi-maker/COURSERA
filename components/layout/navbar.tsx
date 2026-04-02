@@ -21,12 +21,13 @@ import { motion, useScroll, useMotionValueEvent, useMotionValue, useSpring, useT
 
 const navLinks = [
   { href: "/courses", label: "COURSES" },
-  { href: "/automation", label: "AUTOMATION" },
+  { href: "/tools", label: "TOOLS" },
   { href: "/templates", label: "TEMPLATES" },
   { href: "/ebooks", label: "EBOOKS" },
-  { href: "/tools", label: "TOOLS" },
-  { href: "/hire", label: "HIRE" },
+  { href: "/services", label: "SERVICES" },
   { href: "/jobs", label: "JOBS" },
+  { href: "/hire", label: "HIRE ME" },
+  { href: "/how-it-works", label: "HOW IT WORKS" },
 ]
 
 const languages = [
@@ -132,7 +133,7 @@ export function Navbar() {
     if (profile.role === 'admin') return "/admin"
     if (profile.role === 'publisher') return "/publisher"
     if (profile.role === 'seller') return "/dashboard"
-    return "/services"
+    return "/dashboard/buyer"
   }
 
   return (
@@ -189,14 +190,16 @@ export function Navbar() {
             <ShoppingBag className="h-5 w-5 cursor-pointer text-slate-400 transition-colors hover:text-slate-900" />
           </Link>
 
-          <Link href="/dashboard/notifications" className="relative">
-            <Bell className="h-5 w-5 cursor-pointer text-slate-400 transition-colors hover:text-slate-900" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-1 ring-white">
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
-            )}
-          </Link>
+          {user && (
+            <Link href="/dashboard/notifications" className="relative">
+              <Bell className="h-5 w-5 cursor-pointer text-slate-400 transition-colors hover:text-slate-900" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-1 ring-white">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </Link>
+          )}
 
           {/* Language Switcher */}
           <DropdownMenu>

@@ -28,6 +28,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { label: "Commissions", href: "/admin/commissions", icon: ShoppingCart },
     { label: "Orders & Disputes", href: "/admin/orders", icon: ShoppingCart },
     { label: "Settings", href: "/admin/settings", icon: Settings },
+    { label: "🪄 Landing Generator", href: "/admin/landing-generator", icon: Package },
   ]
 
   return (

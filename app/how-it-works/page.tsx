@@ -7,7 +7,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import NeuralBackground from "@/components/ui/flow-field-background"
-import { Navbar } from "@/components/layout/navbar"
 
 const steps = [
   { number: "01", icon: UserPlus, title: "Create Your Account", desc: "Sign up in seconds with Google, GitHub, or your email. No credit card required.", detail: "Your account is the key to the DigitHup ecosystem — post services, buy products, and manage projects all in one place.", color: "text-indigo-500 bg-indigo-500/10 border-indigo-200" },
@@ -28,6 +27,7 @@ const faqs = [
   { q: "Can I become a seller?", a: "Yes! After creating your account, go to your dashboard and click 'Become a Seller'. Submit your portfolio and you'll be reviewed within 48h." },
   { q: "What if I'm not satisfied with the work?", a: "You can request a revision, open a dispute, or get a refund. Buyer protection is always guaranteed." },
   { q: "Is this only for Algerians?", a: "Yes, DigitHup is built for the Algerian market. All prices are in DZD and payment methods are local-first." },
+  { q: "What types of services can I find?", a: "You can find a wide range of digital services, including graphic design, web development, marketing, copywriting, and much more." },
 ]
 
 export default function HowItWorksPage() {
@@ -35,9 +35,7 @@ export default function HowItWorksPage() {
   const [activeStep, setActiveStep] = useState<number | null>(null)
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white selection:bg-blue-500/30">
-      <Navbar />
-      {/* Hero */}
+    <div className="min-h-screen bg-slate-900 text-white selection:bg-blue-500/30">      {/* Hero */}
       <section className="relative overflow-hidden border-b border-white/5 bg-slate-900/50 backdrop-blur-sm">
         <div className="fixed inset-0 pointer-events-none z-0">
           <NeuralBackground

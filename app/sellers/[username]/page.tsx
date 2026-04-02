@@ -148,9 +148,7 @@ export default function SellerProfilePage({ params }: { params: Promise<{ userna
 
   if (error || !profile) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-background flex flex-col items-center justify-center p-4">
-        <Navbar />
-        <AlertTriangle className="w-12 h-12 text-muted-foreground/30 mb-4 mt-20" />
+      <div className="min-h-screen bg-slate-50 dark:bg-background flex flex-col items-center justify-center p-4">        <AlertTriangle className="w-12 h-12 text-muted-foreground/30 mb-4 mt-20" />
         <h2 className="text-xl font-semibold mb-2">{error ? "Error Loading Profile" : "Profile Not Found"}</h2>
         <p className="text-muted-foreground text-center max-w-sm mb-6">{error || "The profile you are looking for does not exist."}</p>
         <Button asChild className="bg-primary text-primary-foreground"><Link href="/services">Browse Marketplace</Link></Button>
@@ -178,8 +176,6 @@ export default function SellerProfilePage({ params }: { params: Promise<{ userna
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-slate-50 dark:bg-background font-sans text-foreground selection:bg-primary selection:text-primary-foreground">
-      <Navbar />
-
       {/* Clean White Background for Profile */}
       <div className="fixed inset-0 bg-slate-50 dark:bg-background z-[1] pointer-events-none" />
 

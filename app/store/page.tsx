@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/client"
-import { Navbar } from "@/components/layout/navbar"
 import { Footer } from "@/components/layout/footer"
 import { AnimatedPageWrapper } from "@/components/ui/animated-page-wrapper"
 import { ProductCard } from "@/components/ui/product-card"
@@ -66,8 +65,6 @@ export default function StorePage() {
 
   return (
     <div className="min-h-screen overflow-hidden bg-[#FAFAFA] font-sans text-gray-900 selection:bg-black selection:text-white">
-      <Navbar />
-
       <AnimatedPageWrapper>
         <main className="pt-20">
           {/* --- HERO SECTION --- */}

@@ -98,7 +98,7 @@ export default function RegisterPage() {
             className="flex items-center gap-2 text-sm font-bold tracking-[0.2em] text-black transition-opacity hover:opacity-70"
           >
             <ArrowLeft className="h-4 w-4" />
-            D I G I T H U P
+            D I G I T H U B
           </Link>
           
           <div className="max-w-md">
@@ -138,7 +138,7 @@ export default function RegisterPage() {
           </div>
           
           <div className="text-xs font-medium tracking-wide text-gray-400">
-            © {new Date().getFullYear()} DIGITHUP. PROUDLY BUILT IN ALGERIA.
+            © {new Date().getFullYear()} DIGITHUB. PROUDLY BUILT IN ALGERIA.
           </div>
         </div>
 
@@ -151,7 +151,7 @@ export default function RegisterPage() {
             className="w-full max-w-md"
           >
             <div className="mb-8 flex justify-between items-center lg:hidden">
-               <Link href="/" className="text-sm font-bold tracking-[0.2em] text-black">D I G I T H U P</Link>
+               <Link href="/" className="text-sm font-bold tracking-[0.2em] text-black">D I G I T H U B</Link>
             </div>
 
             <Card className="border-gray-100 bg-white/70 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl overflow-hidden rounded-[2rem]">

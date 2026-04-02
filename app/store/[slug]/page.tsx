@@ -5,7 +5,6 @@ import Link from "next/link"
 import {
   ChevronRight, Star, Download, CheckCircle2, Shield, CreditCard, ThumbsUp, BookOpen, FileText, Users, Clock, Play, File, Sparkles, AlertTriangle, Package, Heart, Share2, MessageCircle
 } from "lucide-react"
-import { Navbar } from "@/components/layout/navbar"
 import { Footer } from "@/components/layout/footer"
 import { ProductCard } from "@/components/marketplace/product-card"
 import { Button } from "@/components/ui/button"
@@ -190,8 +189,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-background">
-      <Navbar />
-
       <main className="pt-24 pb-16 relative">
         <div className="absolute inset-0 bg-gradient-to-br from-white to-slate-50 z-[1] pointer-events-none" />
         <div className="container mx-auto px-4 lg:px-8 max-w-7xl relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both">

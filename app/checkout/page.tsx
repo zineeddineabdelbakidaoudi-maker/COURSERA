@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/client"
-import { Navbar } from "@/components/layout/navbar"
 import { Footer } from "@/components/layout/footer"
 import { toast } from "sonner"
 
@@ -143,9 +142,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f4f4f5] font-sans">
-      <Navbar />
-      
+    <div className="min-h-screen bg-[#f4f4f5] font-sans">      
       <div className="max-w-6xl mx-auto px-4 pt-32 pb-20">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-12">
           <div>

@@ -1,5 +1,4 @@
 import React from "react"
-import { Navbar } from "@/components/layout/navbar"
 import { Footer } from "@/components/layout/footer"
 
 export const metadata = {
@@ -9,9 +8,7 @@ export const metadata = {
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <Navbar />
-      <main className="flex-1 pt-32 pb-24">
+    <div className="min-h-screen bg-background flex flex-col">      <main className="flex-1 pt-32 pb-24">
         <div className="container mx-auto px-4 max-w-4xl text-center">
           <h1 className="text-4xl md:text-6xl font-display font-bold mb-6">Empowering Algeria's Digital Future.</h1>
           <p className="text-xl text-muted-foreground mb-12">Digit Hup is more than a marketplace. It's an ecosystem for freelancers, creators, and businesses to thrive in the digital economy.</p>
