@@ -77,7 +77,7 @@ export default function CheckoutPage() {
 
     for (const item of items) {
       if (item.type === 'service') {
-        const orderNumber = `ORD-${new Date().getFullYear()}${Math.floor(1000 + Math.random() * 9000)}`
+        const orderNumber = `DH-${new Date().getFullYear()}${Math.floor(1000 + Math.random() * 9000)}`
         const fee = Math.round(item.price * 0.05)
         const payout = item.price - fee
         const { error } = await supabase.from('Order').insert({

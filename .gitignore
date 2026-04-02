@@ -7,7 +7,9 @@ __v0_jsx-dev-runtime.ts
 .vercel/
 next.user-config.*
 
-# Environment variables
+# Environment variables — NEVER commit real credentials
+.env
+.env.local
 .env*.local
 
 # Common ignores

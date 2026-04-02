@@ -71,9 +71,11 @@ export async function updateSession(request: NextRequest) {
     }
 
     // Seller dashboard: only sellers and admins
-    if (pathname === '/dashboard' && role !== 'seller' && role !== 'admin') {
+    // We check if it starts with /dashboard but NOT /dashboard/buyer
+    if (pathname.startsWith('/dashboard') && !pathname.startsWith('/dashboard/buyer') && role !== 'seller' && role !== 'admin') {
       if (role === 'buyer') return createRedirect('/dashboard/buyer')
       if (isPublisher) return createRedirect('/publisher')
+      return createRedirect('/')
     }
 
     // Buyer dashboard: only buyers and admins

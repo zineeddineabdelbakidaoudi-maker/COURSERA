@@ -2,5 +2,8 @@
   "buildCommand": "npx prisma generate && next build",
   "outputDirectory": ".next",
   "framework": "nextjs",
-  "regions": ["cdg1"]
+  "regions": ["cdg1"],
+  "env": {
+    "SKIP_ENV_VALIDATION": "1"
+  }
 }
