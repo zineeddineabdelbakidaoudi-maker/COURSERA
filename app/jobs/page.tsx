@@ -1,9 +1,7 @@
 "use client"
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { motion } from 'motion/react';
 import {
   Search,
   CheckCircle2,
@@ -27,56 +25,96 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Navbar } from '@/components/layout/navbar';
-import { Footer } from '@/components/layout/footer';
-import { AnimatedPageWrapper } from '@/components/ui/animated-page-wrapper';
 import { createClient } from '@/lib/supabase/client';
-import { formatDistanceToNow } from 'date-fns';
-import { toast } from 'sonner';
+
+type Job = {
+  id: string;
+  title: string;
+  postedTime: string;
+  proposals: string;
+  budget: string;
+  level: string;
+  type: string;
+  description: string;
+  category: string;
+  ownerVerified: boolean;
+  skills: string[];
+};
+
+const hardcodedJobs: Job[] = [
+  {
+    id: '1',
+    title: '3D Landing Page for E-commerce Platform',
+    postedTime: '2 hours ago',
+    proposals: '10 to 15',
+    budget: '45,000 DZD',
+    level: 'Expert',
+    type: 'Fixed-price',
+    description: 'We are looking for a visionary 3D designer to create an immersive landing page for our new tech store. Must be proficient in Spline and React Three Fiber.',
+    category: '3D Modeling',
+    ownerVerified: true,
+    skills: ['Spline', 'React', 'Three.js', 'UI/UX'],
+  },
+  {
+    id: '2',
+    title: 'Python Automation Script for Real Estate',
+    postedTime: '5 hours ago',
+    proposals: '5 to 10',
+    budget: '3,500 DZD / hr',
+    level: 'Intermediate',
+    type: 'Hourly',
+    description: 'Need a developer to build a web scraper that collects property data from Ouedkniss and saves it to a Notion database.',
+    category: 'Automation',
+    ownerVerified: true,
+    skills: ['Python', 'BeautifulSoup', 'Notion API', 'Automation'],
+  },
+  {
+    id: '3',
+    title: 'Complete Branding & Logo Design for Startup',
+    postedTime: '1 day ago',
+    proposals: '20 to 30',
+    budget: '25,000 DZD',
+    level: 'Intermediate',
+    type: 'Fixed-price',
+    description: 'Looking for a creative graphic designer to build our brand identity from scratch. Includes logo, typography, and color palette.',
+    category: 'Design',
+    ownerVerified: false,
+    skills: ['Adobe Illustrator', 'Branding', 'Typography', 'Logo Design'],
+  },
+];
+
+const categories = ['All Jobs', 'UI/UX Design', 'Web Dev', '3D Art', 'Automation', 'Video Editing'];
 
 export default function JobsPage() {
   const supabase = createClient();
-  const router = useRouter();
   const [activeCategory, setActiveCategory] = useState('All Jobs');
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [q, setQ] = useState("");
-
-  const [jobs, setJobs] = useState<any[]>([]);
-  const [categories, setCategories] = useState<string[]>(['All Jobs']);
-  const [loading, setLoading] = useState(true);
-
-  // Proposal Form State
-  const [coverLetter, setCoverLetter] = useState("");
-  const [bidAmount, setBidAmount] = useState("");
-  const [deliveryTime, setDeliveryTime] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [session, setSession] = useState<any>(null);
+  const [jobs, setJobs] = useState<Job[]>(hardcodedJobs);
 
   useEffect(() => {
-    async function fetchData() {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-
-      const { data: jobData } = await supabase
-        .from('Job')
-        .select(`
-          *,
-          category:Category(name_en),
-          buyer:Profile!buyer_id(full_name, avatar_url, role),
-          proposals:Proposal(id)
-        `)
-        .eq('status', 'open')
-        .order('created_at', { ascending: false });
-
-      setJobs(jobData || []);
-
-      const { data: catData } = await supabase.from('Category').select('name_en').eq('type', 'services');
-      if (catData) {
-        setCategories(['All Jobs', ...catData.map(c => c.name_en)]);
+    async function fetchDBJobs() {
+      const { data } = await supabase.from('Job').select('*').eq('status', 'open').order('created_at', { ascending: false });
+      if (data && data.length > 0) {
+        const newJobs = data.map((d: any) => ({
+          id: d.id,
+          title: d.title,
+          postedTime: new Date(d.created_at).toLocaleDateString(),
+          proposals: '0',
+          budget: `${parseFloat(d.budget).toLocaleString()} DZD`,
+          level: d.experience_level || 'Intermediate',
+          type: 'Fixed-price',
+          description: d.description,
+          category: d.category,
+          ownerVerified: true,
+          skills: d.skills || [],
+        }));
+        
+        const merged = [...newJobs, ...hardcodedJobs];
+        setJobs(merged);
       }
-      setLoading(false);
     }
-    fetchData();
-  }, []);
+    fetchDBJobs();
+  }, [supabase]);
 
   const handleHeroMouseMove = (e: React.MouseEvent) => {
     const { clientX, clientY } = e;
@@ -87,311 +125,254 @@ export default function JobsPage() {
   };
 
   const filteredJobs = jobs.filter(job => {
-    const catName = job.category?.name_en || "Other";
-    if (activeCategory !== 'All Jobs' && catName !== activeCategory) return false;
-    if (q && !job.title.toLowerCase().includes(q.toLowerCase())) return false;
-    return true;
+    if (activeCategory === 'All Jobs') return true;
+    return job.category.includes(activeCategory) || job.skills.some(s => s.includes(activeCategory));
   });
 
-  const submitProposal = async (jobId: string) => {
-    if (!session) {
-      toast.error("Please sign in to submit a proposal");
-      router.push("/login");
-      return;
-    }
-
-    if (!coverLetter || !bidAmount || !deliveryTime) {
-      toast.error("Please fill all proposal fields");
-      return;
-    }
-
-    setSubmitting(true);
-    const { error } = await supabase.from('Proposal').insert({
-      job_id: jobId,
-      seller_id: session.user.id,
-      cover_letter: coverLetter,
-      bid_amount_dzd: parseFloat(bidAmount),
-      delivery_time: deliveryTime,
-      status: 'pending',
-      updated_at: new Date().toISOString()
-    });
-
-    setSubmitting(false);
-
-    if (error) {
-      toast.error("Error submitting proposal");
-      console.error(error);
-    } else {
-      toast.success("Proposal submitted successfully!");
-      setCoverLetter("");
-      setBidAmount("");
-      setDeliveryTime("");
-    }
-  };
-
   return (
-    <div className="min-h-screen relative overflow-hidden bg-[#f4f4f5] font-sans text-slate-800 selection:bg-slate-900 selection:text-white">
+    <div className="min-h-screen bg-[#FFFFFF] font-sans text-gray-900 selection:bg-black selection:text-white">
       <Navbar />
-
-      <AnimatedPageWrapper>
-        <main className="pt-20 relative">
-          
-          {/* WHITE BACKGROUND */}
-          <div className="fixed inset-0 pointer-events-none z-0 bg-[#f4f4f5]" />
-
-          {/* --- HERO SECTION --- */}
-          <section 
-            className="relative overflow-hidden px-6 py-24 z-10"
-            onMouseMove={handleHeroMouseMove}
-          >
-            <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center opacity-70">
-              {/* 3D-like work symbols with parallax */}
-              <div 
-                className="absolute h-48 w-48 translate-x-72 -translate-y-32 rotate-12 rounded-3xl border border-slate-200 bg-white shadow-2xl transition-transform duration-500 ease-out" 
-                style={{ transform: `translate(${mousePos.x}px, ${mousePos.y}px) rotate(12deg)` }}
-              >
-                <Briefcase className="absolute inset-0 m-auto h-20 w-20 text-slate-100" />
-              </div>
-              <div 
-                className="absolute h-40 w-40 -translate-x-80 translate-y-16 -rotate-12 rounded-full border border-slate-200 bg-white shadow-xl transition-transform duration-700 ease-out" 
-                style={{ transform: `translate(${-mousePos.x * 1.5}px, ${-mousePos.y * 1.5}px) rotate(-12deg)` }}
-              >
-                <Zap className="absolute inset-0 m-auto h-16 w-16 text-slate-100" />
-              </div>
-              <div 
-                className="absolute h-[500px] w-[500px] rounded-full border border-slate-200 opacity-20 transition-transform duration-1000 ease-out" 
-                style={{ transform: `translate(${mousePos.x * 0.5}px, ${mousePos.y * 0.5}px)` }}
-              />
+      <main className="pt-20">
+        <section 
+          className="relative overflow-hidden bg-white px-6 py-24 border-b border-gray-50"
+          onMouseMove={handleHeroMouseMove}
+        >
+          <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center opacity-20">
+            <div 
+              className="absolute h-48 w-48 translate-x-72 -translate-y-32 rotate-12 rounded-3xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white shadow-2xl transition-transform duration-500 ease-out" 
+              style={{ transform: `translate(${mousePos.x}px, ${mousePos.y}px) rotate(12deg)` }}
+            >
+              <Briefcase className="absolute inset-0 m-auto h-20 w-20 text-gray-200" />
             </div>
-
-            <div className="relative z-10 mx-auto max-w-4xl text-center">
-              <h1 className="mb-6 text-5xl font-extrabold tracking-tight text-slate-900 md:text-7xl">
-                Find Your Next <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Digital Project</span>
-              </h1>
-              <p className="mx-auto mb-12 max-w-2xl text-lg font-medium text-slate-600 leading-relaxed">
-                The premier marketplace for high-paying digital jobs in Algeria. Connect with businesses looking for your specific expertise.
-              </p>
-
-              {/* UPWORK-STYLE SEARCH & FILTERS */}
-              <div className="mx-auto flex max-w-3xl flex-col gap-6">
-                <div className="relative flex items-center overflow-hidden rounded-2xl border border-border bg-white p-2 shadow-lg transition-shadow focus-within:shadow-xl">
-                  <Search className="ml-4 h-5 w-5 text-slate-400" />
-                  <Input
-                    className="border-none bg-transparent py-5 text-lg text-slate-900 placeholder:text-slate-400 focus-visible:ring-0 px-4"
-                    placeholder="Search for jobs (e.g. 3D Artist, Python dev)"
-                    value={q}
-                    onChange={(e) => setQ(e.target.value)}
-                  />
-                  <Button className="mr-1 h-12 rounded-xl bg-slate-900 px-8 text-white font-bold hover:bg-slate-800 transition-all shadow-md">
-                    Find Work
-                  </Button>
-                </div>
-
-                <div className="flex flex-wrap items-center justify-center gap-2 mt-4">
-                  {categories.map((cat) => (
-                    <button
-                      key={cat}
-                      onClick={() => setActiveCategory(cat)}
-                      className={[
-                        'rounded-full px-5 py-2 text-sm font-bold transition-all duration-300 shadow-sm border',
-                        activeCategory === cat
-                          ? 'bg-slate-900 border-slate-900 text-white'
-                          : 'bg-white border-border text-slate-600 hover:bg-slate-50',
-                      ].join(' ')}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            <div 
+              className="absolute h-40 w-40 -translate-x-80 translate-y-16 -rotate-12 rounded-full border border-gray-200 bg-gradient-to-tr from-gray-50 to-white shadow-xl transition-transform duration-700 ease-out" 
+              style={{ transform: `translate(${-mousePos.x * 1.5}px, ${-mousePos.y * 1.5}px) rotate(-12deg)` }}
+            >
+              <Zap className="absolute inset-0 m-auto h-16 w-16 text-gray-200" />
             </div>
-          </section>
+            <div 
+              className="absolute h-[500px] w-[500px] rounded-full border border-gray-100 opacity-20 transition-transform duration-1000 ease-out" 
+              style={{ transform: `translate(${mousePos.x * 0.5}px, ${mousePos.y * 0.5}px)` }}
+            />
+          </div>
 
-          {/* --- JOBS LIST --- */}
-          <section className="relative z-10 px-6 py-20">
-            <div className="mx-auto max-w-5xl">
-              <div className="mb-12 flex items-center justify-between">
-                <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">Jobs you might like</h2>
-                <span className="text-sm font-bold text-slate-500 uppercase tracking-widest">{filteredJobs.length} Jobs found</span>
+          <div className="relative z-10 mx-auto max-w-4xl text-center">
+            <h1 className="mb-6 text-5xl font-medium tracking-tight text-black md:text-7xl">
+              Find Your Next <br />
+              <span className="text-black">Digital Project</span>
+            </h1>
+            <p className="mx-auto mb-12 max-w-2xl text-lg font-light text-gray-500">
+              The premier marketplace for high-paying digital jobs in Algeria. Connect with businesses looking for your specific expertise.
+            </p>
+
+            <div className="mx-auto flex max-w-3xl flex-col gap-6">
+              <div className="relative flex items-center overflow-hidden rounded-2xl border border-gray-200 bg-white p-2 shadow-[0_4px_20px_rgb(0,0,0,0.03)] transition-shadow focus-within:shadow-lg">
+                <Search className="ml-4 h-5 w-5 text-gray-400" />
+                <Input
+                  className="border-none bg-transparent py-6 text-lg placeholder:text-gray-400 focus-visible:ring-0"
+                  placeholder="Search for jobs (e.g. 3D Artist, Python dev)"
+                />
+                <Button className="mr-1 h-12 rounded-xl bg-black px-8 text-white hover:bg-gray-800">
+                  Find Work
+                </Button>
               </div>
 
-              <div className="space-y-6">
-                {loading ? (
-                  <div className="space-y-6">
-                    {[1, 2, 3].map(i => <div key={i} className="h-48 rounded-[2.5rem] bg-slate-100 animate-pulse border border-border" />)}
-                  </div>
-                ) : filteredJobs.length === 0 ? (
-                  <div className="text-center py-24 bg-white/50 backdrop-blur-xl border border-border rounded-[3rem]">
-                     <div className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-slate-100 border border-border flex items-center justify-center shadow-sm">
-                       <Briefcase className="w-10 h-10 text-slate-400" />
-                     </div>
-                     <p className="text-xl font-bold text-slate-600">No jobs match your criteria.</p>
-                  </div>
-                ) : filteredJobs.map((job) => {
-                  const postedTime = job.created_at ? formatDistanceToNow(new Date(job.created_at), { addSuffix: true }) : '';
-                  const proposalsCount = job.proposals?.length || 0;
-                  
-                  return (
-                    <div 
-                      key={job.id}
-                      className="group flex flex-col rounded-[2.5rem] border border-border bg-white p-8 transition-all hover:-translate-y-1 hover:border-slate-300 shadow-sm hover:shadow-xl"
-                    >
-                      <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-start">
-                        <div className="flex-1">
-                          <div className="mb-3 flex flex-wrap items-center gap-3">
-                            <h3 className="text-2xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors cursor-pointer leading-tight">
-                              {job.title}
-                            </h3>
-                            {job.buyer?.role === 'buyer' && (
-                              <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-3 py-1 uppercase tracking-wider text-[10px]">
-                                <ShieldCheck className="mr-1.5 h-3.5 w-3.5" />
-                                Verified Payment
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="flex flex-wrap items-center gap-5 text-sm font-semibold text-slate-500">
-                            <span className="flex items-center gap-1.5"><Clock className="h-4 w-4" /> Posted {postedTime}</span>
-                            <span className="flex items-center gap-1.5 text-slate-900"><DollarSign className="h-4 w-4" /> {Number(job.budget_dzd).toLocaleString()} DZD</span>
-                            <span className="flex items-center gap-1.5"><Briefcase className="h-4 w-4" /> {job.delivery_time || "Flexible"}</span>
-                          </div>
-                        </div>
-
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button className="shrink-0 rounded-2xl bg-slate-900 px-8 h-14 text-sm font-bold tracking-wide text-white transition-all hover:bg-slate-800 shadow-md">
-                              Submit Proposal
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="sm:max-w-[600px] rounded-[2.5rem] border border-border shadow-2xl p-8 bg-white/95 backdrop-blur-xl max-h-[90vh] overflow-y-auto">
-                            <DialogHeader>
-                              <DialogTitle className="text-3xl font-extrabold text-slate-900 leading-tight">{job.title}</DialogTitle>
-                              <DialogDescription className="text-slate-600 pt-4 leading-relaxed text-base">
-                                {job.description}
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="mt-8 border-t border-border pt-8">
-                              <h4 className="mb-4 text-xs font-bold uppercase tracking-widest text-slate-900">Required Skills</h4>
-                              <div className="flex flex-wrap gap-2 mb-8">
-                                {job.skills?.map((skill: string) => (
-                                  <span key={skill} className="rounded-xl bg-slate-50 dark:bg-secondary/50 border border-border px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300">
-                                    {skill}
-                                  </span>
-                                ))}
-                              </div>
-                              <div className="space-y-6">
-                                <div className="grid grid-cols-2 gap-6">
-                                  <div>
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2 block">Bid Amount (DZD)</label>
-                                    <Input 
-                                      type="number"
-                                      placeholder="e.g. 5000"
-                                      value={bidAmount}
-                                      onChange={e => setBidAmount(e.target.value)}
-                                      className="rounded-xl border-border bg-white h-12 px-4 shadow-sm"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2 block">Delivery Time</label>
-                                    <Input 
-                                      placeholder="e.g. 3 Days"
-                                      value={deliveryTime}
-                                      onChange={e => setDeliveryTime(e.target.value)}
-                                      className="rounded-xl border-border bg-white h-12 px-4 shadow-sm"
-                                    />
-                                  </div>
-                                </div>
-                                <div>
-                                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2 block">Cover Letter</label>
-                                  <textarea 
-                                    className="mt-2 w-full rounded-2xl border border-border bg-white p-4 text-sm outline-none focus:border-slate-900 transition-all shadow-sm text-slate-900"
-                                    placeholder="Why are you the best fit for this project? Include relevant experience and portfolio links."
-                                    rows={5}
-                                    value={coverLetter}
-                                    onChange={e => setCoverLetter(e.target.value)}
-                                  />
-                                </div>
-                                <Button 
-                                  onClick={() => submitProposal(job.id)}
-                                  disabled={submitting}
-                                  className="w-full rounded-2xl bg-slate-900 h-14 text-sm font-bold tracking-wide text-white transition-all hover:bg-slate-800 mt-4 disabled:opacity-50 shadow-md"
-                                >
-                                  {submitting ? 'Submitting...' : 'Send Proposal'}
-                                </Button>
-                              </div>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
-
-                      <p className="mb-8 line-clamp-2 text-base leading-relaxed text-slate-600">
-                        {job.description}
-                      </p>
-
-                      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 pt-6 mt-auto">
-                        <div className="flex flex-wrap gap-2">
-                          {job.skills?.slice(0, 3).map((skill: string) => (
-                            <span
-                              key={skill}
-                              className="rounded-lg bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-600 border border-slate-200"
-                            >
-                              {skill}
-                            </span>
-                          ))}
-                          {job.skills && job.skills.length > 3 && (
-                             <span className="rounded-lg bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-600 border border-slate-200">
-                               +{job.skills.length - 3}
-                             </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs font-bold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
-                          <Users className="h-4 w-4" />
-                          Proposals: <span className="text-slate-900">{proposalsCount}</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {filteredJobs.length > 0 && (
-                <div className="mt-16 text-center">
-                  <Button variant="outline" className="rounded-[2rem] h-14 border-border px-10 text-sm font-bold tracking-wide text-slate-900 hover:bg-slate-50 bg-white shadow-sm">
-                    Load More Jobs
-                  </Button>
-                </div>
-              )}
-            </div>
-          </section>
-
-          {/* --- HOW IT WORKS (FOR FREELANCERS) --- */}
-          <section className="relative z-10 px-6 py-24 border-t border-border bg-white/50">
-            <div className="mx-auto max-w-7xl">
-              <div className="mb-20 text-center">
-                <h2 className="mb-6 text-4xl font-extrabold tracking-tight text-slate-900">How to Get Hired</h2>
-                <p className="text-slate-600 max-w-2xl mx-auto text-lg font-medium leading-relaxed">Follow our proven workflow to secure high-paying digital jobs.</p>
-              </div>
-
-              <div className="grid grid-cols-1 gap-12 md:grid-cols-3">
-                {[
-                  { step: '01', title: 'Find Work', desc: 'Browse the latest high-end jobs and filter by your specific expertise.' },
-                  { step: '02', title: 'Apply', desc: 'Submit a professional proposal showcasing your skills and portfolio.' },
-                  { step: '03', title: 'Get Paid', desc: 'Complete the project and receive your payment securely via DIGITHUB.' },
-                ].map((s) => (
-                  <div key={s.step} className="text-center group bg-white p-10 rounded-[3rem] border border-border shadow-sm hover:shadow-xl transition-all hover:-translate-y-2">
-                    <div className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-3xl bg-slate-50 shadow-sm border border-border transition-transform group-hover:scale-110">
-                      <span className="text-2xl font-black text-slate-900">{s.step}</span>
-                    </div>
-                    <h3 className="mb-4 text-xl font-extrabold uppercase tracking-wide text-slate-900">{s.title}</h3>
-                    <p className="text-base leading-relaxed font-medium text-slate-600">{s.desc}</p>
-                  </div>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
+                    className={[
+                      'rounded-full px-5 py-2 text-sm font-medium transition-all duration-300',
+                      activeCategory === cat
+                        ? 'bg-black text-white'
+                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-black',
+                    ].join(' ')}
+                  >
+                    {cat}
+                  </button>
                 ))}
+                <button className="flex items-center gap-2 rounded-full border border-gray-200 px-5 py-2 text-sm font-medium text-gray-500 hover:border-black hover:text-black transition-colors">
+                  <Filter className="h-4 w-4" />
+                  Advanced Filters
+                </button>
               </div>
             </div>
-          </section>
-        </main>
-      </AnimatedPageWrapper>
-      <Footer />
+          </div>
+        </section>
+
+        <section className="bg-white px-6 py-20">
+          <div className="mx-auto max-w-5xl">
+            <div className="mb-12 flex items-center justify-between">
+              <h2 className="text-2xl font-medium tracking-tight text-black">Jobs you might like</h2>
+              <span className="text-sm font-medium text-gray-400 uppercase tracking-widest">{filteredJobs.length} Jobs found</span>
+            </div>
+
+            <div className="space-y-6">
+              {filteredJobs.map((job) => (
+                <div 
+                  key={job.id}
+                  className="group flex flex-col rounded-3xl border border-gray-100 bg-white p-8 transition-all hover:border-gray-200 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
+                >
+                  <div className="mb-4 flex flex-col justify-between gap-4 md:flex-row md:items-start">
+                    <div className="flex-1">
+                      <div className="mb-2 flex flex-wrap items-center gap-3">
+                        <h3 className="text-xl font-medium text-black group-hover:text-gray-700 transition-colors cursor-pointer">
+                          {job.title}
+                        </h3>
+                        {job.ownerVerified && (
+                          <Badge variant="secondary" className="bg-green-50 text-green-700 hover:bg-green-50 border-none font-semibold">
+                            <ShieldCheck className="mr-1 h-3 w-3" />
+                            Payment Verified
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
+                        <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> Posted {job.postedTime}</span>
+                        <span className="flex items-center gap-1 font-medium text-black"><DollarSign className="h-4 w-4" /> {job.budget}</span>
+                        <span className="font-medium text-gray-400">• {job.type}</span>
+                        <span className="font-medium text-gray-400">• {job.level}</span>
+                      </div>
+                    </div>
+
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button className="rounded-full bg-black px-8 py-6 text-sm font-semibold tracking-wide text-white transition-all hover:bg-gray-800">
+                          Submit Proposal
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[600px] rounded-[2rem] border-none shadow-2xl">
+                        <DialogHeader>
+                          <DialogTitle className="text-2xl font-medium">{job.title}</DialogTitle>
+                          <DialogDescription className="text-gray-500 pt-2 leading-relaxed">
+                            {job.description}
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="mt-6 border-t border-gray-100 pt-6">
+                          <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-black">Required Skills</h4>
+                          <div className="flex flex-wrap gap-2 mb-8">
+                            {job.skills.map(skill => (
+                              <span key={skill} className="rounded-lg bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-100">
+                                {skill}
+                              </span>
+                            ))}
+                          </div>
+                          <div className="space-y-4">
+                            <div>
+                              <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Cover Letter</label>
+                              <textarea 
+                                className="mt-2 w-full rounded-2xl border border-gray-100 bg-gray-50 p-4 text-sm outline-none focus:border-black transition-colors"
+                                placeholder="Why are you the best fit for this project?"
+                                rows={4}
+                              />
+                            </div>
+                            <Button className="w-full rounded-2xl bg-black py-7 text-sm font-semibold tracking-wide text-white transition-all hover:bg-gray-800">
+                              Send Proposal
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+
+                  <p className="mb-6 line-clamp-2 text-sm leading-relaxed text-gray-500">
+                    {job.description}
+                  </p>
+
+                  <div className="flex flex-wrap items-center justify-between gap-4 border-t border-gray-50 pt-6">
+                    <div className="flex flex-wrap gap-2">
+                      {job.skills.map((skill) => (
+                        <span
+                          key={skill}
+                          className="rounded-lg bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-100"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-1 text-xs font-medium text-gray-400">
+                      <Users className="h-3 w-3" />
+                      Proposals: <span className="text-black font-bold">{job.proposals}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-12 text-center">
+              <Button variant="outline" className="rounded-full border-gray-200 px-10 py-6 text-sm font-semibold tracking-wide text-black hover:bg-gray-50">
+                Load More Jobs
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-[#FAFAFA] px-6 py-24 border-t border-gray-100">
+          <div className="mx-auto max-w-7xl">
+            <div className="mb-16 text-center">
+              <h2 className="mb-4 text-3xl font-medium tracking-tight text-black">How to Get Hired</h2>
+              <p className="text-gray-500">Follow our proven workflow to secure high-paying digital jobs.</p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-12 md:grid-cols-3">
+              {[
+                { step: '01', title: 'Find Work', desc: 'Browse the latest high-end jobs and filter by your specific expertise.' },
+                { step: '02', title: 'Apply', desc: 'Submit a professional proposal showcasing your skills and portfolio.' },
+                { step: '03', title: 'Get Paid', desc: 'Complete the project and receive your payment securely via DIGITHUB.' },
+              ].map((s) => (
+                <div key={s.step} className="text-center">
+                  <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm">
+                    <span className="text-xl font-bold text-black">{s.step}</span>
+                  </div>
+                  <h3 className="mb-3 text-lg font-bold uppercase tracking-wide text-black">{s.title}</h3>
+                  <p className="text-sm leading-relaxed text-gray-500">{s.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="border-t border-gray-200 bg-white px-6 pb-10 pt-20">
+        {/* Simplified footer layout for brevity, matching reference logic */}
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-16 grid grid-cols-1 gap-12 md:grid-cols-4">
+            <div className="md:col-span-1">
+              <div className="mb-6 text-lg font-bold tracking-[0.2em] text-black">D I G I T H U B</div>
+              <p className="text-sm leading-relaxed text-gray-500">
+                The premier marketplace for digital creators, learners, and businesses in Algeria to connect and scale.
+              </p>
+            </div>
+
+            {[
+              { title: 'Platform', links: ['About Us', 'Become a Publisher', 'Careers', 'Affiliate Program'] },
+              { title: 'Browse', links: ['Premium Courses', 'Notion Templates', 'Automation Scripts', 'Hire Freelancers'] },
+              { title: 'Support', links: ['Help Center', 'Contact Us', 'Terms of Service', 'Privacy Policy'] },
+            ].map((column) => (
+              <div key={column.title}>
+                <h4 className="mb-6 text-sm font-semibold uppercase tracking-wider text-black">{column.title}</h4>
+                <ul className="space-y-4 text-sm text-gray-500">
+                  {column.links.map((link) => (
+                    <li key={link}>
+                      <Link className="transition-colors hover:text-black" href="#">{link}</Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-col items-center justify-between gap-4 border-t border-gray-200 pt-8 text-center text-xs font-medium tracking-wide text-gray-400 md:flex-row md:text-left">
+            <p>Copyright {new Date().getFullYear()} DIGITHUB. All rights reserved.</p>
+            <div className="flex flex-wrap items-center justify-center gap-6 md:justify-end">
+              <span>Proudly built in Algeria</span>
+              <Link className="transition-colors hover:text-black" href="#">TWITTER</Link>
+              <Link className="transition-colors hover:text-black" href="#">INSTAGRAM</Link>
+              <Link className="transition-colors hover:text-black" href="#">LINKEDIN</Link>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
-  )
+  );
 }

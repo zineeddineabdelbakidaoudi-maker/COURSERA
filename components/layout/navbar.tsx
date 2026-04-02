@@ -20,11 +20,12 @@ import { useRouter } from "next/navigation"
 import { motion, useScroll, useMotionValueEvent, useMotionValue, useSpring, useTransform } from "motion/react"
 
 const navLinks = [
-  { href: "/store?category=Course", label: "COURSES" },
-  { href: "/store?category=Toolkit", label: "TOOLS" },
-  { href: "/store?category=Template", label: "TEMPLATES" },
-  { href: "/store?category=Ebook", label: "EBOOKS" },
-  { href: "/services", label: "SERVICES" },
+  { href: "/courses", label: "COURSES" },
+  { href: "/automation", label: "AUTOMATION" },
+  { href: "/templates", label: "TEMPLATES" },
+  { href: "/ebooks", label: "EBOOKS" },
+  { href: "/tools", label: "TOOLS" },
+  { href: "/hire", label: "HIRE" },
   { href: "/jobs", label: "JOBS" },
 ]
 
