@@ -35,8 +35,8 @@ export default function HowItWorksPage() {
   const [activeStep, setActiveStep] = useState<number | null>(null)
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white selection:bg-blue-500/30">      {/* Hero */}
-      <section className="relative overflow-hidden border-b border-white/5 bg-slate-900/50 backdrop-blur-sm">
+    <div className="min-h-screen bg-white text-black selection:bg-blue-500/30">      {/* Hero */}
+      <section className="relative overflow-hidden border-b border-gray-100 bg-gray-500 backdrop-blur-sm">
         <div className="fixed inset-0 pointer-events-none z-0">
           <NeuralBackground
             color="#3b82f6"
@@ -46,7 +46,7 @@ export default function HowItWorksPage() {
             className="w-full h-full"
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/40 via-slate-900/60 to-slate-900 z-[1]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/40 via-white/60 to-white z-[1]" />
         
         <div className="relative z-10 max-w-5xl mx-auto px-4 py-24 text-center">
           <Badge variant="outline" className="gap-1.5 mb-6 border-blue-500/30 bg-blue-500/10 text-blue-400">
@@ -55,12 +55,12 @@ export default function HowItWorksPage() {
           <h1 className="text-4xl md:text-6xl font-black tracking-tight mb-5">
             How <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">DigitHup</span> Works
           </h1>
-          <p className="text-slate-400 text-lg max-w-xl mx-auto mb-8 font-medium">
+          <p className="text-gray-500 text-lg max-w-xl mx-auto mb-8 font-medium">
             From signing up to receiving world-class work — your journey in 4 simple steps.
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
             {["✅ No upfront payment", "📦 COD supported", "🔒 Verified sellers"].map(b => (
-              <span key={b} className="text-xs font-bold px-4 py-2 rounded-full border border-white/10 bg-white/5 text-slate-300">{b}</span>
+              <span key={b} className="text-xs font-bold px-4 py-2 rounded-full border border-gray-200 bg-gray-50 text-gray-600">{b}</span>
             ))}
           </div>
         </div>

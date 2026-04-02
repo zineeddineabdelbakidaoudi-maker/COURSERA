@@ -21,13 +21,12 @@ import { motion, useScroll, useMotionValueEvent, useMotionValue, useSpring, useT
 
 const navLinks = [
   { href: "/courses", label: "COURSES" },
-  { href: "/tools", label: "TOOLS" },
+  { href: "/automation", label: "AUTOMATION" },
   { href: "/templates", label: "TEMPLATES" },
   { href: "/ebooks", label: "EBOOKS" },
-  { href: "/services", label: "SERVICES" },
+  { href: "/tools", label: "TOOLS" },
+  { href: "/hire", label: "HIRE" },
   { href: "/jobs", label: "JOBS" },
-  { href: "/hire", label: "HIRE ME" },
-  { href: "/how-it-works", label: "HOW IT WORKS" },
 ]
 
 const languages = [
