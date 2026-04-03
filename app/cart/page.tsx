@@ -49,7 +49,7 @@ export default function CartPage() {
   }, [])
 
   const remove = async (cart_id: string) => {
-    const prev = [...items]
+    const prev = items || []
     setItems(items.filter(i => i.cart_id !== cart_id))
     const { error } = await supabase.from('CartItem').delete().eq('id', cart_id)
     if (error) {

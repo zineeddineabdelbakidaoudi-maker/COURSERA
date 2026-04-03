@@ -255,7 +255,7 @@ export default function CoursesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [priceRange, setPriceRange] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
-  const [courses, setCourses] = useState<Course[]>(hardcodedCourses);
+  const [courses, setCourses] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchDBProducts() {
@@ -274,7 +274,7 @@ export default function CoursesPage() {
           badge: 'New',
           date: d.created_at
         }));
-        setCourses([...dbCourses, ...hardcodedCourses]);
+        setCourses(dbCourses || []);
       }
     }
     fetchDBProducts();

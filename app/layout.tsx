@@ -5,6 +5,7 @@ import { FaqChatbot } from "@/components/ui/chatbot"
 import { Toaster } from "@/components/ui/toaster"
 import { PremiumEffects } from "@/components/ui/premium-effects"
 import { PublicLayoutWrapper } from "@/components/layout/PublicLayoutWrapper"
+import { MessengerBall } from "@/components/ui/messenger-ball"
 import './globals.css'
 
 const inter = Inter({
@@ -106,6 +107,7 @@ export default function RootLayout({
           {children}
         </PublicLayoutWrapper>
         <FaqChatbot />
+        <MessengerBall />
         <Toaster />
         <Analytics />
       </body>

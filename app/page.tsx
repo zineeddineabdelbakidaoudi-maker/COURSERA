@@ -198,7 +198,7 @@ function CourseCard({ course }: { course: Course }) {
 
 export default function LandingPage() {
   const supabase = createClient();
-  const [courses, setCourses] = useState<Course[]>(hardcodedCourses);
+  const [courses, setCourses] = useState([]);
 
   useEffect(() => {
     // Attempt to fetch from Supabase. If empty, fall back to hardcoded.
@@ -224,7 +224,7 @@ export default function LandingPage() {
         }));
         
         // If we don't have 3 from DB, fill the rest with hardcoded
-        const merged = [...newCourses, ...hardcodedCourses.slice(newCourses.length)].slice(0, 3);
+        const merged = [...newCourses].slice(0, 3);
         setCourses(merged);
       }
     }

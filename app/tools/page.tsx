@@ -256,7 +256,7 @@ export default function ToolsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [priceRange, setPriceRange] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
-  const [toolsState, setTools] = useState<Tool[]>(hardcodedTools);
+  const [toolsState, setTools] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchDBProducts() {
@@ -275,7 +275,7 @@ export default function ToolsPage() {
           badge: 'New',
           date: d.created_at
         }));
-        setTools([...dbTools, ...hardcodedTools]);
+        setTools(dbTools || []);
       }
     }
     fetchDBProducts();

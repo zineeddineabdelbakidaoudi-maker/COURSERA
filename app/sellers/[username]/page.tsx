@@ -38,6 +38,11 @@ export default function SellerProfilePage({ params }: { params: Promise<{ userna
   const [reviews, setReviews] = useState<any[]>([])
   const [error, setError] = useState<string | null>(null)
 
+  const [showReviewModal, setShowReviewModal] = useState(false)
+  const [reviewText, setReviewText] = useState("")
+  const [reviewStars, setReviewStars] = useState(5)
+  const [submittingReview, setSubmittingReview] = useState(false)
+
   useEffect(() => {
     async function loadProfile() {
       if (!username) return
@@ -136,6 +141,37 @@ export default function SellerProfilePage({ params }: { params: Promise<{ userna
       })
       setSaved(true)
     }
+  }
+
+  const handleSubmitReview = async () => {
+    if (!reviewText.trim()) return
+    setSubmittingReview(true)
+    if (!user) {
+      router.push("/login")
+      return
+    }
+
+    const { error: reviewErr } = await supabase.from('Review').insert({
+      id: crypto.randomUUID(),
+      reviewer_id: user.id,
+      reviewed_user_id: profile.id,
+      rating_overall: reviewStars,
+      rating_quality: reviewStars,
+      rating_communication: reviewStars,
+      comment: reviewText.trim(),
+      is_visible: true,
+      is_verified_purchase: false
+    })
+
+    if (!reviewErr) {
+      toast.success("Review submitted!")
+      setShowReviewModal(false)
+      setReviewText("")
+      window.location.reload()
+    } else {
+      toast.error("Failed to submit: " + reviewErr.message)
+    }
+    setSubmittingReview(false)
   }
 
   if (loading) {
@@ -341,6 +377,9 @@ export default function SellerProfilePage({ params }: { params: Promise<{ userna
           </TabsContent>
 
           <TabsContent value="reviews" className="focus-visible:outline-none">
+            <div className="flex justify-end mb-4">
+              <Button onClick={() => setShowReviewModal(true)} variant="outline" className="gap-2"><Star className="w-4 h-4"/> Write a Review</Button>
+            </div>
             <div className="space-y-4">
               {reviews.length > 0 ? reviews.map((r, i) => (
                 <Card key={i} className="border-border bg-white/70 dark:bg-card/40 backdrop-blur-xl shadow-sm rounded-3xl">
@@ -403,6 +442,39 @@ export default function SellerProfilePage({ params }: { params: Promise<{ userna
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Review Modal */}
+      {showReviewModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-card w-full max-w-lg rounded-3xl p-6 md:p-8 shadow-2xl relative animate-in fade-in zoom-in-95">
+            <button onClick={() => setShowReviewModal(false)} className="absolute top-4 right-4 p-2 text-slate-400 hover:text-black dark:hover:text-white bg-slate-100 dark:bg-muted rounded-full">
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-5 h-5"><path d="M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68682L4.03164 3.2184C3.80708 2.99385 3.44301 2.99385 3.21846 3.2184C2.99391 3.44295 2.99391 3.80702 3.21846 4.03157L6.68688 7.49999L3.21846 10.9684C2.99391 11.193 2.99391 11.557 3.21846 11.7816C3.44301 12.0061 3.80708 12.0061 4.03164 11.7816L7.50005 8.31316L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.557 12.0062 11.193 11.7816 10.9684L8.31322 7.49999L11.7816 4.03157Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path></svg>
+            </button>
+            <h3 className="text-2xl font-bold mb-4">Write a Review</h3>
+            <p className="text-slate-500 mb-6 font-medium">Share your experience with <b>{displayName}</b>.</p>
+            
+            <div className="mb-6 flex justify-center gap-2">
+              {[1, 2, 3, 4, 5].map(s => (
+                <button key={s} onClick={() => setReviewStars(s)} className="p-1 focus:outline-none focus:scale-110 hover:scale-110 transition-transform">
+                  <Star className={`w-10 h-10 ${reviewStars >= s ? "fill-amber-400 text-amber-400" : "text-slate-200 hover:text-amber-200"}`} />
+                </button>
+              ))}
+            </div>
+
+            <textarea
+              className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 min-h-[120px] mb-6 focus:outline-none focus:ring-2 focus:ring-black outline-none font-medium resize-none text-slate-900"
+              placeholder={`What was it like working with ${displayName}?`}
+              value={reviewText}
+              onChange={e => setReviewText(e.target.value)}
+            />
+
+            <Button onClick={handleSubmitReview} disabled={submittingReview} className="w-full h-14 text-base rounded-xl font-bold gap-2">
+              {submittingReview ? "Submitting..." : "Post Review"}
+            </Button>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

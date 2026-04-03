@@ -88,7 +88,7 @@ export default function JobsPage() {
   const supabase = createClient();
   const [activeCategory, setActiveCategory] = useState('All Jobs');
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [jobs, setJobs] = useState<Job[]>(hardcodedJobs);
+  const [jobs, setJobs] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchDBJobs() {
@@ -108,7 +108,7 @@ export default function JobsPage() {
           skills: d.skills || [],
         }));
         
-        const merged = [...newJobs, ...hardcodedJobs];
+        const merged = dbJobs || [];
         setJobs(merged);
       }
     }

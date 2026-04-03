@@ -255,7 +255,7 @@ export default function EbooksPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [priceRange, setPriceRange] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
-  const [ebooks, setEbooks] = useState<Ebook[]>(hardcodedEbooks);
+  const [ebooks, setEbooks] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchDBProducts() {
@@ -274,7 +274,7 @@ export default function EbooksPage() {
           badge: 'New',
           date: d.created_at
         }));
-        setEbooks([...dbEbooks, ...hardcodedEbooks]);
+        setEbooks(dbEbooks || []);
       }
     }
     fetchDBProducts();

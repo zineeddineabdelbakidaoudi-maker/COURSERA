@@ -129,7 +129,7 @@ export default function HirePage() {
   const supabase = createClient();
   const [activeCategory, setActiveCategory] = useState('All Talent');
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [freelancers, setFreelancers] = useState<Freelancer[]>(hardcodedFreelancers);
+  const [freelancers, setFreelancers] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchSellers() {
@@ -147,7 +147,7 @@ export default function HirePage() {
           skills: f.skills || ['Digital Skills'],
           imageUrl: f.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400',
         }));
-        setFreelancers([...dbFreelancers, ...hardcodedFreelancers]);
+        setFreelancers(dbFreelancers || []);
       }
     }
     fetchSellers();
@@ -298,7 +298,7 @@ export default function HirePage() {
                   </p>
 
                   <div className="mb-8 flex flex-wrap gap-2">
-                    {f.skills.map((skill) => (
+                    {f.skills.map((skill: string) => (
                       <span
                         key={skill}
                         className="rounded-lg bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-100"

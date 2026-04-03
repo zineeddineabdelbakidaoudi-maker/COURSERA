@@ -254,7 +254,7 @@ export default function TemplatesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [priceRange, setPriceRange] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
-  const [templates, setTemplates] = useState<Template[]>(hardcodedTemplates);
+  const [templates, setTemplates] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchDBProducts() {
@@ -273,7 +273,7 @@ export default function TemplatesPage() {
           badge: 'New',
           date: d.created_at
         }));
-        setTemplates([...dbTemplates, ...hardcodedTemplates]);
+        setTemplates(dbTemplates || []);
       }
     }
     fetchDBProducts();

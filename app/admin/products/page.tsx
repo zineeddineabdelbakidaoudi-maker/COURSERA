@@ -49,6 +49,12 @@ export default function AdminProductsPage() {
     await supabase.from("DigitalProduct").delete().eq("id", id)
     setProducts(products.filter(p => p.id !== id))
   }
+  const togglePublish = async (id: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'live' ? 'draft' : 'live'
+    await supabase.from("DigitalProduct").update({ status: newStatus }).eq("id", id)
+    setProducts(products.map(p => p.id === id ? { ...p, status: newStatus } : p))
+  }
+
   const [formData, setFormData] = useState({
     title: "", description: "", shortDesc: "", category: "Templates & UI Kits", type: "Template",
     price: "", discount: "", license: "Personal Use Only", level: "All Levels", destined: "", language: "English (EN)",
@@ -111,7 +117,7 @@ export default function AdminProductsPage() {
       if (result.error) throw new Error(result.error)
 
       setPublished(true)
-      setTimeout(() => { setPublished(false); setActiveTab("directory") }, 2500)
+      setTimeout(() => { setPublished(false); setActiveTab("directory"); fetchProducts() }, 2500)
     } catch (err: any) {
       alert("Error publishing: " + err.message)
     } finally {
@@ -202,9 +208,14 @@ export default function AdminProductsPage() {
                     <p className="text-sm text-muted-foreground mb-4">{product.Category?.name_en || "Uncategorized"}</p>
                     <div className="flex items-center justify-between mt-auto">
                       <span className="font-bold">{product.price_dzd === 0 ? "Free" : `${product.price_dzd} DZD`}</span>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(product.id)} className="text-destructive hover:text-destructive hover:bg-destructive/10">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => togglePublish(product.id, product.status)} className="text-muted-foreground hover:text-black">
+                          {product.status === 'live' ? 'Draft' : 'Publish'}
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleDelete(product.id)} className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
